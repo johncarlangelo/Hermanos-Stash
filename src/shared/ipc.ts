@@ -14,6 +14,8 @@ export const IPC = {
   fsStat: 'fs:stat',
   fsReadTextFile: 'fs:read-text-file',
   fsWriteTextFile: 'fs:write-text-file',
+  fsReadFileBytes: 'fs:read-file-bytes',
+  fsWriteFileBytes: 'fs:write-file-bytes',
 
   tempCreateOperation: 'temp:create-operation',
   tempCleanup: 'temp:cleanup',
@@ -84,6 +86,22 @@ export interface ReadTextFileResult {
   sizeBytes: number
 }
 
+export interface ReadFileBytesRequest {
+  path: string
+  maxBytes?: number
+}
+
+export interface ReadFileBytesResult {
+  /** Structured-clonable, so raw bytes travel over IPC without encoding. */
+  bytes: ArrayBuffer
+  truncated: boolean
+  sizeBytes: number
+}
+
+export interface WriteFileBytesResult {
+  bytesWritten: number
+}
+
 export type OperationStatus = 'active' | 'done' | 'cancelled' | 'error'
 
 export interface ProgressEvent {
@@ -124,6 +142,8 @@ export interface StashBridge {
     stat(path: string): Promise<FileMetadata>
     readTextFile(req: ReadTextFileRequest): Promise<ReadTextFileResult>
     writeTextFile(path: string, content: string): Promise<{ bytesWritten: number }>
+    readFileBytes(req: ReadFileBytesRequest): Promise<ReadFileBytesResult>
+    writeFileBytes(path: string, bytes: ArrayBuffer): Promise<WriteFileBytesResult>
   }
   temp: {
     createOperation(prefix?: string): Promise<string>

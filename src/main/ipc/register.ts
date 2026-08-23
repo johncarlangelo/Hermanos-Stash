@@ -21,6 +21,8 @@ export interface IpcServices {
 }
 
 const TEXT_FILE_LIMIT_BYTES = 32 * 1024 * 1024
+/** Hard cap for raw binary reads/writes — larger files are rejected upfront. */
+const BINARY_FILE_LIMIT_BYTES = 64 * 1024 * 1024
 /** Serialized preference values larger than this are rejected. */
 const PREF_VALUE_LIMIT_BYTES = 64 * 1024
 
@@ -163,6 +165,88 @@ export function registerIpc(services: IpcServices): void {
       await fs.mkdir(path.dirname(target), { recursive: true })
       await fs.writeFile(target, content, 'utf-8')
       return { bytesWritten: Buffer.byteLength(content, 'utf-8') }
+    } catch (err) {
+      throw stashError('FS_WRITE', `Could not save to "${path.basename(target)}".`, {
+        technicalMessage: String(err)
+      })
+    }
+  })
+
+  handle(IPC.fsReadFileBytes, async (_e, raw: unknown) => {
+    if (typeof raw !== 'object' || raw === null) {
+      throw stashError('VALIDATION', 'Invalid request payload.')
+    }
+    const req = raw as Record<string, unknown>
+    const target = assertString(req['path'], 'path')
+    const requestedMax =
+      req['maxBytes'] === undefined
+        ? BINARY_FILE_LIMIT_BYTES
+        : assertNumber(req['maxBytes'], 'maxBytes')
+    if (requestedMax < 0) {
+      throw stashError('VALIDATION', 'Invalid request: "maxBytes" cannot be negative.')
+    }
+    const maxBytes = Math.min(requestedMax, BINARY_FILE_LIMIT_BYTES)
+
+    let handle
+    try {
+      handle = await fs.open(target, 'r')
+    } catch (err) {
+      throw stashError('FS_READ', `Could not open "${path.basename(target)}".`, {
+        technicalMessage: String(err)
+      })
+    }
+    try {
+      const stat = await handle.stat()
+      // Reject oversized files upfront rather than silently truncating previews.
+      if (stat.size > BINARY_FILE_LIMIT_BYTES) {
+        throw stashError(
+          'VALIDATION',
+          `"${path.basename(target)}" is too large to load (limit is 64 MB).`,
+          { technicalMessage: `sizeBytes=${stat.size}` }
+        )
+      }
+      const length = Math.min(stat.size, maxBytes + 1)
+      const buffer = Buffer.alloc(length)
+      const { bytesRead } = await handle.read(buffer, 0, length, 0)
+      const truncated = bytesRead > maxBytes
+      // Slice into a standalone ArrayBuffer so the whole parent allocation
+      // never crosses the process boundary.
+      const kept = Math.min(bytesRead, maxBytes)
+      return {
+        bytes: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + kept),
+        truncated,
+        sizeBytes: stat.size
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  handle(IPC.fsWriteFileBytes, async (_e, raw: unknown) => {
+    if (typeof raw !== 'object' || raw === null) {
+      throw stashError('VALIDATION', 'Invalid request payload.')
+    }
+    const req = raw as Record<string, unknown>
+    const target = assertString(req['path'], 'path')
+    const rawBytes = req['bytes']
+    const isBinary = rawBytes instanceof ArrayBuffer || ArrayBuffer.isView(rawBytes)
+    if (!isBinary) {
+      throw stashError('VALIDATION', 'Cannot save: the content must be binary data.')
+    }
+    const view = ArrayBuffer.isView(rawBytes)
+      ? new Uint8Array(rawBytes.buffer, rawBytes.byteOffset, rawBytes.byteLength)
+      : new Uint8Array(rawBytes as ArrayBuffer)
+    if (view.byteLength > BINARY_FILE_LIMIT_BYTES) {
+      throw stashError('VALIDATION', 'That file is too large to save (limit is 64 MB).', {
+        technicalMessage: `sizeBytes=${view.byteLength}`
+      })
+    }
+    // Writes are restricted to user-approved (dialog) or temp-workspace paths.
+    services.writeScope.assertAllowed(target)
+    try {
+      await fs.mkdir(path.dirname(target), { recursive: true })
+      await fs.writeFile(target, Buffer.from(view))
+      return { bytesWritten: view.byteLength }
     } catch (err) {
       throw stashError('FS_WRITE', `Could not save to "${path.basename(target)}".`, {
         technicalMessage: String(err)

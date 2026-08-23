@@ -49,24 +49,43 @@ toast notifications).
 
 ## Current focus
 
-Milestone 2 — demonstration tools on top of the verified foundation. First three
-tools shipped: **JSON Formatter** (`json-format`), **Base64 Encoder/Decoder**
-(`base64-codec`), and **File Metadata Viewer** (`file-metadata`) — each as a
+Milestone 2 — demonstration tools on top of the verified foundation. Five tools
+shipped: **JSON Formatter** (`json-format`), **Base64 Encoder/Decoder**
+(`base64-codec`), **File Metadata Viewer** (`file-metadata`), **Image Preview**
+(`image-preview`), and **QR Code Generator** (`qr-generator`) — each as a
 definition + lazy view + colocated pure logic with tests (see ADR-015/016).
+
+Milestone 2 batch 2 additions:
+
+- Binary platform bridge: `fs:read-file-bytes` / `fs:write-file-bytes` IPC
+  channels (64 MiB hard cap, upfront rejection of oversized reads, writes gated
+  by `WriteScopeGuard` like text writes). `ArrayBuffer` crosses the boundary
+  via structured clone.
+- `image-preview`: single-image DropZone → bytes via the new read channel →
+  Blob/object-URL `<img>` with metadata strip (name, natural dimensions,
+  humanized size, MIME) and Fit/100%/±25% zoom controls (10%–800%); SVGs are
+  rendered inertly through `<img>`.
+- `qr-generator`: first external dependency `qrcode` (+ `@types/qrcode`),
+  wrapped in pure `generateQrDataUrl()` with fixed scannability palette and
+  StashError mapping; UI offers size/error-correction selects, clipboard copy
+  (`ClipboardItem` PNG) and Save… through save dialog + binary write channel.
 
 ## Verification evidence
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
 - `npx prettier --check "src/**/*.{ts,tsx,css}"` → clean.
-- `npx vitest run` → **10 files, 80 tests passed** (registry/fuzzy search, error
+- `npx vitest run` → **12 files, 90 tests passed** (registry/fuzzy search, error
   normalization, file utils, temp workspace lifecycle, SQLite stores against real
   in-memory DBs, ProgressBus cancellation semantics; plus per-tool logic suites:
   JSON format/validate with line-column extraction, Base64 UTF-8 round-trips and
-  decode tolerances, file-metadata row building and relative-time formatting).
+  decode tolerances, file-metadata row building and relative-time formatting,
+  image-preview zoom clamping and accepted-extension coverage, qr-generator
+  empty/oversized rejection plus PNG data-URL generation for text/URLs/long input).
 - `npx electron-vite build` → main/preload/renderer all build successfully;
   each tool view emits its own lazy chunk (`JsonFormatTool`, `Base64Tool`,
-  `FileMetadataTool`), confirming code splitting through the registry.
+  `FileMetadataTool`, `ImagePreviewTool`, `QrGeneratorTool`), confirming code
+  splitting through the registry.
 - Headless boot check `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0
   (validates services initialize and SQLite opens inside the Electron main process).
 

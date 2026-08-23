@@ -95,3 +95,15 @@
 **Decision:** JSON formatting/validation uses `JSON.parse`/`JSON.stringify` directly in the renderer, deriving error line/column from V8 messages ("at position N" recomputed by newline counting; "(line L column C)" hint as fallback; 1-based coordinates matching editor conventions). Base64 encoding routes UTF-8 through `TextEncoder`/`TextDecoder` (fatal decoding) instead of raw `btoa`/`atob`; decode tolerates missing padding and embedded whitespace but rejects invalid characters and non-UTF-8 byte sequences.
 
 **Reason:** Both operations are instant on realistic inputs, need no native code, and keep files local-first. Documenting tolerance decisions in tests prevents silent behavior drift between contributors.
+
+## ADR-017 — Binary file channels mirror the text channels
+
+**Decision:** Add symmetric binary IPC channels `fs:read-file-bytes` and `fs:write-file-bytes` alongside the existing text pair. Reads validate `path`/`maxBytes`, reject files larger than 64 MiB upfront with a clear validation error (rather than silently truncating), and return a standalone `ArrayBuffer` sliced from the read buffer so no oversized parent allocation crosses IPC. Writes accept `ArrayBuffer`/typed views, enforce the same 64 MiB cap, and pass through `WriteScopeGuard.assertAllowed` exactly like text writes. The renderer bridge exposes them as `window.stash.fs.readFileBytes` / `writeFileBytes`.
+
+**Reason:** Image preview and QR saving need raw bytes; encoding binaries as text would be lossy or wasteful. `ArrayBuffer` is structured-clonable in Electron IPC, so bytes travel without base64 overhead. Mirroring the established handler shape (validation ? scope guard ? fs.promises handle) keeps the security posture uniform across every filesystem channel.
+
+## ADR-018 — QR generation via the mature `qrcode` package, renderer-side
+
+**Decision:** Use `qrcode` (+ `@types/qrcode`) as the sole new dependency for Milestone 2 batch 2. Pure logic wraps `QRCode.toDataURL` in `generateQrDataUrl()` with fixed options (margin 2, width default 512, error correction M, near-black modules on warm paper for scannability). Empty input and library capacity errors are mapped to `StashError` (`VALIDATION`) with actionable messages; tests cover rejection paths and PNG data-URL output for text, URLs, and long payloads.
+
+**Reason:** Hand-rolling QR encoding is high-risk and unnecessary (AGENTS.md principle 12); `qrcode` is mature and dependency-free. Keeping generation renderer-side preserves local-first behavior, and centralizing option/error policy in one pure function makes the tool UI trivial and testable.

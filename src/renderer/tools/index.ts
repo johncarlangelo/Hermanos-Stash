@@ -54,6 +54,31 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsMultipleFiles: true,
       supportsBatch: true
     }
+  },
+  {
+    id: 'image-preview',
+    name: 'Image Preview',
+    category: 'images',
+    description: 'Open and inspect images locally with dimensions, size and zoom controls.',
+    tags: ['image', 'preview', 'viewer', 'png', 'jpg', 'webp', 'gif'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true
+    }
+  },
+  {
+    id: 'qr-generator',
+    name: 'QR Code Generator',
+    category: 'developer',
+    description: 'Generate scannable QR codes from text or URLs, entirely offline.',
+    tags: ['qr', 'qrcode', 'generator', 'barcode'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -65,9 +90,13 @@ for (const definition of TOOL_DEFINITIONS) {
 const JsonFormatTool = lazy(() => import('./json-format/JsonFormatTool'))
 const Base64Tool = lazy(() => import('./base64/Base64Tool'))
 const FileMetadataTool = lazy(() => import('./file-metadata/FileMetadataTool'))
+const ImagePreviewTool = lazy(() => import('./image-preview/ImagePreviewTool'))
+const QrGeneratorTool = lazy(() => import('./qr-generator/QrGeneratorTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
   'base64-codec': Base64Tool,
-  'file-metadata': FileMetadataTool
+  'file-metadata': FileMetadataTool,
+  'image-preview': ImagePreviewTool,
+  'qr-generator': QrGeneratorTool
 }

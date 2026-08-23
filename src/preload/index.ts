@@ -5,6 +5,7 @@ import type {
   HistoryEntryInput,
   OpenFileDialogRequest,
   ProgressEvent,
+  ReadFileBytesRequest,
   ReadTextFileRequest,
   SaveFileDialogRequest,
   StashBridge
@@ -31,7 +32,10 @@ const api: StashBridge = {
   fs: {
     stat: (path: string) => invoke(IPC.fsStat, path),
     readTextFile: (req: ReadTextFileRequest) => invoke(IPC.fsReadTextFile, req),
-    writeTextFile: (path: string, content: string) => invoke(IPC.fsWriteTextFile, path, content)
+    writeTextFile: (path: string, content: string) => invoke(IPC.fsWriteTextFile, path, content),
+    readFileBytes: (req: ReadFileBytesRequest) => invoke(IPC.fsReadFileBytes, req),
+    writeFileBytes: (path: string, bytes: ArrayBuffer) =>
+      invoke(IPC.fsWriteFileBytes, { path, bytes })
   },
   temp: {
     createOperation: (prefix?: string) => invoke(IPC.tempCreateOperation, prefix),
