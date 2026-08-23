@@ -37,7 +37,8 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      spellcheck: false
+      spellcheck: false,
+      zoomFactor: 1.1
     }
   })
 

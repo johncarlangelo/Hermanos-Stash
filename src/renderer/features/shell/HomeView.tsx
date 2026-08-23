@@ -63,10 +63,10 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
           e.stopPropagation()
           void toggleFavorite(tool.id)
         }}
-        className={`absolute top-2 right-2 cursor-pointer rounded-sm p-1 transition-opacity duration-150 ${
+        className={`absolute top-2 right-2 cursor-pointer rounded-sm p-1 transition-all duration-150 ${
           isFavorite
             ? 'text-accent opacity-100'
-            : 'text-faint opacity-0 group-hover:opacity-100 hover:text-ink focus-visible:opacity-100'
+            : 'text-faint opacity-45 group-hover:opacity-100 hover:!opacity-100 hover:text-ink focus-visible:opacity-100'
         }`}
       >
         <Star size={13} fill={isFavorite ? 'currentColor' : 'none'} />

@@ -14,6 +14,9 @@ interface LibraryState {
   recordRecent: (toolId: string) => Promise<void>
 }
 
+/** Sidebar recent list length. */
+const RECENTS_LIMIT = 5
+
 export const useLibrary = create<LibraryState>((set, get) => ({
   favorites: [],
   recents: [],
@@ -23,7 +26,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     try {
       const [favorites, recents] = await Promise.all([
         window.stash.favorites.list(),
-        window.stash.recents.list(8)
+        window.stash.recents.list(RECENTS_LIMIT)
       ])
       set({
         favorites,
@@ -62,7 +65,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
       recents: [
         { toolId, lastUsedMs: Date.now() },
         ...state.recents.filter((r) => r.toolId !== toolId)
-      ].slice(0, 8)
+      ].slice(0, RECENTS_LIMIT)
     }))
     try {
       await window.stash.recents.add(toolId)

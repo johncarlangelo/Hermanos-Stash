@@ -6,6 +6,7 @@ import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
 import { SettingsView } from '../features/shell/SettingsView'
 import { ToastViewport } from '../components/ToastViewport'
+import { RootErrorBoundary } from '../components/RootErrorBoundary'
 import { getIcon } from '../components/icons'
 import { toolRegistry } from '../../shared/tool-registry/registry'
 import { useLibrary } from '../stores/library'
@@ -70,24 +71,26 @@ export default function App() {
   }, [loadLibrary])
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
-      <Sidebar />
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Draggable titlebar row; the right edge stays clear for native controls. */}
-        <header className="app-drag flex h-10 shrink-0 items-center border-b border-line bg-shell pr-[140px] pl-4">
-          <div className="app-no-drag min-w-0">
-            <Breadcrumb />
+    <RootErrorBoundary>
+      <div className="flex h-full w-full overflow-hidden">
+        <Sidebar />
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Draggable titlebar row; the right edge stays clear for native controls. */}
+          <header className="app-drag flex h-10 shrink-0 items-center border-b border-line bg-shell pr-[140px] pl-4">
+            <div className="app-no-drag min-w-0">
+              <Breadcrumb />
+            </div>
+          </header>
+          <div className="min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
+            {view.type === 'home' && <HomeView />}
+            {view.type === 'category' && <HomeView />}
+            {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
+            {view.type === 'settings' && <SettingsView />}
           </div>
-        </header>
-        <div className="min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
-          {view.type === 'home' && <HomeView />}
-          {view.type === 'category' && <HomeView />}
-          {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
-          {view.type === 'settings' && <SettingsView />}
-        </div>
-      </main>
-      <CommandPalette />
-      <ToastViewport />
-    </div>
+        </main>
+        <CommandPalette />
+        <ToastViewport />
+      </div>
+    </RootErrorBoundary>
   )
 }
