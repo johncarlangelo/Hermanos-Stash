@@ -37,6 +37,9 @@ export const IPC = {
   mediaExtractAudio: 'media:extract-audio',
   mediaConvertAudio: 'media:convert-audio',
 
+  cryptoHashText: 'crypto:hash-text',
+  cryptoHashFile: 'crypto:hash-file',
+
   tempCreateOperation: 'temp:create-operation',
   tempCleanup: 'temp:cleanup',
 
@@ -331,6 +334,29 @@ export interface ProgressEvent {
   error?: StashError
 }
 
+// --- Crypto (hashing) ---------------------------------------------------------
+
+export type HashAlgorithm = 'md5' | 'sha1' | 'sha256' | 'sha512'
+
+export interface HashTextRequest {
+  algorithm: HashAlgorithm
+  text: string
+}
+
+export interface HashTextResult {
+  hex: string
+}
+
+export interface HashFileRequest {
+  path: string
+  algorithm: HashAlgorithm
+}
+
+export interface HashFileResult {
+  hex: string
+  sizeBytes: number
+}
+
 export interface HistoryEntryInput {
   toolId: string
   operation: string
@@ -407,6 +433,10 @@ export interface StashBridge {
     videoToGif(req: VideoToGifRequest): Promise<MediaBatchResult>
     extractAudio(req: ExtractAudioRequest): Promise<MediaBatchResult>
     convertAudio(req: ConvertAudioRequest): Promise<MediaBatchResult>
+  }
+  crypto: {
+    hashText(req: HashTextRequest): Promise<HashTextResult>
+    hashFile(req: HashFileRequest): Promise<HashFileResult>
   }
   progress: {
     subscribe(listener: (event: ProgressEvent) => void): () => void

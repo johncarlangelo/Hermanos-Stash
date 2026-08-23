@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-**Milestone 4a-i — Text expansion batch (complete).** Milestones 1–3 complete.
+**Milestone 4a-ii — Developer expansion batch (complete).** Milestones 1–3 and 4a-i complete.
 
 ## Status
 
@@ -53,8 +53,46 @@ installer packaging workflow (`[-]`); non-media Milestone 4 candidates.
 
 ## Current focus
 
-Milestone 4a-i (text expansion batch) is complete: four new renderer-side text tools
-following the established pure-logic + lazy-view pattern (ADR-022):
+Milestone 4a-ii (developer expansion batch) is complete: five new developer-category
+tools following the established pure-logic + lazy-view pattern (ADR-022), plus the
+first crypto IPC domain:
+
+- `regex-tester`: pure never-throws evaluator (`testRegex` → `{matches,total,error?}`)
+  over the supported JS flag set `dgimsuvy` with duplicate/unknown flag rejection;
+  zero-length matches are stepped past (`lastIndex += 1`) so patterns like `a*`
+  over `bbb` terminate; `maxMatches` cap uses `total >= maxMatches` as an explicit
+  "at least N" sentinel. UI debounces live runs (~150 ms), renders aria-pressed
+  flag toggles, an aria-live results line, match rows (index tnum · text mono ·
+  groups/named dim) and a highlighted preview built from clamped non-overlapping
+  segments.
+- `jwt-decoder`: split/decode/JSON-parse pipeline returning `{header,payload,
+  signature}|{error:{message}}`; local base64url→bytes→fatal-UTF-8 decoding;
+  `isExpired(payload, nowMs)` treats `exp === now` as expired. UI pretty-prints
+  header/payload panels with per-panel copy, human-readable exp/iat/nbf claim
+  strip with valid/expired badge, and a prominent "Signature is not verified —
+  decoding only" notice.
+- `timestamp-converter`: auto-detecting parser (>1e11 ⇒ ms, negatives allowed)
+  and deterministic formatter (ISO/UTC/local via Intl + injectable-now relative
+  labels). UI: ticking Now card (setInterval cleaned up on unmount), live
+  timestamp→date conversion, reverse datetime-local→unix seconds/ms row with
+  per-row copy buttons.
+- `hash-generator`: new `crypto:hash-text` / `crypto:hash-file` channels — node:crypto
+  in main with algorithm allowlist validation; file hashing streams through
+  `createReadStream` chunks instead of whole-file reads; wired as a new `crypto`
+  group on the StashBridge. UI: Text/File segmented mode with algorithm select,
+  debounced (200 ms) text hashing with stale-response discard via request counter,
+  any-extension DropZone for files showing name/size/digest/copy; file hashes
+  record history entries (`hash-sha256`, inputs=[filename], best-effort).
+- `url-utils`: URL component parser that prepends `https://` when no scheme is
+  present (documented in tests), port omitted for default ports, query params
+  extracted via `searchParams.entries()`; encodeComponent/decodeComponent wrappers
+  with URIError-safe decode; parseQuery tolerates a leading `?`. UI: Parse table
+  (dim label left / mono value right / per-row copy) plus Encode/Decode panels
+  with output-carrying swap like base64.
+
+## Previous focus — Milestone 4a-i
+
+Four renderer-side text tools following the pure-logic + lazy-view pattern (ADR-022):
 
 - `markdown-preview`: marked (gfm/breaks) → DOMPurify-sanitized live preview with a
   local minimal prose style, Copy-HTML action and word/char footer.
@@ -190,7 +228,21 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Milestone 4a-i gates (latest run):
+Milestone 4a-ii gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx,css}"` → applied; check clean.
+- `npx vitest run` → **27 files, 273 tests passed** (up from 22 files / 199 tests:
+  +74 new tests across the five new logic suites — valid/invalid/empty/boundary
+  coverage for each), including the tool catalog integrity suite over the five new
+  registrations (definition ⇄ component ⇄ registry consistency).
+- `npx electron-vite build` → main/preload/renderer all build; each new tool emits
+  its own lazy chunk (`RegexTesterTool`, `JwtDecoderTool`, `TimestampConverterTool`,
+  `HashGeneratorTool`, `UrlUtilsTool`).
+- Headless boot `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0.
+
+Milestone 4a-i gates (earlier run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.

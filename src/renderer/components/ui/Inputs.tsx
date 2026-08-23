@@ -3,18 +3,20 @@ import { X } from 'lucide-react'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean
+  mono?: boolean
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className = '', invalid = false, ...rest },
+  { className = '', invalid = false, mono = false, ...rest },
   ref
 ) {
   return (
     <input
       ref={ref}
+      spellCheck={false}
       className={`h-8.5 w-full rounded-md border bg-base px-2.5 text-[13px] text-ink placeholder:text-faint transition-colors duration-150 ease-out focus:outline-none ${
         invalid ? 'border-danger/70' : 'border-line hover:border-line-strong focus:border-accent/70'
-      } ${className}`}
+      } ${mono ? 'font-mono tnum' : ''} ${className}`}
       {...rest}
     />
   )

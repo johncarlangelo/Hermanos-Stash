@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
 import path from 'node:path'
 import { IPC } from '../../shared/ipc'
 import type {
@@ -7,6 +9,8 @@ import type {
   ConvertAudioRequest,
   ExtractAudioRequest,
   FileMetadata,
+  HashAlgorithm,
+  HashFileResult,
   HistoryEntryInput,
   ImageBatchFailure,
   ImageBatchResult,
@@ -390,6 +394,21 @@ function parseAudioCodec(value: unknown): AudioCodec {
   throw stashError('VALIDATION', 'Invalid request: "codec" is not a supported audio codec.', {
     technicalMessage: `codec=${JSON.stringify(value)}`
   })
+}
+
+// --- Crypto (hashing) ---------------------------------------------------------
+
+const HASH_ALGORITHMS: readonly HashAlgorithm[] = ['md5', 'sha1', 'sha256', 'sha512']
+
+function parseHashAlgorithm(value: unknown): HashAlgorithm {
+  if (typeof value === 'string' && HASH_ALGORITHMS.includes(value as HashAlgorithm)) {
+    return value as HashAlgorithm
+  }
+  throw stashError(
+    'VALIDATION',
+    'Invalid request: "algorithm" is not a supported hash algorithm.',
+    { technicalMessage: `algorithm=${JSON.stringify(value)}` }
+  )
 }
 
 /**
@@ -935,6 +954,48 @@ export function registerIpc(services: IpcServices): void {
           convertAudio(ctx, input, tempOutput, { ...request, ...hooks })
       }
     )
+  })
+
+  // --- Crypto (hashing) --------------------------------------------------------
+  handle(IPC.cryptoHashText, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const algorithm = parseHashAlgorithm(req['algorithm'])
+    const text = req['text']
+    if (typeof text !== 'string') {
+      throw stashError('VALIDATION', 'Invalid request: "text" must be a string.')
+    }
+    if (Buffer.byteLength(text, 'utf-8') > TEXT_FILE_LIMIT_BYTES) {
+      throw stashError('VALIDATION', 'That text is too large to hash in one pass.')
+    }
+    const hex = crypto.createHash(algorithm).update(text, 'utf-8').digest('hex')
+    return { hex }
+  })
+
+  handle(IPC.cryptoHashFile, async (_e, raw: unknown): Promise<HashFileResult> => {
+    const req = assertPayload(raw)
+    const target = assertString(req['path'], 'path')
+    const algorithm = parseHashAlgorithm(req['algorithm'])
+    let stat: Awaited<ReturnType<typeof fs.stat>>
+    try {
+      stat = await fs.stat(target)
+    } catch (err) {
+      throw stashError('FS_READ', `"${path.basename(target)}" could not be found or opened.`, {
+        technicalMessage: String(err)
+      })
+    }
+    return new Promise<HashFileResult>((resolve, reject) => {
+      const hash = crypto.createHash(algorithm)
+      const stream = createReadStream(target)
+      stream.on('data', (chunk) => hash.update(chunk))
+      stream.on('end', () => resolve({ hex: hash.digest('hex'), sizeBytes: stat.size }))
+      stream.on('error', (err) =>
+        reject(
+          stashError('FS_READ', `Could not read "${path.basename(target)}".`, {
+            technicalMessage: String(err)
+          })
+        )
+      )
+    })
   })
 
   // --- Preferences ----------------------------------------------------------

@@ -87,12 +87,12 @@ Legend:
 - [x] YAML ↔ JSON.
 - [x] CSV ↔ JSON. *(hand-written strict RFC 4180 parser/serializer, header-row toggle, delimiter select)*
 - [x] Text diff. *(LCS line diff, 2000-line guard, unified +/- rows)*
-- [ ] Regex tester.
-- [ ] JWT decoder.
-- [ ] Timestamp converter.
-- [ ] Hash generator.
+- [x] Regex tester. *(never-throws evaluator, dgimsuvy flags, zero-length safety, maxMatches sentinel, highlighted live preview)*
+- [x] JWT decoder. *(base64url split/decode/parse with per-stage errors, exp status strip, explicit not-verified notice)*
+- [x] Timestamp converter. *(s/ms auto-detect at >1e11, negatives allowed, live now card, datetime-local reverse row)*
+- [x] Hash generator. *(crypto:hash-text/crypto:hash-file IPC via node:crypto, streamed file digests, history on file hashes)*
 - [ ] UUID generator.
-- [ ] URL utilities.
+- [x] URL utilities. *(component parser with https:// auto-prepend, URIError-safe encode/decode, query param list)*
 
 ## Future
 

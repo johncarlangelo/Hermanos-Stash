@@ -9,6 +9,8 @@ import type {
   ConvertVideoRequest,
   ExportFileRequest,
   ExtractAudioRequest,
+  HashFileRequest,
+  HashTextRequest,
   HistoryEntryInput,
   OpenFileDialogRequest,
   PdfMergeRequest,
@@ -93,6 +95,10 @@ const api: StashBridge = {
     videoToGif: (req: VideoToGifRequest) => invoke(IPC.mediaVideoToGif, req),
     extractAudio: (req: ExtractAudioRequest) => invoke(IPC.mediaExtractAudio, req),
     convertAudio: (req: ConvertAudioRequest) => invoke(IPC.mediaConvertAudio, req)
+  },
+  crypto: {
+    hashText: (req: HashTextRequest) => invoke(IPC.cryptoHashText, req),
+    hashFile: (req: HashFileRequest) => invoke(IPC.cryptoHashFile, req)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

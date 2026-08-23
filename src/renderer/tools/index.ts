@@ -134,6 +134,74 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'regex-tester',
+    name: 'Regex Tester',
+    category: 'developer',
+    description: 'Test regular expressions live with match highlighting, groups and flags.',
+    tags: ['regex', 'regexp', 'pattern'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'jwt-decoder',
+    name: 'JWT Decoder',
+    category: 'developer',
+    description: 'Decode JWT headers and payloads locally, with expiry status at a glance.',
+    tags: ['jwt', 'token', 'decode', 'auth'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'timestamp-converter',
+    name: 'Unix Timestamp Converter',
+    category: 'developer',
+    description:
+      'Convert Unix seconds or milliseconds to readable dates — and back — in UTC and local time.',
+    tags: ['unix', 'epoch', 'time', 'date', 'iso'],
+    icon: 'clock',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'hash-generator',
+    name: 'Hash Generator',
+    category: 'developer',
+    description:
+      'Compute MD5, SHA-1, SHA-256 or SHA-512 digests of text or any file, streamed locally.',
+    tags: ['hash', 'sha256', 'md5', 'checksum', 'digest'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'url-utils',
+    name: 'URL Utilities',
+    category: 'developer',
+    description: 'Parse URLs into components and percent-encode/decode text safely.',
+    tags: ['url', 'encode', 'decode', 'parse', 'query'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
     id: 'image-convert',
     name: 'Image Converter',
     category: 'images',
@@ -332,6 +400,11 @@ const TextDiffTool = lazy(() => import('./text-diff/TextDiffTool'))
 const FileMetadataTool = lazy(() => import('./file-metadata/FileMetadataTool'))
 const ImagePreviewTool = lazy(() => import('./image-preview/ImagePreviewTool'))
 const QrGeneratorTool = lazy(() => import('./qr-generator/QrGeneratorTool'))
+const RegexTesterTool = lazy(() => import('./regex-tester/RegexTesterTool'))
+const JwtDecoderTool = lazy(() => import('./jwt-decoder/JwtDecoderTool'))
+const TimestampConverterTool = lazy(() => import('./timestamp-converter/TimestampConverterTool'))
+const HashGeneratorTool = lazy(() => import('./hash-generator/HashGeneratorTool'))
+const UrlUtilsTool = lazy(() => import('./url-utils/UrlUtilsTool'))
 const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
@@ -355,6 +428,11 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'file-metadata': FileMetadataTool,
   'image-preview': ImagePreviewTool,
   'qr-generator': QrGeneratorTool,
+  'regex-tester': RegexTesterTool,
+  'jwt-decoder': JwtDecoderTool,
+  'timestamp-converter': TimestampConverterTool,
+  'hash-generator': HashGeneratorTool,
+  'url-utils': UrlUtilsTool,
   'image-convert': ImageConvertTool,
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,
