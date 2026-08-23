@@ -49,17 +49,17 @@ Legend:
 
 ## Milestone 2 — Demonstration tools
 
-- [ ] PDF preview.
-- [ ] Image preview.
+- [x] PDF preview.
+- [x] Image preview.
 - [x] JSON formatter/validator.
-- [ ] Image converter.
-- [ ] Image compressor.
-- [ ] PDF merger.
-- [ ] PDF splitter.
-- [ ] ZIP creator/extractor.
+- [x] Image converter.
+- [x] Image compressor.
+- [x] PDF merger.
+- [x] PDF splitter.
+- [x] ZIP creator/extractor.
 - [x] File metadata viewer.
 - [x] Base64 encoder/decoder.
-- [ ] QR generator.
+- [x] QR generator.
 
 ## Milestone 3 — Native Media & Heavy Processing
 

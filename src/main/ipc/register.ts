@@ -8,7 +8,10 @@ import type {
   ImageBatchFailure,
   ImageBatchResult,
   ImageBatchSuccess,
-  ImageOutputFormat
+  ImageOutputFormat,
+  PdfSplitFailure,
+  PdfSplitResult,
+  PdfSplitSuccess
 } from '../../shared/ipc'
 import { serializeStashError, stashError } from '../../shared/errors'
 import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from '../services/stores'
@@ -23,6 +26,8 @@ import {
   convertImage,
   formatForExtension
 } from '../processing/images'
+import { PDF_INPUT_LIMIT_BYTES, getPdfInfo, mergePdfs, splitPdfPages } from '../processing/pdf'
+import { parsePageRanges } from '../../shared/utils/page-ranges'
 
 export interface IpcServices {
   prefs: PrefsStore
@@ -168,6 +173,82 @@ async function runImageBatch(
     services.temp.cleanup(opDir)
   }
   return { succeeded, failed, cancelled, operationId: id }
+}
+
+/**
+ * Group label used in output names: single page → "p4", range → "p1-p3".
+ */
+function splitGroupName(group: number[]): string {
+  const first = group[0]!
+  const last = group[group.length - 1]!
+  return first === last ? `p${first}` : `p${first}-p${last}`
+}
+
+/**
+ * Full lifecycle for one PDF split: temp workspace → one output per group →
+ * export to the user-approved folder → cleanup, with cooperative
+ * cancellation checked between groups.
+ */
+async function runPdfSplit(
+  services: IpcServices,
+  inputPath: string,
+  groups: number[][],
+  outputDir: string
+): Promise<PdfSplitResult> {
+  const opDir = services.temp.createOperation('pdf-split')
+  const { id, handle } = services.progress.begin('Splitting PDF…')
+  const succeeded: PdfSplitSuccess[] = []
+  const failed: PdfSplitFailure[] = []
+  let cancelled = false
+  try {
+    const base = path.basename(inputPath)
+    const dot = base.lastIndexOf('.')
+    const stem = dot <= 0 ? base : base.slice(0, dot)
+    const usedNames = new Set<string>()
+    let index = 0
+    for (const group of groups) {
+      if (services.progress.isCancelled(id)) {
+        cancelled = true
+        break
+      }
+      handle.report(
+        groups.length === 0 ? null : index / groups.length,
+        `${base} · pages ${group[0]}–${group[group.length - 1]}`
+      )
+      try {
+        const name = uniqueName(`${stem}-${splitGroupName(group)}.pdf`, usedNames)
+        const tempOutput = path.join(opDir, `${index}-${name}`)
+        await splitPdfPages(inputPath, group, tempOutput)
+        // Verify the temp output exists before promoting it to the target.
+        await fs.stat(tempOutput)
+        const target = path.join(outputDir, name)
+        await fs.mkdir(path.dirname(target), { recursive: true })
+        await fs.copyFile(tempOutput, target)
+        const stat = await fs.stat(target)
+        succeeded.push({
+          label: `${stem}-${splitGroupName(group)}.pdf`,
+          output: target,
+          bytesWritten: stat.size
+        })
+      } catch (err) {
+        failed.push({
+          label: `${stem}-${splitGroupName(group)}.pdf`,
+          error: serializeStashError(err)
+        })
+      }
+      index += 1
+    }
+  } finally {
+    if (!cancelled) {
+      if (succeeded.length === 0 && failed.length > 0 && failed.length === groups.length) {
+        handle.fail(failed[0]!.error)
+      } else {
+        handle.done()
+      }
+    }
+    services.temp.cleanup(opDir)
+  }
+  return { succeeded, failed, cancelled }
 }
 
 /**
@@ -506,6 +587,55 @@ export function registerIpc(services: IpcServices): void {
     const outputDir = assertString(req['outputDir'], 'outputDir')
     services.writeScope.assertAllowed(outputDir)
     return extractZipArchive(zipPath, outputDir)
+  })
+
+  // --- PDF processing --------------------------------------------------------
+  handle(IPC.pdfMergeBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const targetPdf = assertString(req['targetPdf'], 'targetPdf')
+    services.writeScope.assertAllowed(targetPdf)
+    let totalBytes = 0
+    for (const filePath of paths) {
+      if (!filePath.toLowerCase().endsWith('.pdf')) {
+        throw stashError('VALIDATION', `"${path.basename(filePath)}" isn't a PDF file.`)
+      }
+      let stat
+      try {
+        stat = await fs.stat(filePath)
+      } catch (err) {
+        throw stashError('FS_READ', `"${path.basename(filePath)}" could not be found or opened.`, {
+          technicalMessage: String(err)
+        })
+      }
+      totalBytes += stat.size
+      if (totalBytes > PDF_INPUT_LIMIT_BYTES) {
+        throw stashError(
+          'VALIDATION',
+          'The selected documents are too large to merge in one pass (limit is 512 MB total).',
+          { technicalMessage: `totalBytes=${totalBytes}` }
+        )
+      }
+    }
+    return mergePdfs(paths, targetPdf)
+  })
+
+  handle(IPC.pdfGetInfo, (_e, target: unknown) => getPdfInfo(assertString(target, 'path')))
+
+  handle(IPC.pdfSplitBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const pageSpec = assertString(req['pageSpec'], 'pageSpec')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    services.writeScope.assertAllowed(outputDir)
+    // The renderer pre-validates for UX; the main process re-validates
+    // authoritatively against the real document.
+    const info = await getPdfInfo(inputPath)
+    const parsed = parsePageRanges(pageSpec, info.pageCount)
+    if ('error' in parsed) {
+      throw stashError('VALIDATION', parsed.error)
+    }
+    return runPdfSplit(services, inputPath, parsed.groups, outputDir)
   })
 
   // --- Preferences ----------------------------------------------------------

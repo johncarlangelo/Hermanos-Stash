@@ -143,6 +143,50 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'pdf-merge',
+    name: 'PDF Merger',
+    category: 'documents',
+    description: 'Combine several PDFs into one document, in exactly the order you choose.',
+    tags: ['pdf', 'merge', 'combine', 'join'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-split',
+    name: 'PDF Splitter',
+    category: 'documents',
+    description:
+      'Extract page ranges like "1-3, 7" from a PDF into separate documents of their own.',
+    tags: ['pdf', 'split', 'extract', 'pages'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-preview',
+    name: 'PDF Preview',
+    category: 'documents',
+    description: 'Read PDFs locally with fast page navigation, zoom and document details.',
+    tags: ['pdf', 'preview', 'viewer', 'read'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true
+    }
   }
 ]
 
@@ -160,6 +204,9 @@ const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
 const ZipExtractTool = lazy(() => import('./zip-extract/ZipExtractTool'))
+const PdfMergeTool = lazy(() => import('./pdf-merge/PdfMergeTool'))
+const PdfSplitTool = lazy(() => import('./pdf-split/PdfSplitTool'))
+const PdfPreviewTool = lazy(() => import('./pdf-preview/PdfPreviewTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -170,5 +217,8 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'image-convert': ImageConvertTool,
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,
-  'zip-extract': ZipExtractTool
+  'zip-extract': ZipExtractTool,
+  'pdf-merge': PdfMergeTool,
+  'pdf-split': PdfSplitTool,
+  'pdf-preview': PdfPreviewTool
 }

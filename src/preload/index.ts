@@ -7,6 +7,8 @@ import type {
   ExportFileRequest,
   HistoryEntryInput,
   OpenFileDialogRequest,
+  PdfMergeRequest,
+  PdfSplitRequest,
   ProgressEvent,
   ReadFileBytesRequest,
   ReadTextFileRequest,
@@ -72,6 +74,11 @@ const api: StashBridge = {
   archives: {
     createZip: (req: ZipCreateRequest) => invoke(IPC.zipCreateBatch, req),
     extractZip: (req: ZipExtractRequest) => invoke(IPC.zipExtractBatch, req)
+  },
+  pdfs: {
+    merge: (req: PdfMergeRequest) => invoke(IPC.pdfMergeBatch, req),
+    getInfo: (path: string) => invoke(IPC.pdfGetInfo, path),
+    split: (req: PdfSplitRequest) => invoke(IPC.pdfSplitBatch, req)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

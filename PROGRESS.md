@@ -101,24 +101,56 @@ Milestone 2 batch 3 (heavy processing) additions:
   live in `src/renderer/tools/shared/` (accumulating dedupe file list, mount-
   time progress subscription that cannot miss events emitted during the invoke).
 
+Milestone 2 batch 4 (PDF suite) additions:
+
+- `pdf-lib` adopted for main-process PDF manipulation, `pdfjs-dist` (v6) for
+  renderer-side rendering only — both mature libraries per AGENTS.md principle 12.
+- `src/main/processing/pdf.ts`: `mergePdfs` (ordered page copy into one target,
+  encrypted inputs rejected with an actionable error naming the file and
+  suggesting protection removal), `getPdfInfo` (page count + on-disk size), and
+  `splitPdfPages` (one output PDF per page group). Lenient pdf-lib parsing is
+  hardened by forcing page-tree access at load time so corrupt documents fail
+  with structured errors instead of mid-merge.
+- `src/shared/utils/page-ranges.ts`: pure parser for "1-3, 7, 10-12" specs —
+  1-based inclusive ranges, whitespace tolerant, out-of-range/backwards/malformed
+  input each produce a distinct actionable error; overlapping groups are allowed
+  but deduped preserving first-appearance order (fully-duplicated groups are
+  dropped so no empty output can ever be produced).
+- Channels `pdf:merge-batch` (512 MB total input cap, `.pdf` extension check,
+  writeScope-gated save target), `pdf:get-info`, and `pdf:split` (authoritative
+  re-validation against the real page count; temp op dir → one PDF per group →
+  collision-suffixed export exactly like the image batch; per-group progress
+  events and cancellation between groups).
+- Three new tools registered: **PDF Merger** (`pdf-merge`, ordered queue with
+  numbered rows and up/down reordering buttons, save-dialog → summary flow like
+  zip-create), **PDF Splitter** (`pdf-split`, document info line fetched via
+  `pdf:get-info`, live range-spec validation using the shared parser, progress
+  bar + cancel during splitting), and **PDF Preview** (`pdf-preview`, pdf.js
+  canvas rendering with worker loaded via Vite `?url` asset import — buffer is
+  copied before handing to pdf.js since it may transfer/detach it — Fit/100%
+  zoom, prev/next with keyboard Left/Right support, loading spinner, encrypted/
+  corrupt error states, full cleanup of render tasks and loading tasks on unmount
+  and file change).
+
 ## Verification evidence
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
 - `npx prettier --check "src/**/*.{ts,tsx,css}"` → clean.
-- `npx vitest run` → **14 files, 105 tests passed** (registry/fuzzy search, error
+- `npx vitest run` → **16 files, 118 tests passed** (registry/fuzzy search, error
   normalization, file utils, temp workspace lifecycle, SQLite stores against real
-  in-memory DBs, ProgressBus cancellation semantics; per-tool logic suites; plus
-  Milestone 2 batch 3: sharp round-trip/quality-clamp/missing-input tests with
-  runtime-generated fixtures, and JSZip create/dedupe/zip-slip/corrupt-archive
-  tests against real temp directories).
+  in-memory DBs, ProgressBus cancellation semantics; per-tool logic suites;
+  sharp round-trip/quality-clamp/missing-input tests with runtime-generated
+  fixtures; JSZip create/dedupe/zip-slip/corrupt-archive tests; page-range
+  parser valid/invalid/boundary/dedupe suites; pdf-lib merge/split/info/encrypted/
+  corrupt tests with runtime-generated fixtures).
 - `npx electron-vite build` → main/preload/renderer all build successfully;
-  each tool view emits its own lazy chunk (including `ImageConvertTool`,
-  `ImageCompressTool`, `ZipCreateTool`, `ZipExtractTool`), confirming code
-  splitting through the registry.
+  each tool view emits its own lazy chunk (including the PDF suite), confirming
+  code splitting through the registry; the pdf.js worker resolves via a Vite
+  `?url` asset import into its own emitted chunk.
 - Headless boot check `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0
-  (validates services initialize — including sharp and jszip imports — and SQLite
-  opens inside the Electron main process).
+  (validates services initialize — including sharp, jszip and pdf-lib imports — and
+  SQLite opens inside the Electron main process).
 
 ## Notes
 

@@ -25,6 +25,10 @@ export const IPC = {
   zipCreateBatch: 'files:zip-create',
   zipExtractBatch: 'files:zip-extract',
 
+  pdfMergeBatch: 'pdf:merge-batch',
+  pdfGetInfo: 'pdf:get-info',
+  pdfSplitBatch: 'pdf:split',
+
   tempCreateOperation: 'temp:create-operation',
   tempCleanup: 'temp:cleanup',
 
@@ -178,6 +182,45 @@ export interface ZipExtractResult {
   topLevelCount: number
 }
 
+export interface PdfMergeRequest {
+  paths: string[]
+  targetPdf: string
+}
+
+export interface PdfMergeResult {
+  bytesWritten: number
+  pageCount: number
+}
+
+export interface PdfInfoResult {
+  pageCount: number
+  sizeBytes: number
+}
+
+export interface PdfSplitRequest {
+  path: string
+  pageSpec: string
+  outputDir: string
+}
+
+/** One successfully written split output, e.g. "report-p1-p3.pdf". */
+export interface PdfSplitSuccess {
+  label: string
+  output: string
+  bytesWritten: number
+}
+
+export interface PdfSplitFailure {
+  label: string
+  error: StashError
+}
+
+export interface PdfSplitResult {
+  succeeded: PdfSplitSuccess[]
+  failed: PdfSplitFailure[]
+  cancelled: boolean
+}
+
 export type OperationStatus = 'active' | 'done' | 'cancelled' | 'error'
 
 export interface ProgressEvent {
@@ -251,6 +294,11 @@ export interface StashBridge {
   archives: {
     createZip(req: ZipCreateRequest): Promise<ZipCreateResult>
     extractZip(req: ZipExtractRequest): Promise<ZipExtractResult>
+  }
+  pdfs: {
+    merge(req: PdfMergeRequest): Promise<PdfMergeResult>
+    getInfo(path: string): Promise<PdfInfoResult>
+    split(req: PdfSplitRequest): Promise<PdfSplitResult>
   }
   progress: {
     subscribe(listener: (event: ProgressEvent) => void): () => void
