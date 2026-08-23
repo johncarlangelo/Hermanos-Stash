@@ -172,6 +172,7 @@ Human QA findings (first user pass) and resolutions:
 | Recents should cap at 5 | Limit was 8 | `RECENTS_LIMIT = 5` |
 | Settings = black screen | Stale-HMR crash class; no repro in fresh builds (probe proves render) | RootErrorBoundary with role=alert + Reload button |
 | UI too small | Default zoom 100% | `zoomFactor: 1.1`; titlebar overlay DIPs aligned (44/154) |
+| Drag-and-drop rejects files (some tools); click-to-browse works | Suspected: Electron ≥32 removed `File.path` — DropZone reads `file.path` → always undefined for drops. OPEN — scheduled for next revision session | Tracked as `[!]` in TASKS.md → QA findings |
 
 ## Release gate status (VERIFY.md)
 

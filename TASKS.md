@@ -94,6 +94,10 @@ Legend:
 - [x] UUID generator. *(crypto.randomUUID v4, bulk 1–100, uppercase/braces options, format validation tests)*
 - [x] URL utilities. *(component parser with https:// auto-prepend, URIError-safe encode/decode, query param list)*
 
+## QA findings — pending revision
+
+- [!] Drag-and-drop does not accept files in several file tools, while click-to-browse works fine. *(Suspected root cause: Electron ≥ 32 removed the `File.path` property on dropped files; `DropZone.tsx` reads `file.path`, which is now `undefined`, so every drop resolves to zero valid paths. Click-to-browse is unaffected because it uses the native dialog IPC which returns real paths. Fix direction: expose `webUtils.getPathForFile(file)` through the preload bridge and use it in `filterValid()`. Affects every tool built on the shared DropZone: image-preview, image-convert, image-compress, image-exif, pdf-* , zip-*, video-*, audio-*, file-metadata. Verify each after fixing, then flip this box.)*
+
 ## Future
 
 - [ ] Prompt template organizer.

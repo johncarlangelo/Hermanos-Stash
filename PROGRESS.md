@@ -2,7 +2,10 @@
 
 ## Current milestone
 
-**All planned milestones complete (M1–M4).** Awaiting human QA pass.
+**All planned milestones complete (M1–M4).** Human QA in progress; revision
+session pending — see `TASKS.md → QA findings` (drag-and-drop regression on
+file tools: suspected Electron ≥32 `File.path` removal; click-to-browse
+unaffected).
 
 ## Status
 
