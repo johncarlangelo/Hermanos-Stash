@@ -15,7 +15,7 @@ Legend:
 - [x] Configure Tailwind CSS, CSS Modules, and design token integration.
 - [x] Establish linting, formatting, and type checking.
 - [x] Establish test framework.
-- [-] Establish build/package workflow. *(electron-vite production build verified; installer packaging still pending)*
+- [x] Establish build/package workflow. *(electron-vite production build + electron-builder: win-unpacked build produced, FFmpeg binaries shipped via extraResources, packaged exe passes smoke boot)*
 
 ### Design system
 - [x] Implement dark design tokens (guided by `DESIGN.md` and installed skills).

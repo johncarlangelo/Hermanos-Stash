@@ -18,7 +18,11 @@ tools-as-cards home screen with category filter chips, and tag-click search
 seeding. An @ui-reviewer accessibility audit across all 33 views returned
 PASS-WITH-FINDINGS; every HIGH/MEDIUM finding was fixed and committed.
 
-Remaining open item (tracked in TASKS.md): installer packaging (`[-]`).
+Installer packaging verified: `npm run package` produces a Windows unpacked
+build (`release/win-unpacked/Hermanos Stash.exe`) via electron-builder, ships the
+user-provided FFmpeg binaries through `extraResources` into
+`resources/ffmpeg/`, and the packaged executable passes the smoke boot test.
+NSIS installer output available via `npm run dist` when wanted.
 
 ## Completed
 

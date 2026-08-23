@@ -5,7 +5,7 @@ import { candidateDirs, findBundledBinaries, parseVersionLine } from './ffmpeg'
 describe('candidateDirs', () => {
   it('prefers the packaged resources dir, then the app root', () => {
     expect(candidateDirs({ resourcesPath: 'C:\\app', appPath: 'D:\\repo' })).toEqual([
-      path.join('C:\\app', 'resources', 'ffmpeg'),
+      path.join('C:\\app', 'ffmpeg'),
       path.join('D:\\repo', 'resources', 'ffmpeg')
     ])
   })
@@ -13,7 +13,7 @@ describe('candidateDirs', () => {
   it('tolerates missing inputs and de-duplicates', () => {
     const only = candidateDirs({ appPath: '/repo' })
     expect(only).toEqual([path.join('/repo', 'resources', 'ffmpeg')])
-    expect(candidateDirs({ appPath: '/same', resourcesPath: '/same' })).toHaveLength(1)
+    expect(candidateDirs({ appPath: '/same', resourcesPath: '/same' })).toHaveLength(2)
   })
 })
 

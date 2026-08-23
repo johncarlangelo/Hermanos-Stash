@@ -152,7 +152,10 @@ AGENTS.md scope discipline — not promised for any milestone.
 ## Release gate status (VERIFY.md)
 
 - [x] Automated tests pass (319)
-- [x] Build passes (+ smoke boot)
+- [x] Build passes (+ smoke boot, dev and packaged exe)
+- [x] Packaging pipeline verified — `npm run package` → win-unpacked build with
+      FFmpeg binaries bundled; packaged exe boots (`STASH_SMOKE_OK`). NSIS
+      installer via `npm run dist` when a distributable is wanted.
 - [ ] Core user flows manually inspected by a human — PENDING USER QA
       (agent-side verification is code-level + integration-test level only)
 - [x] No known blocker remains

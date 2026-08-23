@@ -1,0 +1,22 @@
+appId: com.hermanos.stash
+productName: Hermanos Stash
+
+directories:
+  output: release
+
+files:
+  - out/**
+
+# Ship the user-provided FFmpeg binaries inside the installed app.
+extraResources:
+  - from: resources/ffmpeg
+    to: ffmpeg
+    filter:
+      - '**/*'
+
+win:
+  target: nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

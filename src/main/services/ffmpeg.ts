@@ -46,7 +46,7 @@ function existsExecutable(dir: string, name: string): string | null {
 export function candidateDirs(input: { appPath?: string; resourcesPath?: string }): string[] {
   const dirs: string[] = []
   // electron-builder style: resources/ffmpeg next to the executable.
-  if (input.resourcesPath) dirs.push(path.join(input.resourcesPath, 'resources', 'ffmpeg'))
+  if (input.resourcesPath) dirs.push(path.join(input.resourcesPath, 'ffmpeg'))
   // Development layout: <repo>/resources/ffmpeg beside the project root.
   if (input.appPath) dirs.push(path.join(input.appPath, 'resources', 'ffmpeg'))
   return [...new Set(dirs)]
