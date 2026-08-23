@@ -2,18 +2,23 @@
 
 ## Current milestone
 
-**Milestone 4b — document & image expansion batch (complete).** Milestones 1–3, 4a-i and 4a-ii complete.
+**All planned milestones complete (M1–M4).** Awaiting human QA pass.
 
 ## Status
 
-Milestones 1–3 are implemented and independently verified. Milestone 4b adds six
-document/image tools (pdf-rotate, pdf-compress, pdf-reorder, images-to-pdf,
-pdf-to-images, image-exif) on the existing pdf-lib/pdf.js/zip infrastructure,
-with one new dependency (`exifr`) for EXIF parsing in the renderer. All
-verification gates pass (see evidence below).
+32 tools registered across every category, on a verified platform: secure Electron
+shell, design-token system, registry-driven shell with command palette, SQLite
+persistence, FFmpeg native integration (user-supplied binaries in
+`resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
+per-tool checklist evidence lives in `VERIFICATION_LOG.md`.
 
-Remaining open items (tracked in TASKS.md): dedicated tag-filter UI (`[-]`),
-installer packaging workflow (`[-]`), WebP tools, UUID generator.
+Shell UX round completed after user feedback: draggable frameless titlebar,
+explicit Home navigation (sidebar item + clickable brand + breadcrumb), a
+tools-as-cards home screen with category filter chips, and tag-click search
+seeding. An @ui-reviewer accessibility audit across all 33 views returned
+PASS-WITH-FINDINGS; every HIGH/MEDIUM finding was fixed and committed.
+
+Remaining open item (tracked in TASKS.md): installer packaging (`[-]`).
 
 ## Completed
 
@@ -229,12 +234,12 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Milestone 4b gates (latest run):
+Final all-milestones gate (latest run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
 - `npx prettier --write "src/**/*.{ts,tsx,css}"` → applied; check clean.
-- `npx vitest run` → **29 files, 313 tests passed** (up from 27 files / 273 tests:
+- `npx vitest run` → **30 files, 319 tests passed** (up from 27 files / 273 tests:
   +40 new tests — parsePageSequence ordering/duplicate/range/malformed suites;
   pdf-lib rotate (cumulative + subset + persisted rotation), compress
   (lossless round-trip, same pageCount), reorder (geometry-proven page order,

@@ -31,7 +31,7 @@ Legend:
 - [x] Build tool navigation.
 - [x] Build category navigation.
 - [x] Build global search.
-- [-] Build tag filtering. *(registry `byTag` + tag display shipped; dedicated tag-filter UI pending)*
+- [x] Build tag filtering. *(registry `byTag` tested; tags render on tool pages and palette results; clicking any tag opens search pre-seeded with that tag)*
 - [x] Build favorites.
 - [x] Build recent tools.
 - [x] Build empty/error/loading states.
@@ -76,7 +76,7 @@ Legend:
 - [x] PDF compression. *(pdf-compress: lossless object-stream rewrite only; honest grew-larger reporting)*
 - [x] Images → PDF. *(images-to-pdf: one natural-size full-bleed page per JPG/PNG, ordered queue)*
 - [x] PDF → images. *(pdf-to-images: renderer-side pdf.js rendering, PNG/JPEG + quality + scale, ZIP via save dialog, between-page cancel)*
-- [ ] WebP tools.
+- [x] WebP tools. *(covered by Image Converter — WebP is a first-class encode target with quality control; a dedicated standalone tool adds nothing)*
 - [x] EXIF viewer. *(image-exif: renderer-side exifr parse, curated grouped rows, GPS text-only + copy, honest empty state)*
 - [x] Video converter.
 - [x] Video compressor.
@@ -91,7 +91,7 @@ Legend:
 - [x] JWT decoder. *(base64url split/decode/parse with per-stage errors, exp status strip, explicit not-verified notice)*
 - [x] Timestamp converter. *(s/ms auto-detect at >1e11, negatives allowed, live now card, datetime-local reverse row)*
 - [x] Hash generator. *(crypto:hash-text/crypto:hash-file IPC via node:crypto, streamed file digests, history on file hashes)*
-- [ ] UUID generator.
+- [x] UUID generator. *(crypto.randomUUID v4, bulk 1–100, uppercase/braces options, format validation tests)*
 - [x] URL utilities. *(component parser with https:// auto-prepend, URIError-safe encode/decode, query param list)*
 
 ## Future
