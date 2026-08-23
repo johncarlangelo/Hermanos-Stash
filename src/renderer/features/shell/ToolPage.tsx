@@ -25,6 +25,7 @@ function Fallback() {
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const goHome = useNav((s) => s.goHome)
+  const setPaletteOpen = useNav((s) => s.setPaletteOpen)
   const toggleFavorite = useLibrary((s) => s.toggleFavorite)
   const favorites = useLibrary((s) => s.favorites)
   const recordRecent = useLibrary((s) => s.recordRecent)
@@ -87,7 +88,16 @@ export function ToolPage({ toolId }: { toolId: string }) {
             {tool.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {tool.tags.map((tag) => (
-                  <TagChip key={tag} tag={tag} />
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setPaletteOpen(true, tag)}
+                    aria-label={`Search tools tagged ${tag}`}
+                    title={`Search tools tagged "${tag}"`}
+                    className="cursor-pointer"
+                  >
+                    <TagChip tag={tag} />
+                  </button>
                 ))}
               </div>
             )}

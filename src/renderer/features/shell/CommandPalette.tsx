@@ -34,7 +34,16 @@ export function CommandPalette() {
   }, [query])
 
   useEffect(() => {
-    if (!open) setQuery('')
+    if (!open) {
+      setQuery('')
+      return
+    }
+    // Consume a seeded query (e.g. clicking a tag chip on a tool page).
+    const seed = useNav.getState().paletteSeedQuery
+    if (seed) {
+      setQuery(seed)
+      useNav.setState({ paletteSeedQuery: null })
+    }
   }, [open])
 
   useEffect(() => {
