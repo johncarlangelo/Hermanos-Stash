@@ -49,17 +49,24 @@ toast notifications).
 
 ## Current focus
 
-Milestone 2 — demonstration tools on top of the verified foundation.
+Milestone 2 — demonstration tools on top of the verified foundation. First three
+tools shipped: **JSON Formatter** (`json-format`), **Base64 Encoder/Decoder**
+(`base64-codec`), and **File Metadata Viewer** (`file-metadata`) — each as a
+definition + lazy view + colocated pure logic with tests (see ADR-015/016).
 
 ## Verification evidence
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
 - `npx prettier --check "src/**/*.{ts,tsx,css}"` → clean.
-- `npx vitest run` → **6 files, 41 tests passed** (registry/fuzzy search, error
+- `npx vitest run` → **10 files, 80 tests passed** (registry/fuzzy search, error
   normalization, file utils, temp workspace lifecycle, SQLite stores against real
-  in-memory DBs, ProgressBus cancellation semantics).
-- `npx electron-vite build` → main/preload/renderer all build successfully.
+  in-memory DBs, ProgressBus cancellation semantics; plus per-tool logic suites:
+  JSON format/validate with line-column extraction, Base64 UTF-8 round-trips and
+  decode tolerances, file-metadata row building and relative-time formatting).
+- `npx electron-vite build` → main/preload/renderer all build successfully;
+  each tool view emits its own lazy chunk (`JsonFormatTool`, `Base64Tool`,
+  `FileMetadataTool`), confirming code splitting through the registry.
 - Headless boot check `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0
   (validates services initialize and SQLite opens inside the Electron main process).
 

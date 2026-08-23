@@ -83,3 +83,15 @@
 **Decision:** Use Zustand for navigation, library (favorites/recents), and toast state.
 
 **Reason:** Minimal API surface, no provider nesting, trivially testable selectors — appropriate scale for a single-window utility suite.
+
+## ADR-015 — Tools ship as definition + lazy view + colocated pure logic
+
+**Decision:** Each tool contributes a `ToolDefinition` registered in `src/renderer/tools/index.ts`, a default-exported lazily-loaded view component, and pure logic colocated in the tool folder (`logic.ts` + `logic.test.ts`) with no React/DOM coupling. Tool UIs compose shared primitives (`Button`, `Inputs`, `Feedback`, `DropZone`, `IconButton`, toasts) and never re-implement them.
+
+**Reason:** Keeps the shell decoupled from implementations (code-split chunks per tool in production builds), makes conversion/format logic unit-testable without mounting components, and enforces the shared design system (TOOL_SPEC.md → UI contract). Proven by the first three tools: `json-format`, `base64-codec`, `file-metadata`.
+
+## ADR-016 — JSON/Base64 text processing stays renderer-side with documented tolerances
+
+**Decision:** JSON formatting/validation uses `JSON.parse`/`JSON.stringify` directly in the renderer, deriving error line/column from V8 messages ("at position N" recomputed by newline counting; "(line L column C)" hint as fallback; 1-based coordinates matching editor conventions). Base64 encoding routes UTF-8 through `TextEncoder`/`TextDecoder` (fatal decoding) instead of raw `btoa`/`atob`; decode tolerates missing padding and embedded whitespace but rejects invalid characters and non-UTF-8 byte sequences.
+
+**Reason:** Both operations are instant on realistic inputs, need no native code, and keep files local-first. Documenting tolerance decisions in tests prevents silent behavior drift between contributors.

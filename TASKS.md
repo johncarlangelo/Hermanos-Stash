@@ -51,14 +51,14 @@ Legend:
 
 - [ ] PDF preview.
 - [ ] Image preview.
-- [ ] JSON formatter/validator.
+- [x] JSON formatter/validator.
 - [ ] Image converter.
 - [ ] Image compressor.
 - [ ] PDF merger.
 - [ ] PDF splitter.
 - [ ] ZIP creator/extractor.
-- [ ] File metadata viewer.
-- [ ] Base64 encoder/decoder.
+- [x] File metadata viewer.
+- [x] Base64 encoder/decoder.
 - [ ] QR generator.
 
 ## Milestone 3 — Native Media & Heavy Processing
