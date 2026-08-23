@@ -70,24 +70,55 @@ Milestone 2 batch 2 additions:
   StashError mapping; UI offers size/error-correction selects, clipboard copy
   (`ClipboardItem` PNG) and Save… through save dialog + binary write channel.
 
+Milestone 2 batch 3 (heavy processing) additions:
+
+- Platform extensions: `dialog:choose-directory` (native folder picker whose
+  choice is approved in `WriteScopeGuard`, which now prefix-whitelists writes
+  beneath any approved directory) and `fs:export-file` (copy temp-workspace
+  output to an approved destination; source must resolve inside the temp root).
+- `sharp` + `jszip` adopted as mature processing libraries (prebuilt N-API
+  binaries, verified inside Electron via the smoke test).
+- `src/main/processing/images.ts`: pure-ish sharp wrappers — `convertImage`
+  (png/jpeg/webp/avif/tiff, clamped quality on lossy formats only) and
+  `compressImage` (format inferred from extension, PNG palette+level 9,
+  optional `withoutEnlargement` downscale), both returning written bytes.
+- `src/main/processing/archives.ts`: `createZipArchive` (512 MB input cap,
+  collision-safe entry names) and `extractZipArchive` (zip-slip guard: absolute
+  paths, drive letters and `..` segments are skipped, plus a resolved-prefix
+  defense-in-depth check).
+- Batch orchestration channels `images:convert-batch` / `images:compress-batch`
+  run the full lifecycle (validate → temp op dir → process → verify → export →
+  cleanup) sequentially under the ProgressBus: real per-file ratio + filename,
+  cooperative cancellation, per-file success/failure outcomes, total-failure
+  escalation to a progress error event.
+- ZIP channels `files:zip-create` / `files:zip-extract` behind the same
+  validation/writeScope gates.
+- Four new tools registered (definitions + lazy views): **Image Converter**
+  (`image-convert`), **Image Compressor** (`image-compress`, shows original→new
+  size and saved % from pre-fetched stat sizes), **ZIP Creator** (`zip-create`,
+  indeterminate progress, no cancellation capability claimed), **ZIP Extractor**
+  (`zip-extract`, summary + skipped-entry warnings). Shared batch-tool hooks
+  live in `src/renderer/tools/shared/` (accumulating dedupe file list, mount-
+  time progress subscription that cannot miss events emitted during the invoke).
+
 ## Verification evidence
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
 - `npx prettier --check "src/**/*.{ts,tsx,css}"` → clean.
-- `npx vitest run` → **12 files, 90 tests passed** (registry/fuzzy search, error
+- `npx vitest run` → **14 files, 105 tests passed** (registry/fuzzy search, error
   normalization, file utils, temp workspace lifecycle, SQLite stores against real
-  in-memory DBs, ProgressBus cancellation semantics; plus per-tool logic suites:
-  JSON format/validate with line-column extraction, Base64 UTF-8 round-trips and
-  decode tolerances, file-metadata row building and relative-time formatting,
-  image-preview zoom clamping and accepted-extension coverage, qr-generator
-  empty/oversized rejection plus PNG data-URL generation for text/URLs/long input).
+  in-memory DBs, ProgressBus cancellation semantics; per-tool logic suites; plus
+  Milestone 2 batch 3: sharp round-trip/quality-clamp/missing-input tests with
+  runtime-generated fixtures, and JSZip create/dedupe/zip-slip/corrupt-archive
+  tests against real temp directories).
 - `npx electron-vite build` → main/preload/renderer all build successfully;
-  each tool view emits its own lazy chunk (`JsonFormatTool`, `Base64Tool`,
-  `FileMetadataTool`, `ImagePreviewTool`, `QrGeneratorTool`), confirming code
+  each tool view emits its own lazy chunk (including `ImageConvertTool`,
+  `ImageCompressTool`, `ZipCreateTool`, `ZipExtractTool`), confirming code
   splitting through the registry.
 - Headless boot check `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0
-  (validates services initialize and SQLite opens inside the Electron main process).
+  (validates services initialize — including sharp and jszip imports — and SQLite
+  opens inside the Electron main process).
 
 ## Notes
 

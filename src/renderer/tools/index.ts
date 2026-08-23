@@ -79,6 +79,70 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsText: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'image-convert',
+    name: 'Image Converter',
+    category: 'images',
+    description:
+      'Batch-convert images between PNG, JPEG, WebP, AVIF and TIFF with quality control.',
+    tags: ['convert', 'format', 'webp', 'jpeg', 'png', 'avif'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'image-compress',
+    name: 'Image Compressor',
+    category: 'images',
+    description: 'Shrink images in place of quality you choose, with optional downscaling.',
+    tags: ['compress', 'optimize', 'size', 'resize', 'quality'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'zip-create',
+    name: 'ZIP Creator',
+    category: 'files',
+    description: 'Pack any mix of files into a single .zip archive, entirely locally.',
+    tags: ['zip', 'archive', 'pack', 'compress'],
+    icon: 'folder',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'zip-extract',
+    name: 'ZIP Extractor',
+    category: 'files',
+    description: 'Extract .zip archives into a folder you choose, with zip-slip protection.',
+    tags: ['unzip', 'extract', 'archive'],
+    icon: 'folder',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -92,11 +156,19 @@ const Base64Tool = lazy(() => import('./base64/Base64Tool'))
 const FileMetadataTool = lazy(() => import('./file-metadata/FileMetadataTool'))
 const ImagePreviewTool = lazy(() => import('./image-preview/ImagePreviewTool'))
 const QrGeneratorTool = lazy(() => import('./qr-generator/QrGeneratorTool'))
+const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
+const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
+const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
+const ZipExtractTool = lazy(() => import('./zip-extract/ZipExtractTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
   'base64-codec': Base64Tool,
   'file-metadata': FileMetadataTool,
   'image-preview': ImagePreviewTool,
-  'qr-generator': QrGeneratorTool
+  'qr-generator': QrGeneratorTool,
+  'image-convert': ImageConvertTool,
+  'image-compress': ImageCompressTool,
+  'zip-create': ZipCreateTool,
+  'zip-extract': ZipExtractTool
 }

@@ -2,13 +2,27 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { IPC } from '../../shared/ipc'
-import type { FileMetadata, HistoryEntryInput } from '../../shared/ipc'
+import type {
+  FileMetadata,
+  HistoryEntryInput,
+  ImageBatchFailure,
+  ImageBatchResult,
+  ImageBatchSuccess,
+  ImageOutputFormat
+} from '../../shared/ipc'
 import { serializeStashError, stashError } from '../../shared/errors'
 import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { ProgressBus } from './progress'
 import { WriteScopeGuard } from './write-scope'
 import { assertNumber, assertOptionalString, assertString, parseFilters } from './validate'
+import { createZipArchive, extractZipArchive } from '../processing/archives'
+import {
+  SUPPORTED_FORMATS,
+  compressImage,
+  convertImage,
+  formatForExtension
+} from '../processing/images'
 
 export interface IpcServices {
   prefs: PrefsStore
@@ -28,6 +42,132 @@ const PREF_VALUE_LIMIT_BYTES = 64 * 1024
 
 function optionalWindow(): BrowserWindow | undefined {
   return BrowserWindow.getAllWindows()[0]
+}
+
+/** Reject paths outside the app-owned temporary workspace. */
+function assertInsideTempRoot(temp: TempWorkspaceManager, target: string): void {
+  const resolved = path.resolve(target)
+  const root = path.resolve(temp.rootPath)
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw stashError('VALIDATION', 'That source path is not part of a Stash operation.', {
+      technicalMessage: `outside temp root: ${target}`
+    })
+  }
+}
+
+function assertPayload(raw: unknown): Record<string, unknown> {
+  if (typeof raw !== 'object' || raw === null) {
+    throw stashError('VALIDATION', 'Invalid request payload.')
+  }
+  return raw as Record<string, unknown>
+}
+
+function assertPathsArray(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0 || !value.every((p) => typeof p === 'string')) {
+    throw stashError(
+      'VALIDATION',
+      'Invalid request: "paths" must be a non-empty array of file paths.'
+    )
+  }
+  return value as string[]
+}
+
+function parseImageFormat(value: unknown): ImageOutputFormat {
+  if (typeof value === 'string' && (SUPPORTED_FORMATS as readonly string[]).includes(value)) {
+    return value as ImageOutputFormat
+  }
+  throw stashError('VALIDATION', 'Invalid request: "format" is not a supported image format.', {
+    technicalMessage: `format=${JSON.stringify(value)}`
+  })
+}
+
+const EXTENSION_BY_FORMAT: Record<ImageOutputFormat, string> = {
+  png: '.png',
+  jpeg: '.jpg',
+  webp: '.webp',
+  avif: '.avif',
+  tiff: '.tiff'
+}
+
+function swapExtension(name: string, format: ImageOutputFormat): string {
+  const dot = name.lastIndexOf('.')
+  const stem = dot <= 0 ? name : name.slice(0, dot)
+  return stem + EXTENSION_BY_FORMAT[format]
+}
+
+/** Case-insensitive collision handling so batch exports never overwrite each other. */
+function uniqueName(name: string, used: Set<string>): string {
+  const dot = name.lastIndexOf('.')
+  const stem = dot <= 0 ? name : name.slice(0, dot)
+  const ext = dot <= 0 ? '' : name.slice(dot)
+  let candidate = name
+  let counter = 1
+  while (used.has(candidate.toLowerCase())) {
+    candidate = `${stem}-${counter}${ext}`
+    counter += 1
+  }
+  used.add(candidate.toLowerCase())
+  return candidate
+}
+
+interface ImageBatchPlan {
+  prefix: string
+  message: string
+  outputNameFor(source: string): string
+  process(inputPath: string, tempOutput: string): Promise<number>
+}
+
+/**
+ * Full lifecycle for one image batch: temp workspace → process → verify →
+ * export to the user-approved folder → cleanup, with cooperative cancellation.
+ */
+async function runImageBatch(
+  services: IpcServices,
+  req: { paths: string[]; outputDir: string },
+  plan: ImageBatchPlan
+): Promise<ImageBatchResult> {
+  services.writeScope.assertAllowed(req.outputDir)
+  const opDir = services.temp.createOperation(plan.prefix)
+  const { id, handle } = services.progress.begin(plan.message)
+  const succeeded: ImageBatchSuccess[] = []
+  const failed: ImageBatchFailure[] = []
+  let cancelled = false
+  try {
+    const usedNames = new Set<string>()
+    let index = 0
+    for (const source of req.paths) {
+      if (services.progress.isCancelled(id)) {
+        cancelled = true
+        break
+      }
+      handle.report(req.paths.length === 0 ? null : index / req.paths.length, path.basename(source))
+      try {
+        const name = uniqueName(plan.outputNameFor(source), usedNames)
+        const tempOutput = path.join(opDir, `${index}-${name}`)
+        await plan.process(source, tempOutput)
+        // Verify the temp output exists before promoting it to the target.
+        await fs.stat(tempOutput)
+        const target = path.join(req.outputDir, name)
+        await fs.mkdir(path.dirname(target), { recursive: true })
+        await fs.copyFile(tempOutput, target)
+        const stat = await fs.stat(target)
+        succeeded.push({ source, output: target, bytesWritten: stat.size })
+      } catch (err) {
+        failed.push({ source, error: serializeStashError(err) })
+      }
+      index += 1
+    }
+  } finally {
+    if (!cancelled) {
+      if (succeeded.length === 0 && failed.length > 0 && failed.length === req.paths.length) {
+        handle.fail(failed[0]!.error)
+      } else {
+        handle.done()
+      }
+    }
+    services.temp.cleanup(opDir)
+  }
+  return { succeeded, failed, cancelled, operationId: id }
 }
 
 /**
@@ -90,6 +230,23 @@ export function registerIpc(services: IpcServices): void {
     // Only paths the user explicitly chose become writable targets.
     services.writeScope.approve(result.filePath)
     return { cancelled: false, path: result.filePath }
+  })
+
+  handle(IPC.dialogChooseDirectory, async (_e, raw: unknown) => {
+    const req = (raw ?? {}) as Record<string, unknown>
+    const options: Electron.OpenDialogOptions = {
+      title: assertOptionalString(req['title'], 'title'),
+      properties: ['openDirectory', 'createDirectory']
+    }
+    const win = optionalWindow()
+    const result = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled || result.filePaths.length === 0) return { cancelled: true }
+    const chosen = result.filePaths[0]!
+    // Approving a directory whitelists every export beneath it (WriteScopeGuard).
+    services.writeScope.approve(chosen)
+    return { cancelled: false, path: chosen }
   })
 
   // --- Filesystem ---------------------------------------------------------
@@ -254,6 +411,25 @@ export function registerIpc(services: IpcServices): void {
     }
   })
 
+  handle(IPC.fsExportFile, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const sourcePath = assertString(req['sourcePath'], 'sourcePath')
+    const targetPath = assertString(req['targetPath'], 'targetPath')
+    // Exports may only promote files produced inside a Stash operation.
+    assertInsideTempRoot(services.temp, sourcePath)
+    services.writeScope.assertAllowed(targetPath)
+    try {
+      await fs.mkdir(path.dirname(targetPath), { recursive: true })
+      await fs.copyFile(sourcePath, targetPath)
+      const stat = await fs.stat(targetPath)
+      return { bytesWritten: stat.size }
+    } catch (err) {
+      throw stashError('FS_WRITE', `Could not export to "${path.basename(targetPath)}".`, {
+        technicalMessage: String(err)
+      })
+    }
+  })
+
   // --- Temporary workspace --------------------------------------------------
   handle(IPC.tempCreateOperation, (_e, prefix: unknown) =>
     services.temp.createOperation(prefix === undefined ? undefined : assertString(prefix, 'prefix'))
@@ -261,6 +437,75 @@ export function registerIpc(services: IpcServices): void {
 
   handle(IPC.tempCleanup, async (_e, dir: unknown) => {
     services.temp.cleanup(assertString(dir, 'dir'))
+  })
+
+  // --- Image processing batches ---------------------------------------------
+  handle(IPC.imagesConvertBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const format = parseImageFormat(req['format'])
+    const quality =
+      req['quality'] === undefined ? undefined : assertNumber(req['quality'], 'quality')
+    return runImageBatch(
+      services,
+      { paths, outputDir },
+      {
+        prefix: 'image-convert',
+        message: 'Converting images…',
+        outputNameFor: (source) => swapExtension(path.basename(source), format),
+        process: (input, tempOutput) =>
+          convertImage(input, tempOutput, { format, quality }).then((r) => r.bytesWritten)
+      }
+    )
+  })
+
+  handle(IPC.imagesCompressBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const quality = assertNumber(req['quality'], 'quality')
+    const maxDimension =
+      req['maxDimension'] === undefined
+        ? undefined
+        : assertNumber(req['maxDimension'], 'maxDimension')
+    if (maxDimension !== undefined && (maxDimension < 1 || !Number.isInteger(maxDimension))) {
+      throw stashError('VALIDATION', 'Invalid request: "maxDimension" must be a positive integer.')
+    }
+    return runImageBatch(
+      services,
+      { paths, outputDir },
+      {
+        prefix: 'image-compress',
+        message: 'Compressing images…',
+        outputNameFor: (source) => {
+          const base = path.basename(source)
+          const dot = base.lastIndexOf('.')
+          const stem = dot <= 0 ? base : base.slice(0, dot)
+          const ext = formatForExtension(dot <= 0 ? '' : base.slice(dot)) ?? ''
+          return `${stem}-min${ext}`
+        },
+        process: (input, tempOutput) =>
+          compressImage(input, tempOutput, { quality, maxDimension }).then((r) => r.bytesWritten)
+      }
+    )
+  })
+
+  // --- ZIP archives -----------------------------------------------------------
+  handle(IPC.zipCreateBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const targetZip = assertString(req['targetZip'], 'targetZip')
+    services.writeScope.assertAllowed(targetZip)
+    return createZipArchive(paths, targetZip)
+  })
+
+  handle(IPC.zipExtractBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const zipPath = assertString(req['zipPath'], 'zipPath')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    services.writeScope.assertAllowed(outputDir)
+    return extractZipArchive(zipPath, outputDir)
   })
 
   // --- Preferences ----------------------------------------------------------

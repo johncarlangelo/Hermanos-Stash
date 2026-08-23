@@ -10,12 +10,20 @@ export const IPC = {
 
   dialogOpenFile: 'dialog:open-file',
   dialogSaveFile: 'dialog:save-file',
+  dialogChooseDirectory: 'dialog:choose-directory',
 
   fsStat: 'fs:stat',
   fsReadTextFile: 'fs:read-text-file',
   fsWriteTextFile: 'fs:write-text-file',
   fsReadFileBytes: 'fs:read-file-bytes',
   fsWriteFileBytes: 'fs:write-file-bytes',
+  fsExportFile: 'fs:export-file',
+
+  imagesConvertBatch: 'images:convert-batch',
+  imagesCompressBatch: 'images:compress-batch',
+
+  zipCreateBatch: 'files:zip-create',
+  zipExtractBatch: 'files:zip-extract',
 
   tempCreateOperation: 'temp:create-operation',
   tempCleanup: 'temp:cleanup',
@@ -65,6 +73,11 @@ export interface SaveFileDialogResult {
   path?: string
 }
 
+export interface ChooseDirectoryResult {
+  cancelled: boolean
+  path?: string
+}
+
 export interface FileMetadata {
   path: string
   name: string
@@ -102,6 +115,69 @@ export interface WriteFileBytesResult {
   bytesWritten: number
 }
 
+export interface ExportFileRequest {
+  sourcePath: string
+  targetPath: string
+}
+
+export type ImageOutputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'tiff'
+
+export interface ConvertImagesRequest {
+  paths: string[]
+  outputDir: string
+  format: ImageOutputFormat
+  quality?: number
+}
+
+export interface CompressImagesRequest {
+  paths: string[]
+  outputDir: string
+  quality: number
+  maxDimension?: number
+}
+
+/** One successfully processed file inside a batch. */
+export interface ImageBatchSuccess {
+  source: string
+  output: string
+  bytesWritten: number
+}
+
+/** One failed file inside a batch — the batch itself keeps going. */
+export interface ImageBatchFailure {
+  source: string
+  error: StashError
+}
+
+export interface ImageBatchResult {
+  succeeded: ImageBatchSuccess[]
+  failed: ImageBatchFailure[]
+  cancelled: boolean
+  operationId: string
+}
+
+export interface ZipCreateRequest {
+  paths: string[]
+  targetZip: string
+}
+
+export interface ZipCreateResult {
+  bytesWritten: number
+  fileCount: number
+}
+
+export interface ZipExtractRequest {
+  zipPath: string
+  outputDir: string
+}
+
+export interface ZipExtractResult {
+  extractedCount: number
+  /** Entry names rejected by the zip-slip guard. */
+  skipped: string[]
+  topLevelCount: number
+}
+
 export type OperationStatus = 'active' | 'done' | 'cancelled' | 'error'
 
 export interface ProgressEvent {
@@ -137,6 +213,7 @@ export interface StashBridge {
   dialogs: {
     openFile(req?: OpenFileDialogRequest): Promise<OpenFileDialogResult>
     saveFile(req?: SaveFileDialogRequest): Promise<SaveFileDialogResult>
+    chooseDirectory(req?: { title?: string }): Promise<ChooseDirectoryResult>
   }
   fs: {
     stat(path: string): Promise<FileMetadata>
@@ -144,6 +221,7 @@ export interface StashBridge {
     writeTextFile(path: string, content: string): Promise<{ bytesWritten: number }>
     readFileBytes(req: ReadFileBytesRequest): Promise<ReadFileBytesResult>
     writeFileBytes(path: string, bytes: ArrayBuffer): Promise<WriteFileBytesResult>
+    exportFile(req: ExportFileRequest): Promise<{ bytesWritten: number }>
   }
   temp: {
     createOperation(prefix?: string): Promise<string>
@@ -165,6 +243,14 @@ export interface StashBridge {
     list(limit?: number): Promise<HistoryEntry[]>
     record(entry: HistoryEntryInput): Promise<HistoryEntry>
     clear(): Promise<void>
+  }
+  processing: {
+    convertImages(req: ConvertImagesRequest): Promise<ImageBatchResult>
+    compressImages(req: CompressImagesRequest): Promise<ImageBatchResult>
+  }
+  archives: {
+    createZip(req: ZipCreateRequest): Promise<ZipCreateResult>
+    extractZip(req: ZipExtractRequest): Promise<ZipExtractResult>
   }
   progress: {
     subscribe(listener: (event: ProgressEvent) => void): () => void

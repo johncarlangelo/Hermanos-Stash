@@ -29,6 +29,11 @@ export class WriteScopeGuard {
   isAllowed(targetPath: string): boolean {
     const resolved = path.resolve(targetPath)
     if (this.approved.has(resolved)) return true
+    // An approved directory whitelists every write beneath it (e.g. an export
+    // folder chosen via the directory picker covers all outputs inside).
+    for (const entry of this.approved) {
+      if (resolved.startsWith(entry + path.sep)) return true
+    }
     const root = this.tempRootProvider()
     return resolved === root || resolved.startsWith(root + path.sep)
   }

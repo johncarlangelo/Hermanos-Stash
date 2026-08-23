@@ -2,13 +2,18 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
+  CompressImagesRequest,
+  ConvertImagesRequest,
+  ExportFileRequest,
   HistoryEntryInput,
   OpenFileDialogRequest,
   ProgressEvent,
   ReadFileBytesRequest,
   ReadTextFileRequest,
   SaveFileDialogRequest,
-  StashBridge
+  StashBridge,
+  ZipCreateRequest,
+  ZipExtractRequest
 } from '../shared/ipc'
 
 /**
@@ -27,7 +32,8 @@ const api: StashBridge = {
   },
   dialogs: {
     openFile: (req?: OpenFileDialogRequest) => invoke(IPC.dialogOpenFile, req ?? {}),
-    saveFile: (req?: SaveFileDialogRequest) => invoke(IPC.dialogSaveFile, req ?? {})
+    saveFile: (req?: SaveFileDialogRequest) => invoke(IPC.dialogSaveFile, req ?? {}),
+    chooseDirectory: (req?: { title?: string }) => invoke(IPC.dialogChooseDirectory, req ?? {})
   },
   fs: {
     stat: (path: string) => invoke(IPC.fsStat, path),
@@ -35,7 +41,8 @@ const api: StashBridge = {
     writeTextFile: (path: string, content: string) => invoke(IPC.fsWriteTextFile, path, content),
     readFileBytes: (req: ReadFileBytesRequest) => invoke(IPC.fsReadFileBytes, req),
     writeFileBytes: (path: string, bytes: ArrayBuffer) =>
-      invoke(IPC.fsWriteFileBytes, { path, bytes })
+      invoke(IPC.fsWriteFileBytes, { path, bytes }),
+    exportFile: (req: ExportFileRequest) => invoke(IPC.fsExportFile, req)
   },
   temp: {
     createOperation: (prefix?: string) => invoke(IPC.tempCreateOperation, prefix),
@@ -57,6 +64,14 @@ const api: StashBridge = {
     list: (limit?: number) => invoke(IPC.historyList, limit),
     record: (entry: HistoryEntryInput) => invoke(IPC.historyRecord, entry),
     clear: () => invoke<void>(IPC.historyClear)
+  },
+  processing: {
+    convertImages: (req: ConvertImagesRequest) => invoke(IPC.imagesConvertBatch, req),
+    compressImages: (req: CompressImagesRequest) => invoke(IPC.imagesCompressBatch, req)
+  },
+  archives: {
+    createZip: (req: ZipCreateRequest) => invoke(IPC.zipCreateBatch, req),
+    extractZip: (req: ZipExtractRequest) => invoke(IPC.zipExtractBatch, req)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

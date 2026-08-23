@@ -107,3 +107,15 @@
 **Decision:** Use `qrcode` (+ `@types/qrcode`) as the sole new dependency for Milestone 2 batch 2. Pure logic wraps `QRCode.toDataURL` in `generateQrDataUrl()` with fixed options (margin 2, width default 512, error correction M, near-black modules on warm paper for scannability). Empty input and library capacity errors are mapped to `StashError` (`VALIDATION`) with actionable messages; tests cover rejection paths and PNG data-URL output for text, URLs, and long payloads.
 
 **Reason:** Hand-rolling QR encoding is high-risk and unnecessary (AGENTS.md principle 12); `qrcode` is mature and dependency-free. Keeping generation renderer-side preserves local-first behavior, and centralizing option/error policy in one pure function makes the tool UI trivial and testable.
+
+## ADR-019 — Heavy file processing in main-process services with a shared batch lifecycle
+
+**Decision:** Add src/main/processing/ for heavy processors (images.ts over sharp, rchives.ts over jszip) and orchestrate batches through dedicated IPC channels that run the full lifecycle — validate → 	emp.createOperation → process → verify output exists → export to the user-approved folder → 	emp.cleanup — under the existing ProgressBus with cooperative cancellation. Exports are gated by two new primitives: dialog:choose-directory (whose choice is approved in the guard, which now prefix-whitelists everything beneath an approved directory) and s:export-file (source must resolve inside the temp root; target must pass ssertAllowed). Batch results are structured per-file outcomes (succeeded/ailed/cancelled) so one bad file never fails the batch.
+
+**Reason:** Keeps renderer code browser-safe and long-running work out of the UI thread (ARCHITECTURE.md → Long-running work), reuses the proven temp-workspace + write-scope + progress primitives instead of inventing new ones, and gives every future heavy tool (PDF, media) a single pattern to follow.
+
+## ADR-020 — sharp and jszip as the image/archive engines
+
+**Decision:** Adopt sharp (prebuilt N-API binaries) for image conversion/compression and jszip for archive creation/extraction. Compression infers format from extension (PNG stays lossless via palette + compression level 9; quality applies only to jpeg/webp/avif); resizing uses it: inside + withoutEnlargement. Extraction rejects zip-slip entries (absolute paths, drive letters, .. segments) by skipping them and reporting warnings rather than failing.
+
+**Reason:** Both are mature, widely deployed libraries (AGENTS.md principle 12). Sharp ships prebuilt binaries so no Electron ABI rebuild is needed — verified by the smoke test. Skipping unsafe zip entries matches TOOL_SPEC.md's warning-oriented result model: users get everything safe plus an explicit list of what was refused.
