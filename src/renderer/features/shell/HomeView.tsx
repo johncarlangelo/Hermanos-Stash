@@ -156,7 +156,6 @@ function RecentStrip({ tools }: { tools: ToolDefinition[] }) {
 export function HomeView() {
   const view = useNav((s) => s.view)
   const goHome = useNav((s) => s.goHome)
-  const openCategory = useNav((s) => s.openCategory)
   const favorites = useLibrary((s) => s.favorites)
   const recents = useLibrary((s) => s.recents)
 
@@ -291,15 +290,6 @@ export function HomeView() {
       {routeCategory && (
         <p className="mt-8 text-center text-[11.5px] text-faint">
           Looking for something else?{' '}
-          <button
-            type="button"
-            onClick={() => openCategory(routeCategory)}
-            className="cursor-pointer underline underline-offset-2 hover:text-dim"
-            aria-hidden
-            tabIndex={-1}
-          >
-            {/* visual no-op retained for layout symmetry */}
-          </button>
           <button
             type="button"
             onClick={goHome}

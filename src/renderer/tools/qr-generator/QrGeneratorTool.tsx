@@ -56,6 +56,17 @@ export default function QrGeneratorTool() {
       if (dialog.cancelled || !dialog.path) return
       const bytes = await (await fetch(dataUrl)).arrayBuffer()
       await window.stash.fs.writeFileBytes(dialog.path, bytes)
+      try {
+        await window.stash.history.record({
+          toolId: 'qr-generator',
+          operation: 'save-png',
+          inputs: [text.slice(0, 80)],
+          outputs: [fileNameOf(dialog.path)],
+          status: 'success'
+        })
+      } catch {
+        // History is best-effort.
+      }
       toastSuccess(`Saved ${fileNameOf(dialog.path)}`)
     } catch (err) {
       toastError(err)

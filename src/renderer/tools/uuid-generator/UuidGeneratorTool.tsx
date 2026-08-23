@@ -3,6 +3,7 @@ import { Check, Copy } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { FieldRow, Input, Toggle } from '../../components/ui/Inputs'
 import { ErrorNote, Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
+import { toastError, toastSuccess } from '../../stores/toasts'
 import { formatUuid, isValidUuidV4, MAX_UUID_BATCH } from './logic'
 
 export default function UuidGeneratorTool() {
@@ -31,13 +32,22 @@ export default function UuidGeneratorTool() {
 
   const copyAll = async () => {
     if (!results?.length) return
-    await navigator.clipboard.writeText(results.join('\n'))
+    try {
+      await navigator.clipboard.writeText(results.join('\n'))
+      toastSuccess(`Copied ${results.length} UUIDs`)
+    } catch {
+      toastError('Clipboard write was blocked by the system.')
+    }
   }
 
   const copyOne = async (value: string, index: number) => {
-    await navigator.clipboard.writeText(value)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex((c) => (c === index ? null : c)), 1200)
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopiedIndex(index)
+      setTimeout(() => setCopiedIndex((c) => (c === index ? null : c)), 1200)
+    } catch {
+      toastError('Clipboard write was blocked by the system.')
+    }
   }
 
   const allValid = useMemo(

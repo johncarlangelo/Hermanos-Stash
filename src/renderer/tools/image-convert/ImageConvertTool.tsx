@@ -12,6 +12,7 @@ import { IconButton } from '../../components/ui/IconButton'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
+import { formatBytes } from '../../../shared/utils/files'
 import type { ConvertImagesRequest, ImageBatchResult, ImageOutputFormat } from '../../../shared/ipc'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { FileListPanel } from '../shared/file-list-panel'
@@ -232,9 +233,7 @@ export default function ImageConvertTool() {
               <li key={entry.source}>
                 <p className="truncate text-[12.5px] text-ok" title={entry.output}>
                   {fileNameOf(entry.source)} → {fileNameOf(entry.output)}
-                  <span className="tnum ml-2 text-faint">
-                    {(entry.bytesWritten / 1024).toFixed(1)} KB
-                  </span>
+                  <span className="tnum ml-2 text-faint">{formatBytes(entry.bytesWritten)}</span>
                 </p>
               </li>
             ))}

@@ -259,7 +259,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsFiles: true,
       acceptsMultipleFiles: true,
-      supportsProgress: true,
       supportsBatch: true,
       producesFiles: true
     }
@@ -288,7 +287,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsFiles: true,
       acceptsMultipleFiles: true,
-      supportsProgress: true,
       supportsBatch: true,
       producesFiles: true
     }
