@@ -1,0 +1,103 @@
+# Hermanos Stash — Task Board
+
+Legend:
+
+- `[ ]` not started
+- `[-]` in progress
+- `[x]` verified complete
+- `[!]` blocked
+
+## Milestone 1 — Foundation
+
+### Project setup
+- [x] Initialize Electron + React + TypeScript + Vite.
+- [x] Establish main/preload/renderer boundaries.
+- [x] Configure Tailwind CSS, CSS Modules, and design token integration.
+- [x] Establish linting, formatting, and type checking.
+- [x] Establish test framework.
+- [-] Establish build/package workflow. *(electron-vite production build verified; installer packaging still pending)*
+
+### Design system
+- [x] Implement dark design tokens (guided by `DESIGN.md` and installed skills).
+- [x] Implement typography scale.
+- [x] Implement spacing/radius/elevation tokens.
+- [x] Implement core controls (buttons, inputs, cards, drop zones, switches).
+- [x] Implement focus/keyboard states.
+- [x] Implement motion primitives.
+
+### Application shell
+- [x] Build persistent sidebar.
+- [x] Build main content region.
+- [x] Build tool navigation.
+- [x] Build category navigation.
+- [x] Build global search.
+- [-] Build tag filtering. *(registry `byTag` + tag display shipped; dedicated tag-filter UI pending)*
+- [x] Build favorites.
+- [x] Build recent tools.
+- [x] Build empty/error/loading states.
+
+### Local platform
+- [x] Secure filesystem bridge.
+- [x] Native file picker.
+- [x] Save/export dialog.
+- [x] Temporary workspace manager & cleanup.
+- [x] Progress event & cancellation IPC bridge.
+- [x] Processor structured error normalization.
+- [x] Local SQLite persistence.
+- [x] Activity history service.
+- [x] Notification/toast system.
+
+## Milestone 2 — Demonstration tools
+
+- [ ] PDF preview.
+- [ ] Image preview.
+- [ ] JSON formatter/validator.
+- [ ] Image converter.
+- [ ] Image compressor.
+- [ ] PDF merger.
+- [ ] PDF splitter.
+- [ ] ZIP creator/extractor.
+- [ ] File metadata viewer.
+- [ ] Base64 encoder/decoder.
+- [ ] QR generator.
+
+## Milestone 3 — Native Media & Heavy Processing
+
+- [ ] FFmpeg native integration & binary management.
+- [ ] Large media streaming & background workers.
+- [ ] Output verification & integrity checks.
+- [ ] Media transcoding & audio extraction services.
+
+## Milestone 4 — Expansion candidates
+
+- [ ] PDF page extraction.
+- [ ] PDF page reorder.
+- [ ] PDF rotation.
+- [ ] PDF compression.
+- [ ] Images → PDF.
+- [ ] PDF → images.
+- [ ] WebP tools.
+- [ ] EXIF viewer.
+- [ ] Video converter.
+- [ ] Video compressor.
+- [ ] Video → GIF.
+- [ ] Audio extraction.
+- [ ] Audio converter.
+- [ ] Markdown preview.
+- [ ] YAML ↔ JSON.
+- [ ] CSV ↔ JSON.
+- [ ] Text diff.
+- [ ] Regex tester.
+- [ ] JWT decoder.
+- [ ] Timestamp converter.
+- [ ] Hash generator.
+- [ ] UUID generator.
+- [ ] URL utilities.
+
+## Future
+
+- [ ] Prompt template organizer.
+- [ ] Prompt formatter.
+- [ ] Prompt variable builder.
+- [ ] Local prompt history.
+- [ ] Additional tool categories discovered through real usage.
