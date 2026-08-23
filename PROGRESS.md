@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-**Milestone 3 — Native Media & Heavy Processing (complete).** Milestones 1–2 complete.
+**Milestone 4a-i — Text expansion batch (complete).** Milestones 1–3 complete.
 
 ## Status
 
@@ -53,8 +53,24 @@ installer packaging workflow (`[-]`); non-media Milestone 4 candidates.
 
 ## Current focus
 
-Milestone 3 (FFmpeg native media) is complete, together with the five Milestone 4
-media tools. Key additions:
+Milestone 4a-i (text expansion batch) is complete: four new renderer-side text tools
+following the established pure-logic + lazy-view pattern (ADR-022):
+
+- `markdown-preview`: marked (gfm/breaks) → DOMPurify-sanitized live preview with a
+  local minimal prose style, Copy-HTML action and word/char footer.
+- `yaml-json`: js-yaml `load(json:true)`/`dump(indent:2)` both directions, structured
+  1-based line/column errors from `YAMLException.mark`, Base64-style direction
+  segmented control with output-carrying swap.
+- `csv-json`: hand-written strict RFC 4180 parser/serializer (quoted fields, `""`
+  escapes, embedded commas/newlines, CRLF normalization, trailing-newline tolerance,
+  unclosed-quote line errors), CSV→JSON/JSON→CSV with header-row toggle and
+  comma/semicolon/tab delimiter select; malformed-JSON errors reuse
+  `positionToLineColumn` from json-format.
+- `text-diff`: LCS line diff over a flat Int32Array DP table, guarded at 2000 lines
+  per side (`{ error: 'too large' }` honest empty state), explicit Compute action,
+  unified rows (+/− markers with bg tints and sr-only descriptions), summary line.
+
+## Previous focus — Milestone 3
 
 - `src/main/services/ffmpeg.ts`: binary management with bundled-first resolution
   (`resources/ffmpeg` — packaged `resourcesPath` then dev `appPath`, extensionless
@@ -174,7 +190,21 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Milestone 3 gates (latest run):
+Milestone 4a-i gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx,css}"` → applied; check clean.
+- `npx vitest run` → **22 files, 199 tests passed** (up from 18 files / 145 tests:
+  +54 new tests across the four new logic suites — valid/invalid/empty/boundary
+  coverage for each), including the tool catalog integrity suite over the four new
+  registrations (definition ⇄ component ⇄ registry consistency).
+- `npx electron-vite build` → main/preload/renderer all build; each new tool emits
+  its own lazy chunk (`MarkdownPreviewTool`, `YamlJsonTool`, `CsvJsonTool`,
+  `TextDiffTool`).
+- Headless boot `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0.
+
+Milestone 3 gates (earlier run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.

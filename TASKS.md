@@ -83,10 +83,10 @@ Legend:
 - [x] Video → GIF.
 - [x] Audio extraction.
 - [x] Audio converter.
-- [ ] Markdown preview.
-- [ ] YAML ↔ JSON.
-- [ ] CSV ↔ JSON.
-- [ ] Text diff.
+- [x] Markdown preview. *(marked gfm/breaks + DOMPurify sanitize, live two-pane preview, Copy HTML)*
+- [x] YAML ↔ JSON.
+- [x] CSV ↔ JSON. *(hand-written strict RFC 4180 parser/serializer, header-row toggle, delimiter select)*
+- [x] Text diff. *(LCS line diff, 2000-line guard, unified +/- rows)*
 - [ ] Regex tester.
 - [ ] JWT decoder.
 - [ ] Timestamp converter.

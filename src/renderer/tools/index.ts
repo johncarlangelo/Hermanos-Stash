@@ -42,6 +42,59 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'markdown-preview',
+    name: 'Markdown Preview',
+    category: 'text',
+    description: 'Render Markdown to sanitized HTML with a live side-by-side preview.',
+    tags: ['markdown', 'md', 'html', 'preview'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'yaml-json',
+    name: 'YAML ⇄ JSON Converter',
+    category: 'text',
+    description: 'Convert YAML to JSON and back with precise error locations.',
+    tags: ['yaml', 'json', 'convert'],
+    icon: 'braces',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'csv-json',
+    name: 'CSV ⇄ JSON Converter',
+    category: 'text',
+    description:
+      'Convert CSV/TSV to JSON and back with strict RFC 4180 quoting and delimiter control.',
+    tags: ['csv', 'tsv', 'json', 'spreadsheet', 'convert'],
+    icon: 'braces',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'text-diff',
+    name: 'Text Diff',
+    category: 'text',
+    description: 'Compare two texts line by line and see exactly what was added or removed.',
+    tags: ['diff', 'compare', 'changes', 'lines'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
     id: 'file-metadata',
     name: 'File Metadata Viewer',
     category: 'files',
@@ -272,6 +325,10 @@ for (const definition of TOOL_DEFINITIONS) {
 /** Lazily-loaded view per tool id. */
 const JsonFormatTool = lazy(() => import('./json-format/JsonFormatTool'))
 const Base64Tool = lazy(() => import('./base64/Base64Tool'))
+const MarkdownPreviewTool = lazy(() => import('./markdown-preview/MarkdownPreviewTool'))
+const YamlJsonTool = lazy(() => import('./yaml-json/YamlJsonTool'))
+const CsvJsonTool = lazy(() => import('./csv-json/CsvJsonTool'))
+const TextDiffTool = lazy(() => import('./text-diff/TextDiffTool'))
 const FileMetadataTool = lazy(() => import('./file-metadata/FileMetadataTool'))
 const ImagePreviewTool = lazy(() => import('./image-preview/ImagePreviewTool'))
 const QrGeneratorTool = lazy(() => import('./qr-generator/QrGeneratorTool'))
@@ -291,6 +348,10 @@ const AudioConvertTool = lazy(() => import('./audio-convert/AudioConvertTool'))
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
   'base64-codec': Base64Tool,
+  'markdown-preview': MarkdownPreviewTool,
+  'yaml-json': YamlJsonTool,
+  'csv-json': CsvJsonTool,
+  'text-diff': TextDiffTool,
   'file-metadata': FileMetadataTool,
   'image-preview': ImagePreviewTool,
   'qr-generator': QrGeneratorTool,
