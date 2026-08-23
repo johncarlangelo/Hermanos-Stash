@@ -16,12 +16,28 @@ export interface OperationHandle {
  */
 export class ProgressBus {
   private active = new Map<string, boolean>()
+  /** Callbacks fired exactly once when a specific operation is cancelled. */
+  private cancelHandlers = new Map<string, Set<() => void>>()
   private listeners: Array<(event: ProgressEvent) => void> = []
 
   constructor(private sender?: WebContents) {}
 
   setSender(sender: WebContents | undefined): void {
     this.sender = sender
+  }
+
+  /**
+   * Register a callback invoked when `cancel(operationId)` fires — e.g. to
+   * interrupt a spawned child process immediately instead of waiting for the
+   * next poll. Cleared automatically on done/fail/cancel.
+   */
+  onCancel(operationId: string, fn: () => void): void {
+    let handlers = this.cancelHandlers.get(operationId)
+    if (!handlers) {
+      handlers = new Set()
+      this.cancelHandlers.set(operationId, handlers)
+    }
+    handlers.add(fn)
   }
 
   /** Subscribe to raw events (used by tests). Returns an unsubscribe fn. */
@@ -45,11 +61,13 @@ export class ProgressBus {
       done: (message) => {
         if (!this.active.has(id)) return
         this.active.delete(id)
+        this.cancelHandlers.delete(id)
         this.emit({ operationId: id, status: 'done', ratio: 1, message })
       },
       fail: (err) => {
         if (!this.active.has(id)) return
         this.active.delete(id)
+        this.cancelHandlers.delete(id)
         this.emit({
           operationId: id,
           status: 'error',
@@ -69,6 +87,11 @@ export class ProgressBus {
     if (!this.active.has(operationId)) return
     this.active.delete(operationId)
     this.emit({ operationId, status: 'cancelled', ratio: null })
+    const handlers = this.cancelHandlers.get(operationId)
+    if (handlers) {
+      this.cancelHandlers.delete(operationId)
+      for (const fn of handlers) fn()
+    }
   }
 
   cancelAll(): void {

@@ -63,10 +63,10 @@ Legend:
 
 ## Milestone 3 — Native Media & Heavy Processing
 
-- [ ] FFmpeg native integration & binary management.
-- [ ] Large media streaming & background workers.
-- [ ] Output verification & integrity checks.
-- [ ] Media transcoding & audio extraction services.
+- [x] FFmpeg native integration & binary management. *(bundled-first resolution with PATH fallback, cached; spawn-based, no new deps)*
+- [x] Large media streaming & background workers. *(spawned ffmpeg with `-progress pipe:1`, cooperative + instant-hook cancellation, stderr tails in structured errors)*
+- [x] Output verification & integrity checks. *(every media output re-probed via ffprobe: container/stream kind + duration within ±10% before export)*
+- [x] Media transcoding & audio extraction services.
 
 ## Milestone 4 — Expansion candidates
 
@@ -78,11 +78,11 @@ Legend:
 - [ ] PDF → images.
 - [ ] WebP tools.
 - [ ] EXIF viewer.
-- [ ] Video converter.
-- [ ] Video compressor.
-- [ ] Video → GIF.
-- [ ] Audio extraction.
-- [ ] Audio converter.
+- [x] Video converter.
+- [x] Video compressor.
+- [x] Video → GIF.
+- [x] Audio extraction.
+- [x] Audio converter.
 - [ ] Markdown preview.
 - [ ] YAML ↔ JSON.
 - [ ] CSV ↔ JSON.

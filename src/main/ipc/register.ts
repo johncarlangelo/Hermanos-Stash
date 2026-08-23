@@ -3,12 +3,20 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { IPC } from '../../shared/ipc'
 import type {
+  AudioCodec,
+  ConvertAudioRequest,
+  ExtractAudioRequest,
   FileMetadata,
   HistoryEntryInput,
   ImageBatchFailure,
   ImageBatchResult,
   ImageBatchSuccess,
   ImageOutputFormat,
+  MediaBatchFailure,
+  MediaBatchResult,
+  MediaBatchSuccess,
+  MediaCapabilities,
+  VideoOutputFormat,
   PdfSplitFailure,
   PdfSplitResult,
   PdfSplitSuccess
@@ -16,6 +24,7 @@ import type {
 import { serializeStashError, stashError } from '../../shared/errors'
 import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
+import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
 import { ProgressBus } from './progress'
 import { WriteScopeGuard } from './write-scope'
 import { assertNumber, assertOptionalString, assertString, parseFilters } from './validate'
@@ -27,6 +36,17 @@ import {
   formatForExtension
 } from '../processing/images'
 import { PDF_INPUT_LIMIT_BYTES, getPdfInfo, mergePdfs, splitPdfPages } from '../processing/pdf'
+import {
+  AUDIO_EXTENSION_BY_CODEC,
+  compressVideo,
+  convertAudio,
+  convertVideo,
+  extractAudio,
+  probeMedia,
+  videoToGif,
+  type MediaOpResult,
+  type MediaToolsContext
+} from '../processing/media'
 import { parsePageRanges } from '../../shared/utils/page-ranges'
 
 export interface IpcServices {
@@ -251,11 +271,131 @@ async function runPdfSplit(
   return { succeeded, failed, cancelled }
 }
 
+// --- Media (FFmpeg) ---------------------------------------------------------
+
+const VIDEO_EXTENSIONS_BY_FORMAT: Record<VideoOutputFormat, string> = {
+  mp4: '.mp4',
+  webm: '.webm',
+  mkv: '.mkv'
+}
+
+function swapExtensionTo(name: string, extension: string): string {
+  const dot = name.lastIndexOf('.')
+  const stem = dot <= 0 ? name : name.slice(0, dot)
+  return stem + extension
+}
+
+/** Resolve the FFmpeg toolchain or fail with an actionable message. */
+async function requireMediaContext(): Promise<MediaToolsContext> {
+  const resolved = await resolveFfmpegBinaries()
+  if ('error' in resolved) {
+    throw stashError('UNSUPPORTED', resolved.error, { technicalMessage: 'no ffmpeg/ffprobe' })
+  }
+  return { ffmpegPath: resolved.ffmpegPath, ffprobePath: resolved.ffprobePath }
+}
+
+interface MediaOpPlan {
+  prefix: string
+  message: string
+  outputNameFor(sourceName: string): string
+  process(
+    ctx: MediaToolsContext,
+    inputPath: string,
+    tempOutput: string,
+    hooks: { onProgress(ratio: number | null, message?: string): void; shouldCancel(): boolean }
+  ): Promise<MediaOpResult>
+}
+
+/**
+ * Full lifecycle for one media operation: temp workspace → process with
+ * live progress and instant cancellation → verify by re-probing → export to
+ * the user-approved folder → cleanup.
+ */
+async function runMediaOperation(
+  services: IpcServices,
+  req: { path: string; outputDir: string },
+  plan: MediaOpPlan
+): Promise<MediaBatchResult> {
+  services.writeScope.assertAllowed(req.outputDir)
+  const ctx = await requireMediaContext()
+  const opDir = services.temp.createOperation(plan.prefix)
+  const { id, handle } = services.progress.begin(plan.message)
+
+  // Instant-cancel wiring: ProgressBus invokes this hook synchronously when
+  // the renderer cancels, killing the spawned ffmpeg without waiting for the
+  // next poll tick.
+  let cancelRequested = false
+  services.progress.onCancel(id, () => {
+    cancelRequested = true
+  })
+
+  const succeeded: MediaBatchSuccess[] = []
+  const failed: MediaBatchFailure[] = []
+  let cancelled = false
+  try {
+    if (services.progress.isCancelled(id)) {
+      cancelled = true
+    } else {
+      const sourceName = path.basename(req.path)
+      handle.report(null, sourceName)
+      const name = uniqueName(plan.outputNameFor(sourceName), new Set())
+      const tempOutput = path.join(opDir, name)
+      try {
+        const result = await plan.process(ctx, req.path, tempOutput, {
+          onProgress: (ratio, message) => handle.report(ratio, message ?? sourceName),
+          shouldCancel: () => cancelRequested || services.progress.isCancelled(id)
+        })
+        // Verify the temp output exists before promoting it to the target.
+        await fs.stat(tempOutput)
+        const target = path.join(req.outputDir, name)
+        await fs.mkdir(path.dirname(target), { recursive: true })
+        await fs.copyFile(tempOutput, target)
+        const stat = await fs.stat(target)
+        succeeded.push({
+          source: req.path,
+          output: target,
+          bytesWritten: stat.size,
+          verified: result.verified
+        })
+      } catch (err) {
+        failed.push({ source: req.path, error: serializeStashError(err) })
+      }
+    }
+  } finally {
+    if (!cancelled) {
+      if (succeeded.length === 0 && failed.length > 0) {
+        handle.fail(failed[0]!.error)
+      } else {
+        handle.done()
+      }
+    }
+    services.temp.cleanup(opDir)
+  }
+  return { succeeded, failed, cancelled }
+}
+
+function parseVideoFormat(value: unknown): VideoOutputFormat {
+  if (typeof value === 'string' && value in VIDEO_EXTENSIONS_BY_FORMAT) {
+    return value as VideoOutputFormat
+  }
+  throw stashError('VALIDATION', 'Invalid request: "format" is not a supported video format.', {
+    technicalMessage: `format=${JSON.stringify(value)}`
+  })
+}
+
+function parseAudioCodec(value: unknown): AudioCodec {
+  if (typeof value === 'string' && value in AUDIO_EXTENSION_BY_CODEC) {
+    return value as AudioCodec
+  }
+  throw stashError('VALIDATION', 'Invalid request: "codec" is not a supported audio codec.', {
+    technicalMessage: `codec=${JSON.stringify(value)}`
+  })
+}
+
 /**
  * Register a channel whose thrown values are always normalized into a
  * serialized StashError before crossing the process boundary.
- */
-function handle(channel: string, listener: (...args: never[]) => unknown): void {
+ */ function handle(channel: string, listener: (...args: never[]) => unknown): void {
   ipcMain.handle(channel, async (...args: unknown[]) => {
     try {
       return await (listener as (...a: unknown[]) => unknown)(...args)
@@ -636,6 +776,165 @@ export function registerIpc(services: IpcServices): void {
       throw stashError('VALIDATION', parsed.error)
     }
     return runPdfSplit(services, inputPath, parsed.groups, outputDir)
+  })
+
+  // --- Media (FFmpeg) --------------------------------------------------------
+  handle(IPC.mediaGetCapabilities, async (): Promise<MediaCapabilities> => {
+    const resolved = await resolveFfmpegBinaries()
+    if ('error' in resolved) return { available: false }
+    try {
+      const [ffmpegVersion, ffprobeVersion] = await Promise.all([
+        getVersion(resolved.ffmpegPath).catch(() => undefined),
+        getVersion(resolved.ffprobePath).catch(() => undefined)
+      ])
+      return {
+        available: true,
+        source: resolved.source,
+        ...(ffmpegVersion ? { ffmpegVersion } : {}),
+        ...(ffprobeVersion ? { ffprobeVersion } : {})
+      }
+    } catch {
+      return { available: false }
+    }
+  })
+
+  handle(IPC.mediaProbe, async (_e, raw: unknown) => {
+    const target = assertString(raw, 'path')
+    // Reads stay broad by design; no write-scope approval needed here.
+    const ctx = await requireMediaContext()
+    const info = await probeMedia(ctx.ffprobePath, target)
+    let sizeBytes = info.sizeBytes ?? 0
+    try {
+      sizeBytes = (await fs.stat(target)).size
+    } catch {
+      // Fall back to container-reported size.
+    }
+    return { info, sizeBytes }
+  })
+
+  handle(IPC.mediaConvertVideo, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const format = parseVideoFormat(req['format'])
+    const crfQuality =
+      req['crfQuality'] === undefined ? undefined : assertNumber(req['crfQuality'], 'crfQuality')
+    return runMediaOperation(
+      services,
+      { path: inputPath, outputDir },
+      {
+        prefix: 'media-convert-video',
+        message: 'Converting video…',
+        outputNameFor: (source) => swapExtensionTo(source, VIDEO_EXTENSIONS_BY_FORMAT[format]),
+        process: (ctx, input, tempOutput, hooks) =>
+          convertVideo(ctx, input, tempOutput, { format, crfQuality, ...hooks })
+      }
+    )
+  })
+
+  handle(IPC.mediaCompressVideo, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const crfQuality = assertNumber(req['crfQuality'], 'crfQuality')
+    const maxDimension =
+      req['maxDimension'] === undefined
+        ? undefined
+        : assertNumber(req['maxDimension'], 'maxDimension')
+    return runMediaOperation(
+      services,
+      { path: inputPath, outputDir },
+      {
+        prefix: 'media-compress-video',
+        message: 'Compressing video…',
+        outputNameFor: (source) => swapExtensionTo(source, '.mp4'),
+        process: (ctx, input, tempOutput, hooks) =>
+          compressVideo(ctx, input, tempOutput, {
+            crfQuality,
+            ...(maxDimension !== undefined && maxDimension > 0 ? { maxDimension } : {}),
+            ...hooks
+          })
+      }
+    )
+  })
+
+  handle(IPC.mediaVideoToGif, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const fps = assertNumber(req['fps'], 'fps')
+    const maxWidth = assertNumber(req['maxWidth'], 'maxWidth')
+    return runMediaOperation(
+      services,
+      { path: inputPath, outputDir },
+      {
+        prefix: 'media-video-to-gif',
+        message: 'Building GIF…',
+        outputNameFor: (source) => swapExtensionTo(source, '.gif'),
+        process: (ctx, input, tempOutput, hooks) =>
+          videoToGif(ctx, input, tempOutput, {
+            fps,
+            maxWidth,
+            palettePath: path.join(
+              path.dirname(tempOutput),
+              `palette-${path.basename(tempOutput)}.png`
+            ),
+            ...hooks
+          })
+      }
+    )
+  })
+
+  handle(IPC.mediaExtractAudio, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const codec = parseAudioCodec(req['codec'])
+    const bitrateKbps =
+      req['bitrateKbps'] === undefined ? undefined : assertNumber(req['bitrateKbps'], 'bitrateKbps')
+    const request: ExtractAudioRequest = {
+      path: inputPath,
+      outputDir,
+      codec,
+      ...(bitrateKbps !== undefined ? { bitrateKbps } : {})
+    }
+    return runMediaOperation(
+      services,
+      { path: inputPath, outputDir },
+      {
+        prefix: 'media-extract-audio',
+        message: 'Extracting audio…',
+        outputNameFor: (source) => swapExtensionTo(source, AUDIO_EXTENSION_BY_CODEC[codec]),
+        process: (ctx, input, tempOutput, hooks) =>
+          extractAudio(ctx, input, tempOutput, { ...request, ...hooks })
+      }
+    )
+  })
+
+  handle(IPC.mediaConvertAudio, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const codec = parseAudioCodec(req['codec'])
+    const bitrateKbps =
+      req['bitrateKbps'] === undefined ? undefined : assertNumber(req['bitrateKbps'], 'bitrateKbps')
+    const request: ConvertAudioRequest = {
+      path: inputPath,
+      outputDir,
+      codec,
+      ...(bitrateKbps !== undefined ? { bitrateKbps } : {})
+    }
+    return runMediaOperation(
+      services,
+      { path: inputPath, outputDir },
+      {
+        prefix: 'media-convert-audio',
+        message: 'Converting audio…',
+        outputNameFor: (source) => swapExtensionTo(source, AUDIO_EXTENSION_BY_CODEC[codec]),
+        process: (ctx, input, tempOutput, hooks) =>
+          convertAudio(ctx, input, tempOutput, { ...request, ...hooks })
+      }
+    )
   })
 
   // --- Preferences ----------------------------------------------------------

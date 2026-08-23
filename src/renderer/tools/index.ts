@@ -187,6 +187,81 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsFiles: true
     }
+  },
+  {
+    id: 'video-convert',
+    name: 'Video Converter',
+    category: 'video',
+    description: 'Convert videos between MP4, WebM and MKV with quality control, locally.',
+    tags: ['video', 'convert', 'mp4', 'webm', 'mkv'],
+    icon: 'film',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'video-compress',
+    name: 'Video Compressor',
+    category: 'video',
+    description: 'Shrink video files with preset quality levels and optional downscaling.',
+    tags: ['video', 'compress', 'shrink', 'size'],
+    icon: 'film',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'video-to-gif',
+    name: 'Video → GIF',
+    category: 'video',
+    description: 'Turn short video clips into smooth GIFs using two-pass palette optimization.',
+    tags: ['gif', 'animation', 'convert'],
+    icon: 'film',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'extract-audio',
+    name: 'Audio Extractor',
+    category: 'audio',
+    description: 'Pull the soundtrack out of any video as AAC, MP3, WAV, FLAC or Opus.',
+    tags: ['audio', 'extract', 'soundtrack', 'mp3', 'wav'],
+    icon: 'music',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'audio-convert',
+    name: 'Audio Converter',
+    category: 'audio',
+    description: 'Convert audio files between MP3, AAC, WAV, FLAC and Opus locally.',
+    tags: ['audio', 'convert', 'mp3', 'flac', 'wav'],
+    icon: 'music',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -207,6 +282,11 @@ const ZipExtractTool = lazy(() => import('./zip-extract/ZipExtractTool'))
 const PdfMergeTool = lazy(() => import('./pdf-merge/PdfMergeTool'))
 const PdfSplitTool = lazy(() => import('./pdf-split/PdfSplitTool'))
 const PdfPreviewTool = lazy(() => import('./pdf-preview/PdfPreviewTool'))
+const VideoConvertTool = lazy(() => import('./video-convert/VideoConvertTool'))
+const VideoCompressTool = lazy(() => import('./video-compress/VideoCompressTool'))
+const VideoGifTool = lazy(() => import('./video-gif/VideoGifTool'))
+const AudioExtractTool = lazy(() => import('./audio-extract/AudioExtractTool'))
+const AudioConvertTool = lazy(() => import('./audio-convert/AudioConvertTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -220,5 +300,10 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'zip-extract': ZipExtractTool,
   'pdf-merge': PdfMergeTool,
   'pdf-split': PdfSplitTool,
-  'pdf-preview': PdfPreviewTool
+  'pdf-preview': PdfPreviewTool,
+  'video-convert': VideoConvertTool,
+  'video-compress': VideoCompressTool,
+  'video-to-gif': VideoGifTool,
+  'extract-audio': AudioExtractTool,
+  'audio-convert': AudioConvertTool
 }

@@ -3,8 +3,12 @@ import type { IpcRendererEvent } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
   CompressImagesRequest,
+  CompressVideoRequest,
+  ConvertAudioRequest,
   ConvertImagesRequest,
+  ConvertVideoRequest,
   ExportFileRequest,
+  ExtractAudioRequest,
   HistoryEntryInput,
   OpenFileDialogRequest,
   PdfMergeRequest,
@@ -14,6 +18,7 @@ import type {
   ReadTextFileRequest,
   SaveFileDialogRequest,
   StashBridge,
+  VideoToGifRequest,
   ZipCreateRequest,
   ZipExtractRequest
 } from '../shared/ipc'
@@ -79,6 +84,15 @@ const api: StashBridge = {
     merge: (req: PdfMergeRequest) => invoke(IPC.pdfMergeBatch, req),
     getInfo: (path: string) => invoke(IPC.pdfGetInfo, path),
     split: (req: PdfSplitRequest) => invoke(IPC.pdfSplitBatch, req)
+  },
+  media: {
+    getCapabilities: () => invoke(IPC.mediaGetCapabilities),
+    probe: (path: string) => invoke(IPC.mediaProbe, path),
+    convertVideo: (req: ConvertVideoRequest) => invoke(IPC.mediaConvertVideo, req),
+    compressVideo: (req: CompressVideoRequest) => invoke(IPC.mediaCompressVideo, req),
+    videoToGif: (req: VideoToGifRequest) => invoke(IPC.mediaVideoToGif, req),
+    extractAudio: (req: ExtractAudioRequest) => invoke(IPC.mediaExtractAudio, req),
+    convertAudio: (req: ConvertAudioRequest) => invoke(IPC.mediaConvertAudio, req)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

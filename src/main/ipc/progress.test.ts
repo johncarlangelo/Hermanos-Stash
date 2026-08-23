@@ -70,4 +70,29 @@ describe('ProgressBus', () => {
     expect(last.error?.userMessage).not.toContain('disk exploded')
     expect(last.error?.technicalMessage).toContain('disk exploded')
   })
+
+  it('fires cancel handlers exactly once on cancel', () => {
+    const bus = new ProgressBus()
+    const { id } = bus.begin()
+    let calls = 0
+    bus.onCancel(id, () => {
+      calls += 1
+    })
+    bus.cancel(id)
+    // Cancelling an already-finished operation must not re-fire handlers.
+    bus.cancel(id)
+    expect(calls).toBe(1)
+    expect(bus.isCancelled(id)).toBe(true)
+  })
+
+  it('does not fire cancel handlers on done', () => {
+    const bus = new ProgressBus()
+    const { id, handle } = bus.begin()
+    let calls = 0
+    bus.onCancel(id, () => {
+      calls += 1
+    })
+    handle.done()
+    expect(calls).toBe(0)
+  })
 })

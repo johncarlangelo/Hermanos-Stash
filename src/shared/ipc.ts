@@ -29,6 +29,14 @@ export const IPC = {
   pdfGetInfo: 'pdf:get-info',
   pdfSplitBatch: 'pdf:split',
 
+  mediaGetCapabilities: 'media:get-capabilities',
+  mediaProbe: 'media:probe',
+  mediaConvertVideo: 'media:convert-video',
+  mediaCompressVideo: 'media:compress-video',
+  mediaVideoToGif: 'media:video-to-gif',
+  mediaExtractAudio: 'media:extract-audio',
+  mediaConvertAudio: 'media:convert-audio',
+
   tempCreateOperation: 'temp:create-operation',
   tempCleanup: 'temp:cleanup',
 
@@ -223,6 +231,97 @@ export interface PdfSplitResult {
 
 export type OperationStatus = 'active' | 'done' | 'cancelled' | 'error'
 
+// --- Media (FFmpeg) ---------------------------------------------------------
+
+export interface MediaCapabilities {
+  available: boolean
+  source?: 'bundled' | 'path'
+  ffmpegVersion?: string
+  ffprobeVersion?: string
+}
+
+/** One decoded stream from ffprobe, sanitized for the renderer. */
+export interface MediaStreamInfo {
+  type: 'video' | 'audio' | 'other'
+  codec?: string
+  width?: number
+  height?: number
+  sampleRate?: number
+  channels?: number
+}
+
+export interface MediaInfo {
+  durationSec?: number
+  formatName?: string
+  bitrate?: number
+  sizeBytes?: number
+  streams: MediaStreamInfo[]
+}
+
+export interface MediaProbeResult {
+  info: MediaInfo
+  /** Size on disk of the probed file. */
+  sizeBytes: number
+}
+
+export type VideoOutputFormat = 'mp4' | 'webm' | 'mkv'
+
+export type AudioCodec = 'aac' | 'mp3' | 'wav' | 'flac' | 'opus'
+
+export interface ConvertVideoRequest {
+  path: string
+  outputDir: string
+  format: VideoOutputFormat
+  crfQuality?: number
+}
+
+export interface CompressVideoRequest {
+  path: string
+  outputDir: string
+  crfQuality: number
+  maxDimension?: number
+}
+
+export interface VideoToGifRequest {
+  path: string
+  outputDir: string
+  fps: number
+  maxWidth: number
+}
+
+export interface ExtractAudioRequest {
+  path: string
+  outputDir: string
+  codec: AudioCodec
+  bitrateKbps?: number
+}
+
+export interface ConvertAudioRequest {
+  path: string
+  outputDir: string
+  codec: AudioCodec
+  bitrateKbps?: number
+}
+
+/** One successfully processed media file. */
+export interface MediaBatchSuccess {
+  source: string
+  output: string
+  bytesWritten: number
+  verified: boolean
+}
+
+export interface MediaBatchFailure {
+  source: string
+  error: StashError
+}
+
+export interface MediaBatchResult {
+  succeeded: MediaBatchSuccess[]
+  failed: MediaBatchFailure[]
+  cancelled: boolean
+}
+
 export interface ProgressEvent {
   operationId: string
   status: OperationStatus
@@ -299,6 +398,15 @@ export interface StashBridge {
     merge(req: PdfMergeRequest): Promise<PdfMergeResult>
     getInfo(path: string): Promise<PdfInfoResult>
     split(req: PdfSplitRequest): Promise<PdfSplitResult>
+  }
+  media: {
+    getCapabilities(): Promise<MediaCapabilities>
+    probe(path: string): Promise<MediaProbeResult>
+    convertVideo(req: ConvertVideoRequest): Promise<MediaBatchResult>
+    compressVideo(req: CompressVideoRequest): Promise<MediaBatchResult>
+    videoToGif(req: VideoToGifRequest): Promise<MediaBatchResult>
+    extractAudio(req: ExtractAudioRequest): Promise<MediaBatchResult>
+    convertAudio(req: ConvertAudioRequest): Promise<MediaBatchResult>
   }
   progress: {
     subscribe(listener: (event: ProgressEvent) => void): () => void

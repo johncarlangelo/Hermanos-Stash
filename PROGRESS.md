@@ -2,17 +2,20 @@
 
 ## Current milestone
 
-**Milestone 2 — Demonstration tools (complete).** Milestone 1 — Foundation complete.
+**Milestone 3 — Native Media & Heavy Processing (complete).** Milestones 1–2 complete.
 
 ## Status
 
-The application foundation and the full Milestone 2 demonstration-tool catalog are
-implemented and independently verified: 11 tools / 12 registry entries spanning text,
-files/archives, images, documents/PDF, and developer categories, all riding on the
-shared processing architecture (temp workspace → process → approved export → history).
+Milestones 1 and 2 are implemented and independently verified. Milestone 3 adds the
+FFmpeg native platform (binary resolution with bundled-first/PATH-fallback caching,
+spawn-based processing, machine-readable progress, instant cancellation via new
+ProgressBus `onCancel` hooks) plus the Milestone 4 media tools: video-convert,
+video-compress, video-to-gif, extract-audio, audio-convert — every output
+re-probed with ffprobe before export (integrity checks), all riding the shared
+temp → process → verify → approved-export lifecycle.
 
 Remaining open items (tracked in TASKS.md): dedicated tag-filter UI (`[-]`) and
-installer packaging workflow (`[-]`); Milestone 3 (FFmpeg/media) not started.
+installer packaging workflow (`[-]`); non-media Milestone 4 candidates.
 
 ## Completed
 
@@ -50,11 +53,46 @@ installer packaging workflow (`[-]`); Milestone 3 (FFmpeg/media) not started.
 
 ## Current focus
 
-Milestone 2 is complete. All 11 demonstration tools (12 registry entries) shipped
-across four batches — text tools, binary bridge + preview/QR, sharp/jszip heavy
-processing, and the PDF suite. See batch notes below and ADR-015 through ADR-021.
+Milestone 3 (FFmpeg native media) is complete, together with the five Milestone 4
+media tools. Key additions:
 
-Next up when work resumes: Milestone 3 (FFmpeg native media) per TASKS.md, plus
+- `src/main/services/ffmpeg.ts`: binary management with bundled-first resolution
+  (`resources/ffmpeg` — packaged `resourcesPath` then dev `appPath`, extensionless
+  fallbacks for cross-platform future), system-PATH fallback via spawned
+  `-version` probes (5 s timeout), result cached after first success; pure helpers
+  (`candidateDirs`, `findBundledBinaries`, `parseVersionLine`) are Electron-free
+  and unit tested.
+- ProgressBus extended with `onCancel(operationId, fn)`: handlers fire exactly
+  once on cancel and are cleared on done/fail/cancel — media operations use it to
+  kill a spawned ffmpeg instantly instead of waiting for the next poll tick.
+- `src/main/processing/media.ts`: pure parsers (`parseFfprobeJson` against a
+  realistic fixture, `parseFfmpegProgressLine`, `out_time_us/ms/out_time` ratio
+  math incl. the historical µs/mislabel quirk, CRF/bitrate clamps, scale-filter
+  builder); spawn-based `runFfmpeg` (`-progress pipe:1 -nostats`, 500 ms cancel
+  poll + instant hook kill, stderr tail surfaced in structured errors);
+  high-level ops `convertVideo` (x264/vp9 + aac/opus), `compressVideo`
+  (aspect-preserving cap filter), `videoToGif` (two-pass palettegen/paletteuse,
+  progress split 15/85 across passes), `extractAudio`/`convertAudio` (-vn map,
+  wav=pcm_s16le, aac→.m4a); every output re-probed by `verifyOutputMedia`
+  (container/stream kind + duration within ±10%) before export.
+- IPC channels `media:get-capabilities`, `media:probe`, `media:convert-video`,
+  `media:compress-video`, `media:video-to-gif`, `media:extract-audio`,
+  `media:convert-audio`; single-input ops keep the plural batch result shape;
+  missing binaries produce an actionable error mentioning `resources/ffmpeg`.
+- Shared single-file media tool workspace (`shared/media-tool.tsx`): capability
+  gating with honest FFmpeg-not-found EmptyState, auto-probe info line
+  (duration · resolution · codec · size), options panel injection, progress +
+  cancel binding, original→new size + saved %, "Output verified" SuccessNote,
+  history records and toast summaries.
+- Five tools registered: **Video Converter** (`video-convert`, CRF 18–40 slider),
+  **Video Compressor** (`video-compress`, preset + max-resolution selects),
+  **Video → GIF** (`video-to-gif`, fps/width selects + one-line size caveat),
+  **Audio Extractor** (`extract-audio`) and **Audio Converter**
+  (`audio-convert`) in the audio category.
+- No new npm dependencies for the platform: ffmpeg.exe/ffprobe.exe are spawned
+  directly via `child_process.spawn`.
+
+Next up when work resumes: remaining Milestone 4 candidates per TASKS.md, plus
 the two open `[-]` items (tag-filter UI, installer packaging).
 
 Milestone 2 batch 2 additions:
@@ -135,6 +173,28 @@ Milestone 2 batch 4 (PDF suite) additions:
   and file change).
 
 ## Verification evidence
+
+Milestone 3 gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx,css}"` → applied; check clean.
+- `npx vitest run` → **18 files, 145 tests passed**, including: ProgressBus
+  cancel-hook tests (fires exactly once on cancel, never on done); ffprobe JSON
+  fixture parsing; ffmpeg progress-line/timestamp/ratio parsers; CRF/bitrate
+  clamps and scale-filter builder; verifyMediaInfo kind/duration-tolerance
+  suites; version-line + candidate-dir helpers; and the **guarded integration
+  test which ran against the real bundled binaries** (generated a 0.5 s
+  `testsrc` MP4 via lavfi, converted it to WebM, re-probed and verified the
+  output, extracted WAV audio and asserted duration ≈0.5 s ±0.2 s — 449 ms).
+  On machines without binaries the integration test returns silently so CI
+  stays green.
+- `npx electron-vite build` → main/preload/renderer all build; each new tool
+  emits its own lazy chunk (`VideoConvertTool`, `VideoCompressTool`,
+  `VideoGifTool`, `AudioExtractTool`, `AudioConvertTool`, shared `media-tool`).
+- Headless boot `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0.
+
+Earlier Milestone 2 evidence:
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.
