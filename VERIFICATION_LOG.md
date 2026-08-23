@@ -8,7 +8,7 @@ Static gates at time of logging: `tsc` clean · `eslint` clean · `prettier` cle
 **319/319 vitest tests (30 files)** · `electron-vite build` clean (per-tool lazy
 chunks) · smoke boot `STASH_SMOKE_OK`.
 
-## Registry (32 tools)
+## Registry (33 tools)
 
 | # | Tool id | Category | Logic tests | Progress + Cancel | History records |
 |---|---|---|---|---|---|
@@ -43,7 +43,8 @@ chunks) · smoke boot `STASH_SMOKE_OK`.
 | 29 | video-convert | video | media suite (~20) | ffmpeg `-progress` ratio + kill-cancel | yes |
 | 30 | video-compress | video | ↑ | same | yes |
 | 31 | video-to-gif | video | ↑ | two-pass split progress + cancel | yes |
-| 32 | extract-audio / audio-convert | audio | ↑ | same + duration verify ±10% | yes |
+| 32 | extract-audio | audio | ↑ | same + duration verify ±10% | yes |
+| 33 | audio-convert | audio | ↑ | same + duration verify ±10% | yes |
 
 ## TOOL_SPEC.md — "Adding a tool checklist"
 

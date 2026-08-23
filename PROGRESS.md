@@ -6,7 +6,7 @@
 
 ## Status
 
-32 tools registered across every category, on a verified platform: secure Electron
+33 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
