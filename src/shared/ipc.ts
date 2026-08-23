@@ -28,6 +28,10 @@ export const IPC = {
   pdfMergeBatch: 'pdf:merge-batch',
   pdfGetInfo: 'pdf:get-info',
   pdfSplitBatch: 'pdf:split',
+  pdfRotateBatch: 'pdf:rotate',
+  pdfCompressBatch: 'pdf:compress',
+  pdfReorderBatch: 'pdf:reorder',
+  pdfImagesToPdfBatch: 'pdf:images-to-pdf',
 
   mediaGetCapabilities: 'media:get-capabilities',
   mediaProbe: 'media:probe',
@@ -232,6 +236,47 @@ export interface PdfSplitResult {
   cancelled: boolean
 }
 
+export interface PdfRotateRequest {
+  path: string
+  /** 'all' or an ordered page spec like "1-3, 7". */
+  pageSpec: string
+  angle: 90 | 180 | 270
+  targetPdf: string
+}
+
+export interface PdfRotateResult {
+  bytesWritten: number
+  rotatedCount: number
+}
+
+export interface PdfCompressRequest {
+  path: string
+  targetPdf: string
+}
+
+export interface PdfCompressResult {
+  bytesWritten: number
+  pageCount: number
+}
+
+export interface PdfReorderRequest {
+  path: string
+  /** Explicit full sequence — 'all' is not accepted here. */
+  pageSpec: string
+  targetPdf: string
+}
+
+export interface PdfReorderResult {
+  bytesWritten: number
+  pageCount: number
+}
+
+/** One image file per page, at each image's natural pixel size. */
+export interface ImagesToPdfRequest {
+  paths: string[]
+  targetPdf: string
+}
+
 export type OperationStatus = 'active' | 'done' | 'cancelled' | 'error'
 
 // --- Media (FFmpeg) ---------------------------------------------------------
@@ -424,6 +469,10 @@ export interface StashBridge {
     merge(req: PdfMergeRequest): Promise<PdfMergeResult>
     getInfo(path: string): Promise<PdfInfoResult>
     split(req: PdfSplitRequest): Promise<PdfSplitResult>
+    rotate(req: PdfRotateRequest): Promise<PdfRotateResult>
+    compress(req: PdfCompressRequest): Promise<PdfCompressResult>
+    reorder(req: PdfReorderRequest): Promise<PdfReorderResult>
+    imagesToPdf(req: ImagesToPdfRequest): Promise<PdfMergeResult>
   }
   media: {
     getCapabilities(): Promise<MediaCapabilities>

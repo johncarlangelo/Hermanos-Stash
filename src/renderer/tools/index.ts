@@ -310,6 +310,92 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'pdf-rotate',
+    name: 'PDF Rotator',
+    category: 'documents',
+    description:
+      'Turn selected pages of a PDF by 90°, 180° or 270° — stacking on top of existing rotation.',
+    tags: ['pdf', 'rotate', 'pages'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-compress',
+    name: 'PDF Optimizer',
+    category: 'documents',
+    description:
+      'Losslessly rewrite a PDF with compact object streams to shrink file size where possible.',
+    tags: ['pdf', 'compress', 'optimize', 'size'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-reorder',
+    name: 'PDF Page Reorderer',
+    category: 'documents',
+    description:
+      'Arrange pages into any explicit order — "3, 1-2" puts page 3 first — as a new PDF.',
+    tags: ['pdf', 'reorder', 'arrange', 'pages'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'images-to-pdf',
+    name: 'Images → PDF',
+    category: 'documents',
+    description:
+      'Combine JPG/PNG images into one PDF — one page per image at its natural pixel size.',
+    tags: ['images', 'pdf', 'combine', 'jpg', 'png'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-to-images',
+    name: 'PDF → Images',
+    category: 'documents',
+    description:
+      'Render every page of a PDF to PNG or JPEG images locally and pack them into one ZIP.',
+    tags: ['pdf', 'export', 'png', 'jpg', 'render'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'image-exif',
+    name: 'EXIF Inspector',
+    category: 'images',
+    description:
+      'Read camera, lens, exposure, capture date and GPS metadata from photos — entirely offline.',
+    tags: ['exif', 'metadata', 'gps', 'camera', 'photo'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true
+    }
+  },
+  {
     id: 'video-convert',
     name: 'Video Converter',
     category: 'video',
@@ -412,6 +498,12 @@ const ZipExtractTool = lazy(() => import('./zip-extract/ZipExtractTool'))
 const PdfMergeTool = lazy(() => import('./pdf-merge/PdfMergeTool'))
 const PdfSplitTool = lazy(() => import('./pdf-split/PdfSplitTool'))
 const PdfPreviewTool = lazy(() => import('./pdf-preview/PdfPreviewTool'))
+const PdfRotateTool = lazy(() => import('./pdf-rotate/PdfRotateTool'))
+const PdfCompressTool = lazy(() => import('./pdf-compress/PdfCompressTool'))
+const PdfReorderTool = lazy(() => import('./pdf-reorder/PdfReorderTool'))
+const ImagesToPdfTool = lazy(() => import('./images-to-pdf/ImagesToPdfTool'))
+const PdfToImagesTool = lazy(() => import('./pdf-to-images/PdfToImagesTool'))
+const ImageExifTool = lazy(() => import('./image-exif/ImageExifTool'))
 const VideoConvertTool = lazy(() => import('./video-convert/VideoConvertTool'))
 const VideoCompressTool = lazy(() => import('./video-compress/VideoCompressTool'))
 const VideoGifTool = lazy(() => import('./video-gif/VideoGifTool'))
@@ -440,6 +532,12 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'pdf-merge': PdfMergeTool,
   'pdf-split': PdfSplitTool,
   'pdf-preview': PdfPreviewTool,
+  'pdf-rotate': PdfRotateTool,
+  'pdf-compress': PdfCompressTool,
+  'pdf-reorder': PdfReorderTool,
+  'images-to-pdf': ImagesToPdfTool,
+  'pdf-to-images': PdfToImagesTool,
+  'image-exif': ImageExifTool,
   'video-convert': VideoConvertTool,
   'video-compress': VideoCompressTool,
   'video-to-gif': VideoGifTool,

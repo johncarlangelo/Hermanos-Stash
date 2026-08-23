@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import * as pdfjsLib from 'pdfjs-dist'
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist'
 import { Button } from '../../components/ui/Button'
 import { EmptyState, ErrorNote, Panel, SectionHeading, Spinner } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
-import { normalizeError, stashError, type StashError } from '../../../shared/errors'
+import { stashError, type StashError } from '../../../shared/errors'
 import { formatBytes } from '../../../shared/utils/files'
+import { mapPdfJsError, pdfjsLib } from '../shared/pdfjs'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
-
-// The worker ships as its own module; Vite resolves the URL at build time.
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 
 type ZoomMode = 'fit' | 100
 
@@ -85,16 +81,7 @@ export default function PdfPreviewTool() {
         })
       } catch (err) {
         loadingTaskRef.current = null
-        const raw = err as Error
-        const isPassword =
-          raw?.name === 'PasswordException' || /password/i.test(String(raw?.message ?? ''))
-        const normalized = isPassword
-          ? stashError(
-              'UNSUPPORTED',
-              `"${name}" is password-protected. Enter the password in its owning app to unlock it first.`,
-              { technicalMessage: String(raw?.message ?? err) }
-            )
-          : normalizeError(err)
+        const normalized = mapPdfJsError(err, name)
         setError(normalized)
         recordHistoryQuietly({
           toolId: 'pdf-preview',

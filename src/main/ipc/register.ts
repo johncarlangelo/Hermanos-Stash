@@ -39,7 +39,17 @@ import {
   convertImage,
   formatForExtension
 } from '../processing/images'
-import { PDF_INPUT_LIMIT_BYTES, getPdfInfo, mergePdfs, splitPdfPages } from '../processing/pdf'
+import {
+  IMAGES_TO_PDF_EXTENSIONS,
+  PDF_INPUT_LIMIT_BYTES,
+  compressPdf,
+  getPdfInfo,
+  imagesToPdf,
+  mergePdfs,
+  reorderPdf,
+  rotatePdf,
+  splitPdfPages
+} from '../processing/pdf'
 import {
   AUDIO_EXTENSION_BY_CODEC,
   compressVideo,
@@ -51,7 +61,7 @@ import {
   type MediaOpResult,
   type MediaToolsContext
 } from '../processing/media'
-import { parsePageRanges } from '../../shared/utils/page-ranges'
+import { parsePageRanges, parsePageSequence } from '../../shared/utils/page-ranges'
 
 export interface IpcServices {
   prefs: PrefsStore
@@ -795,6 +805,93 @@ export function registerIpc(services: IpcServices): void {
       throw stashError('VALIDATION', parsed.error)
     }
     return runPdfSplit(services, inputPath, parsed.groups, outputDir)
+  })
+
+  /** Shared validation for single-PDF → single-output operations. */
+  async function loadValidatedSinglePdf(
+    req: Record<string, unknown>
+  ): Promise<{ path: string; targetPdf: string; pageCount: number }> {
+    const inputPath = assertString(req['path'], 'path')
+    const targetPdf = assertString(req['targetPdf'], 'targetPdf')
+    services.writeScope.assertAllowed(targetPdf)
+    if (!inputPath.toLowerCase().endsWith('.pdf')) {
+      throw stashError('VALIDATION', `"${path.basename(inputPath)}" isn't a PDF file.`)
+    }
+    let stat
+    try {
+      stat = await fs.stat(inputPath)
+    } catch (err) {
+      throw stashError('FS_READ', `"${path.basename(inputPath)}" could not be found or opened.`, {
+        technicalMessage: String(err)
+      })
+    }
+    if (stat.size > PDF_INPUT_LIMIT_BYTES) {
+      throw stashError(
+        'VALIDATION',
+        'That document is too large to process in one pass (limit is 512 MB).',
+        { technicalMessage: `sizeBytes=${stat.size}` }
+      )
+    }
+    const info = await getPdfInfo(inputPath)
+    return { path: inputPath, targetPdf, pageCount: info.pageCount }
+  }
+
+  /** 'all' means every page; anything else is parsed as an ordered sequence. */
+  function resolveSequence(pageSpec: string, pageCount: number): number[] {
+    if (pageSpec.trim().toLowerCase() === 'all') {
+      return Array.from({ length: pageCount }, (_, index) => index)
+    }
+    const parsed = parsePageSequence(pageSpec, pageCount)
+    if ('error' in parsed) {
+      throw stashError('VALIDATION', parsed.error)
+    }
+    return parsed.pages.map((page) => page - 1)
+  }
+
+  handle(IPC.pdfRotateBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const { path: inputPath, targetPdf, pageCount } = await loadValidatedSinglePdf(req)
+    const pageSpec = assertString(req['pageSpec'], 'pageSpec')
+    const angle = assertNumber(req['angle'], 'angle')
+    if (angle !== 90 && angle !== 180 && angle !== 270) {
+      throw stashError('VALIDATION', 'Invalid request: "angle" must be 90, 180 or 270.')
+    }
+    const indices = resolveSequence(pageSpec, pageCount)
+    return rotatePdf(inputPath, indices, angle, targetPdf)
+  })
+
+  handle(IPC.pdfCompressBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const { path: inputPath, targetPdf } = await loadValidatedSinglePdf(req)
+    return compressPdf(inputPath, targetPdf)
+  })
+
+  handle(IPC.pdfReorderBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const { path: inputPath, targetPdf, pageCount } = await loadValidatedSinglePdf(req)
+    const pageSpec = assertString(req['pageSpec'], 'pageSpec')
+    const parsed = parsePageSequence(pageSpec, pageCount)
+    if ('error' in parsed) {
+      throw stashError('VALIDATION', parsed.error)
+    }
+    return reorderPdf(inputPath, parsed.pages, targetPdf)
+  })
+
+  handle(IPC.pdfImagesToPdfBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const targetPdf = assertString(req['targetPdf'], 'targetPdf')
+    services.writeScope.assertAllowed(targetPdf)
+    for (const imagePath of paths) {
+      if (
+        !(IMAGES_TO_PDF_EXTENSIONS as readonly string[]).includes(
+          path.extname(imagePath).toLowerCase()
+        )
+      ) {
+        throw stashError('VALIDATION', `"${path.basename(imagePath)}" isn't a JPG or PNG image.`)
+      }
+    }
+    return imagesToPdf(paths, targetPdf)
   })
 
   // --- Media (FFmpeg) --------------------------------------------------------

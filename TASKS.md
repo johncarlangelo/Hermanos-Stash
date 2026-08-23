@@ -70,14 +70,14 @@ Legend:
 
 ## Milestone 4 — Expansion candidates
 
-- [ ] PDF page extraction.
-- [ ] PDF page reorder.
-- [ ] PDF rotation.
-- [ ] PDF compression.
-- [ ] Images → PDF.
-- [ ] PDF → images.
+- [x] PDF page extraction. *(shipped as PDF Splitter in Milestone 2)*
+- [x] PDF page reorder. *(pdf-reorder: explicit ordered sequence, duplicates rejected, new doc via pdf-lib page copy)*
+- [x] PDF rotation. *(pdf-rotate: 'all' or sequence spec, cumulative mod-360 rotation, subset support)*
+- [x] PDF compression. *(pdf-compress: lossless object-stream rewrite only; honest grew-larger reporting)*
+- [x] Images → PDF. *(images-to-pdf: one natural-size full-bleed page per JPG/PNG, ordered queue)*
+- [x] PDF → images. *(pdf-to-images: renderer-side pdf.js rendering, PNG/JPEG + quality + scale, ZIP via save dialog, between-page cancel)*
 - [ ] WebP tools.
-- [ ] EXIF viewer.
+- [x] EXIF viewer. *(image-exif: renderer-side exifr parse, curated grouped rows, GPS text-only + copy, honest empty state)*
 - [x] Video converter.
 - [x] Video compressor.
 - [x] Video → GIF.

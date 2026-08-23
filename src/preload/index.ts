@@ -12,8 +12,12 @@ import type {
   HashFileRequest,
   HashTextRequest,
   HistoryEntryInput,
+  ImagesToPdfRequest,
   OpenFileDialogRequest,
+  PdfCompressRequest,
   PdfMergeRequest,
+  PdfReorderRequest,
+  PdfRotateRequest,
   PdfSplitRequest,
   ProgressEvent,
   ReadFileBytesRequest,
@@ -85,7 +89,11 @@ const api: StashBridge = {
   pdfs: {
     merge: (req: PdfMergeRequest) => invoke(IPC.pdfMergeBatch, req),
     getInfo: (path: string) => invoke(IPC.pdfGetInfo, path),
-    split: (req: PdfSplitRequest) => invoke(IPC.pdfSplitBatch, req)
+    split: (req: PdfSplitRequest) => invoke(IPC.pdfSplitBatch, req),
+    rotate: (req: PdfRotateRequest) => invoke(IPC.pdfRotateBatch, req),
+    compress: (req: PdfCompressRequest) => invoke(IPC.pdfCompressBatch, req),
+    reorder: (req: PdfReorderRequest) => invoke(IPC.pdfReorderBatch, req),
+    imagesToPdf: (req: ImagesToPdfRequest) => invoke(IPC.pdfImagesToPdfBatch, req)
   },
   media: {
     getCapabilities: () => invoke(IPC.mediaGetCapabilities),

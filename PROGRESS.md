@@ -2,20 +2,18 @@
 
 ## Current milestone
 
-**Milestone 4a-ii — Developer expansion batch (complete).** Milestones 1–3 and 4a-i complete.
+**Milestone 4b — document & image expansion batch (complete).** Milestones 1–3, 4a-i and 4a-ii complete.
 
 ## Status
 
-Milestones 1 and 2 are implemented and independently verified. Milestone 3 adds the
-FFmpeg native platform (binary resolution with bundled-first/PATH-fallback caching,
-spawn-based processing, machine-readable progress, instant cancellation via new
-ProgressBus `onCancel` hooks) plus the Milestone 4 media tools: video-convert,
-video-compress, video-to-gif, extract-audio, audio-convert — every output
-re-probed with ffprobe before export (integrity checks), all riding the shared
-temp → process → verify → approved-export lifecycle.
+Milestones 1–3 are implemented and independently verified. Milestone 4b adds six
+document/image tools (pdf-rotate, pdf-compress, pdf-reorder, images-to-pdf,
+pdf-to-images, image-exif) on the existing pdf-lib/pdf.js/zip infrastructure,
+with one new dependency (`exifr`) for EXIF parsing in the renderer. All
+verification gates pass (see evidence below).
 
-Remaining open items (tracked in TASKS.md): dedicated tag-filter UI (`[-]`) and
-installer packaging workflow (`[-]`); non-media Milestone 4 candidates.
+Remaining open items (tracked in TASKS.md): dedicated tag-filter UI (`[-]`),
+installer packaging workflow (`[-]`), WebP tools, UUID generator.
 
 ## Completed
 
@@ -53,42 +51,45 @@ installer packaging workflow (`[-]`); non-media Milestone 4 candidates.
 
 ## Current focus
 
-Milestone 4a-ii (developer expansion batch) is complete: five new developer-category
-tools following the established pure-logic + lazy-view pattern (ADR-022), plus the
-first crypto IPC domain:
+Milestone 4b (document & image expansion batch) is complete — six new tools plus
+shared infrastructure extensions:
 
-- `regex-tester`: pure never-throws evaluator (`testRegex` → `{matches,total,error?}`)
-  over the supported JS flag set `dgimsuvy` with duplicate/unknown flag rejection;
-  zero-length matches are stepped past (`lastIndex += 1`) so patterns like `a*`
-  over `bbb` terminate; `maxMatches` cap uses `total >= maxMatches` as an explicit
-  "at least N" sentinel. UI debounces live runs (~150 ms), renders aria-pressed
-  flag toggles, an aria-live results line, match rows (index tnum · text mono ·
-  groups/named dim) and a highlighted preview built from clamped non-overlapping
-  segments.
-- `jwt-decoder`: split/decode/JSON-parse pipeline returning `{header,payload,
-  signature}|{error:{message}}`; local base64url→bytes→fatal-UTF-8 decoding;
-  `isExpired(payload, nowMs)` treats `exp === now` as expired. UI pretty-prints
-  header/payload panels with per-panel copy, human-readable exp/iat/nbf claim
-  strip with valid/expired badge, and a prominent "Signature is not verified —
-  decoding only" notice.
-- `timestamp-converter`: auto-detecting parser (>1e11 ⇒ ms, negatives allowed)
-  and deterministic formatter (ISO/UTC/local via Intl + injectable-now relative
-  labels). UI: ticking Now card (setInterval cleaned up on unmount), live
-  timestamp→date conversion, reverse datetime-local→unix seconds/ms row with
-  per-row copy buttons.
-- `hash-generator`: new `crypto:hash-text` / `crypto:hash-file` channels — node:crypto
-  in main with algorithm allowlist validation; file hashing streams through
-  `createReadStream` chunks instead of whole-file reads; wired as a new `crypto`
-  group on the StashBridge. UI: Text/File segmented mode with algorithm select,
-  debounced (200 ms) text hashing with stale-response discard via request counter,
-  any-extension DropZone for files showing name/size/digest/copy; file hashes
-  record history entries (`hash-sha256`, inputs=[filename], best-effort).
-- `url-utils`: URL component parser that prepends `https://` when no scheme is
-  present (documented in tests), port omitted for default ports, query params
-  extracted via `searchParams.entries()`; encodeComponent/decodeComponent wrappers
-  with URIError-safe decode; parseQuery tolerates a leading `?`. UI: Parse table
-  (dim label left / mono value right / per-row copy) plus Encode/Decode panels
-  with output-carrying swap like base64.
+- `parsePageSequence` added beside (not replacing) `parsePageRanges`: same
+  "1-3, 7" grammar but returning a FLAT ordered array exactly as written
+  ("3,1" means page 3 first) with duplicate rejection. Fully tested for order,
+  duplicates, out-of-range and malformed input.
+- `pdf-rotate` + `pdf:rotate`: cumulative rotation `(existing + angle) mod 360`
+  over 'all' or any sequence subset via pdf-lib `setRotation`; UI mirrors the
+  splitter (info line, live sequence validation, angle select, save dialog).
+- `pdf-compress` + `pdf:compress`: deliberately lossless-only structural
+  optimization (`useObjectStreams`); UI states exactly that and reports a size
+  increase neutrally instead of a success badge.
+- `pdf-reorder` + `pdf:reorder`: builds a NEW document copying pages in exact
+  parsed-sequence order ('all' rejected — no ordering intent); output page
+  count equals the requested sequence length.
+- `images-to-pdf` + `pdf:images-to-pdf`: one full-bleed page per JPG/PNG at its
+  natural pixel size (`embedJpg`/`embedPng` by extension), ordered queue UI
+  copied from PDF Merger.
+- `pdf-to-images`: renderer-driven pdf.js rendering through a newly extracted
+  shared bootstrap `tools/shared/pdfjs.ts` (preview refactored onto it);
+  .zip destination approved by save dialog BEFORE rendering; pages render to
+  canvas → blob → temp operation dir as page-001.png… then pack via the
+  existing zip archive channel; local between-page cancellation with cleanup
+  in `finally`.
+- `image-exif`: first use of `exifr` (types bundled), parsing in the RENDERER
+  over bytes from the existing 64 MiB read bridge; curated grouped display rows
+  (~15 tags across Camera/Date/Location/Technical), fraction shutter speeds,
+  six-decimal GPS shown text-only with copy (no external link), copy-all-as-JSON,
+  honest empty state when metadata is absent.
+
+## Previous focus — Milestone 4a-ii
+
+Five developer tools (ADR-023): `regex-tester` (never-throws evaluator with
+termination guarantees), `jwt-decoder` (per-stage decode errors, explicit
+not-verified notice), `timestamp-converter` (s/ms auto-detect, injectable now),
+`hash-generator` (first crypto IPC domain via node:crypto, streamed file digests)
+and `url-utils` (component parser, URIError-safe encode/decode). See ADR-023 for
+the full record.
 
 ## Previous focus — Milestone 4a-i
 
@@ -228,7 +229,27 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Milestone 4a-ii gates (latest run):
+Milestone 4b gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx,css}"` → applied; check clean.
+- `npx vitest run` → **29 files, 313 tests passed** (up from 27 files / 273 tests:
+  +40 new tests — parsePageSequence ordering/duplicate/range/malformed suites;
+  pdf-lib rotate (cumulative + subset + persisted rotation), compress
+  (lossless round-trip, same pageCount), reorder (geometry-proven page order,
+  out-of-range rejection) and images-to-pdf (natural page sizes, one image
+  object per page, extension and corrupt-byte rejection); pdf-to-images logic
+  (page-001 padding, format mapping, quality clamps); image-exif logic (fraction
+  exposure, GPS decimals, section grouping/omission). Includes the tool catalog
+  integrity suite over all six new registrations.
+- `npx electron-vite build` → main/preload/renderer all build; each new tool
+  emits its own lazy chunk (`PdfRotateTool`, `PdfCompressTool`, `PdfReorderTool`,
+  `ImagesToPdfTool`, `PdfToImagesTool`, `ImageExifTool`) plus the shared `pdfjs`
+  chunk now shared by preview and exporter.
+- Headless boot `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0.
+
+Milestone 4a-ii gates (earlier run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.

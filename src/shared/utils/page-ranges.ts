@@ -7,6 +7,14 @@
  */
 export type PageRangeParse = { groups: number[][] } | { error: string }
 
+/**
+ * Ordered-sequence variant used by tools where position matters (reorder):
+ * the same syntax produces a FLAT page array exactly as written, so "3,1"
+ * means page 3 first. Repeats are rejected — a sequence must name each page
+ * once. Validation is total like `parsePageRanges`.
+ */
+export type PageSequenceParse = { pages: number[] } | { error: string }
+
 export function parsePageRanges(spec: string, pageCount: number): PageRangeParse {
   if (pageCount < 1) {
     return { error: 'This document has no pages to split.' }
@@ -58,4 +66,53 @@ export function parsePageRanges(spec: string, pageCount: number): PageRangeParse
     return { error: 'Enter a page range first — e.g. "1-3, 7".' }
   }
   return { groups }
+}
+
+export function parsePageSequence(spec: string, pageCount: number): PageSequenceParse {
+  if (pageCount < 1) {
+    return { error: 'This document has no pages to arrange.' }
+  }
+  const trimmed = spec.trim()
+  if (trimmed.length === 0) {
+    return { error: 'Enter a page sequence first — e.g. "3, 1-2".' }
+  }
+
+  const pages: number[] = []
+  const seen = new Set<number>()
+  for (const part of trimmed.split(',')) {
+    const token = part.trim()
+    if (token.length === 0) {
+      return { error: 'The sequence has an empty section — check for extra commas.' }
+    }
+    const bounds = token.split('-')
+    if (bounds.length > 2) {
+      return { error: `"${token}" isn't a valid page or range.` }
+    }
+    const start = Number(bounds[0])
+    const end = bounds.length === 2 ? Number(bounds[1]) : start
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+      return { error: `"${token}" isn't a whole page number or range.` }
+    }
+    if (start < 1 || end < 1) {
+      return { error: `Page numbers start at 1 — "${token}" is out of range.` }
+    }
+    if (end < start) {
+      return { error: `"${token}" runs backwards — ranges go low to high.` }
+    }
+    if (start > pageCount || end > pageCount) {
+      return {
+        error: `"${token}" exceeds this document's ${pageCount} page${pageCount === 1 ? '' : 's'}.`
+      }
+    }
+    for (let page = start; page <= end; page += 1) {
+      if (seen.has(page)) {
+        return {
+          error: `"${page}" appears twice — a sequence must name each page once.`
+        }
+      }
+      seen.add(page)
+      pages.push(page)
+    }
+  }
+  return { pages }
 }
