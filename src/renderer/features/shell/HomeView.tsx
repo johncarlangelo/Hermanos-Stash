@@ -169,7 +169,7 @@ function RecentLink({ tool }: { tool: ToolDefinition }) {
       <button
         type="button"
         onClick={() => openTool(tool.id)}
-        className="flex cursor-pointer items-center gap-1.5 rounded-sm px-1 py-0.5 text-[12.5px] text-dim transition-colors duration-150 ease-out hover:text-accent"
+        className="group flex cursor-pointer items-center gap-1.5 rounded-sm px-1 py-0.5 text-[12.5px] text-dim transition-colors duration-150 ease-out hover:text-ink"
       >
         <Icon size={13} strokeWidth={1.75} className="shrink-0" aria-hidden />
         <span className="underline-offset-2 group-hover:underline">{tool.name}</span>

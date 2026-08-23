@@ -59,11 +59,8 @@ export function openDatabase(userDataFolder: string): OpenedDatabase {
   db.exec('PRAGMA journal_mode = WAL;')
   db.exec('PRAGMA foreign_keys = ON;')
 
-  let version = Number(
-    db.prepare('PRAGMA user_version').get() !== undefined
-      ? Object.values(db.prepare('PRAGMA user_version').get() as Record<string, unknown>)[0]
-      : 0
-  )
+  const row = db.prepare('PRAGMA user_version').get() as Record<string, unknown> | undefined
+  let version = Number(row?.['user_version'] ?? 0)
 
   while (version < MIGRATIONS.length) {
     db.exec('BEGIN;')

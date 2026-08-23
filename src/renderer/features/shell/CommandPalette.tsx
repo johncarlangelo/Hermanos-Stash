@@ -59,7 +59,7 @@ export function CommandPalette() {
   const onInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) => Math.min(i + 1, results.length - 1))
+      setActiveIndex((i) => (results.length === 0 ? 0 : Math.min(i + 1, results.length - 1)))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActiveIndex((i) => Math.max(i - 1, 0))
@@ -69,15 +69,32 @@ export function CommandPalette() {
     }
   }
 
+  // Keep keyboard focus inside the modal while it is open.
+  const trapFocus = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab') return
+    const focusables = e.currentTarget.querySelectorAll<HTMLElement>('input, button')
+    if (focusables.length === 0) return
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   return (
     <div
-      className="fixed inset-0 z-40 flex items-start justify-center bg-black/45 pt-[14vh]"
+      className="fixed inset-0 z-40 flex items-start justify-center bg-base/75 pt-[14vh]"
       onClick={() => setOpen(false)}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Search tools"
+        onKeyDown={trapFocus}
         className="anim-pop w-[560px] overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
@@ -123,7 +140,7 @@ export function CommandPalette() {
                   type="button"
                   onClick={() => choose(tool)}
                   onMouseEnter={() => setActiveIndex(index)}
-                  className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100 ${
+                  className={`group flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100 ${
                     index === activeIndex ? 'bg-surface' : ''
                   }`}
                 >

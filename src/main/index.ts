@@ -5,6 +5,7 @@ import { openDatabase } from './services/db'
 import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from './services/stores'
 import { TempWorkspaceManager } from './services/temp-workspace'
 import { ProgressBus } from './ipc/progress'
+import { WriteScopeGuard } from './ipc/write-scope'
 import { registerIpc } from './ipc/register'
 
 // Prevent GPU cache issues in some environments; harmless elsewhere.
@@ -12,6 +13,7 @@ app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication')
 
 let mainWindow: BrowserWindow | null = null
 let tempManager: TempWorkspaceManager | null = null
+let progressBus: ProgressBus | null = null
 
 const isSmokeTest = process.argv.includes('--smoke-test')
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
@@ -43,6 +45,11 @@ function createWindow(): void {
     mainWindow?.show()
   })
 
+  // Route progress events to the live window (re-wired if it is recreated).
+  mainWindow.webContents.once('did-finish-load', () => {
+    progressBus?.setSender(mainWindow!.webContents)
+  })
+
   // Keep external links out of the app window.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://') || url.startsWith('http://')) {
@@ -58,6 +65,7 @@ function createWindow(): void {
   }
 
   mainWindow.on('closed', () => {
+    progressBus?.setSender(undefined)
     mainWindow = null
   })
 }
@@ -69,13 +77,15 @@ function initializeServices(): void {
   tempManager.purgeStale()
 
   const progress = new ProgressBus()
+  progressBus = progress
   registerIpc({
     prefs: new PrefsStore(db),
     favorites: new FavoritesStore(db),
     recents: new RecentsStore(db),
     history: new HistoryStore(db),
     temp: tempManager,
-    progress
+    progress,
+    writeScope: new WriteScopeGuard(() => tempManager!.rootPath)
   })
 }
 

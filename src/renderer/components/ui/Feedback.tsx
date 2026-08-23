@@ -19,7 +19,7 @@ export function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function EmptyState({
-  icon = 'sparkles',
+  icon = 'folder',
   title,
   hint,
   action

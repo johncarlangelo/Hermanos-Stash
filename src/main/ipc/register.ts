@@ -7,6 +7,7 @@ import { serializeStashError, stashError } from '../../shared/errors'
 import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { ProgressBus } from './progress'
+import { WriteScopeGuard } from './write-scope'
 import { assertNumber, assertOptionalString, assertString, parseFilters } from './validate'
 
 export interface IpcServices {
@@ -16,13 +17,15 @@ export interface IpcServices {
   history: HistoryStore
   temp: TempWorkspaceManager
   progress: ProgressBus
+  writeScope: WriteScopeGuard
 }
 
 const TEXT_FILE_LIMIT_BYTES = 32 * 1024 * 1024
+/** Serialized preference values larger than this are rejected. */
+const PREF_VALUE_LIMIT_BYTES = 64 * 1024
 
-function mainWindow(): BrowserWindow | undefined {
-  const [win] = BrowserWindow.getAllWindows()
-  return win
+function optionalWindow(): BrowserWindow | undefined {
+  return BrowserWindow.getAllWindows()[0]
 }
 
 /**
@@ -57,23 +60,33 @@ export function registerIpc(services: IpcServices): void {
     const title = assertOptionalString(req['title'], 'title')
     const filters = parseFilters(req['filters']) ?? [{ name: 'All Files', extensions: ['*'] }]
     const multiSelections = req['multiSelections'] === true
-    const result = await dialog.showOpenDialog(mainWindow()!, {
+    const options: Electron.OpenDialogOptions = {
       title,
       filters,
       properties: multiSelections ? ['openFile', 'multiSelections'] : ['openFile']
-    })
+    }
+    const win = optionalWindow()
+    const result = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options)
     if (result.canceled) return { cancelled: true, paths: [] }
     return { cancelled: false, paths: result.filePaths }
   })
 
   handle(IPC.dialogSaveFile, async (_e, raw: unknown) => {
     const req = (raw ?? {}) as Record<string, unknown>
-    const result = await dialog.showSaveDialog(mainWindow()!, {
+    const saveOptions: Electron.SaveDialogOptions = {
       title: assertOptionalString(req['title'], 'title'),
       defaultPath: assertOptionalString(req['defaultName'], 'defaultName'),
       filters: parseFilters(req['filters'])
-    })
+    }
+    const win = optionalWindow()
+    const result = win
+      ? await dialog.showSaveDialog(win, saveOptions)
+      : await dialog.showSaveDialog(saveOptions)
     if (result.canceled || !result.filePath) return { cancelled: true }
+    // Only paths the user explicitly chose become writable targets.
+    services.writeScope.approve(result.filePath)
     return { cancelled: false, path: result.filePath }
   })
 
@@ -104,10 +117,14 @@ export function registerIpc(services: IpcServices): void {
     }
     const req = raw as Record<string, unknown>
     const target = assertString(req['path'], 'path')
-    const maxBytes =
+    const requestedMax =
       req['maxBytes'] === undefined
         ? TEXT_FILE_LIMIT_BYTES
-        : Math.min(assertNumber(req['maxBytes'], 'maxBytes'), TEXT_FILE_LIMIT_BYTES)
+        : assertNumber(req['maxBytes'], 'maxBytes')
+    if (requestedMax < 0) {
+      throw stashError('VALIDATION', 'Invalid request: "maxBytes" cannot be negative.')
+    }
+    const maxBytes = Math.min(requestedMax, TEXT_FILE_LIMIT_BYTES)
 
     let handle
     try {
@@ -136,7 +153,12 @@ export function registerIpc(services: IpcServices): void {
     }
     const req = raw as Record<string, unknown>
     const target = assertString(req['path'], 'path')
-    const content = typeof req['content'] === 'string' ? req['content'] : ''
+    if (typeof req['content'] !== 'string') {
+      throw stashError('VALIDATION', 'Cannot save: the content must be text.')
+    }
+    const content = req['content']
+    // Writes are restricted to user-approved (dialog) or temp-workspace paths.
+    services.writeScope.assertAllowed(target)
     try {
       await fs.mkdir(path.dirname(target), { recursive: true })
       await fs.writeFile(target, content, 'utf-8')
@@ -160,6 +182,13 @@ export function registerIpc(services: IpcServices): void {
   // --- Preferences ----------------------------------------------------------
   handle(IPC.prefsGet, (_e, key: unknown) => services.prefs.get(assertString(key, 'key')))
   handle(IPC.prefsSet, (_e, key: unknown, value: unknown) => {
+    const serialized = JSON.stringify(value)
+    if (serialized === undefined) {
+      throw stashError('VALIDATION', 'Preferences must be JSON-serializable values.')
+    }
+    if (Buffer.byteLength(serialized, 'utf-8') > PREF_VALUE_LIMIT_BYTES) {
+      throw stashError('VALIDATION', 'That preference value is too large to store.')
+    }
     services.prefs.set(assertString(key, 'key'), value)
   })
 

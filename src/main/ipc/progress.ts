@@ -20,7 +20,7 @@ export class ProgressBus {
 
   constructor(private sender?: WebContents) {}
 
-  setSender(sender: WebContents): void {
+  setSender(sender: WebContents | undefined): void {
     this.sender = sender
   }
 

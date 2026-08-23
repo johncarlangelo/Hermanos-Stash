@@ -131,6 +131,14 @@ function rowToHistoryEntry(row: Record<string, unknown>): HistoryEntry {
   }
 }
 
+const HISTORY_MAX_PATHS = 100
+const HISTORY_MAX_ITEM_LENGTH = 500
+const HISTORY_MAX_MESSAGE_LENGTH = 1000
+
+function clampPathList(list: string[]): string[] {
+  return list.slice(0, HISTORY_MAX_PATHS).map((item) => item.slice(0, HISTORY_MAX_ITEM_LENGTH))
+}
+
 export function assertHistoryEntry(entry: HistoryEntryInput): void {
   const fail = (detail: string): never => {
     throw stashError('VALIDATION', 'The activity record is malformed.', {
@@ -143,6 +151,12 @@ export function assertHistoryEntry(entry: HistoryEntryInput): void {
   for (const field of ['inputs', 'outputs'] as const) {
     const list = entry[field]
     if (!Array.isArray(list) || !list.every((x) => typeof x === 'string')) fail(field)
+  }
+  if (
+    entry.durationMs !== undefined &&
+    (!Number.isFinite(entry.durationMs) || (entry.durationMs as number) < 0)
+  ) {
+    fail('durationMs')
   }
 }
 
@@ -161,12 +175,12 @@ export class HistoryStore {
     const result = this.insertStmt.run(
       now,
       entry.toolId,
-      entry.operation,
-      JSON.stringify(entry.inputs),
-      JSON.stringify(entry.outputs),
+      String(entry.operation).slice(0, HISTORY_MAX_ITEM_LENGTH),
+      JSON.stringify(clampPathList(entry.inputs)),
+      JSON.stringify(clampPathList(entry.outputs)),
       entry.status,
       entry.durationMs ?? null,
-      entry.message ?? null
+      entry.message ? String(entry.message).slice(0, HISTORY_MAX_MESSAGE_LENGTH) : null
     )
     const id = Number(result.lastInsertRowid)
     const row = this.db

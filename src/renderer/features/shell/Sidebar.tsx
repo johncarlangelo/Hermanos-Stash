@@ -123,7 +123,7 @@ export function Sidebar() {
                     e.stopPropagation()
                     void toggleFavorite(tool.id)
                   }}
-                  className="absolute top-1/2 right-1 hidden -translate-y-1/2 cursor-pointer rounded-sm p-1 text-faint transition-colors duration-150 group-hover:block hover:text-danger"
+                  className="absolute top-1/2 right-1 hidden -translate-y-1/2 cursor-pointer rounded-sm p-1 text-faint transition-colors duration-150 group-hover:block hover:text-dim"
                 >
                   <Star size={12} fill="currentColor" />
                 </button>

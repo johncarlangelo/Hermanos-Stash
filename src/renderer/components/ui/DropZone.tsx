@@ -93,11 +93,15 @@ export function DropZone({
     }
   }
 
+  const multipleAccepted = accept.length === 0
+
   const borderTone = !drag.active
     ? 'border-line hover:border-line-strong'
     : drag.valid
       ? 'border-accent/80 bg-accent-soft/40'
-      : 'border-danger/70 bg-danger/8'
+      : // Extension validity can't be verified mid-drag when a filter is set,
+        // so show a neutral "armed" state instead of implying acceptance or rejection.
+        'border-line-strong bg-raised'
 
   return (
     <div className={className}>
@@ -117,7 +121,10 @@ export function DropZone({
           if (disabled) return
           e.preventDefault()
           depthCounter.current += 1
-          setDrag({ active: true, valid: e.dataTransfer.types.includes('Files') })
+          setDrag({
+            active: true,
+            valid: e.dataTransfer.types.includes('Files') && multipleAccepted
+          })
         }}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => {

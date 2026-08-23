@@ -119,7 +119,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         </ToolErrorBoundary>
       ) : (
         <EmptyState
-          icon="sparkles"
+          icon="clock"
           title="This tool is registered but its interface hasn't shipped yet."
           hint="The catalog entry exists so search and categories stay accurate while implementation lands."
         />

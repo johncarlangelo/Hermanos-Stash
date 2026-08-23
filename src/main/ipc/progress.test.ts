@@ -41,7 +41,9 @@ describe('ProgressBus', () => {
     const { handle } = bus.begin()
     handle.report(1.7)
     handle.report(-0.3)
-    const ratios = events.filter((e) => e.status === 'active' && e.ratio !== null).map((e) => e.ratio)
+    const ratios = events
+      .filter((e) => e.status === 'active' && e.ratio !== null)
+      .map((e) => e.ratio)
     expect(ratios).toEqual([1, 0])
   })
 

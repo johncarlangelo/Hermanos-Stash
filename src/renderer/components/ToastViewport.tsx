@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Check, TriangleAlert, X } from 'lucide-react'
 import { useToasts } from '../stores/toasts'
 
@@ -16,9 +16,17 @@ function ToastRow({
   detail?: string
 }) {
   const dismiss = useToasts((s) => s.dismiss)
+  const paused = useRef(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const arm = () => {
+      timer = setTimeout(() => {
+        if (!paused.current) dismiss(id)
+        else arm()
+      }, AUTO_DISMISS_MS)
+    }
+    arm()
     return () => clearTimeout(timer)
   }, [id, dismiss])
 
@@ -26,6 +34,10 @@ function ToastRow({
   return (
     <div
       role={isError ? 'alert' : 'status'}
+      onMouseEnter={() => (paused.current = true)}
+      onMouseLeave={() => (paused.current = false)}
+      onFocusCapture={() => (paused.current = true)}
+      onBlurCapture={() => (paused.current = false)}
       className="anim-slide-up pointer-events-auto flex w-80 items-start gap-2.5 rounded-md border border-line-strong bg-overlay px-3 py-2.5 shadow-lg shadow-black/25"
     >
       {isError ? (
