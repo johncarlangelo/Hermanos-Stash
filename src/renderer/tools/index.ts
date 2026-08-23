@@ -202,6 +202,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'uuid-generator',
+    name: 'UUID Generator',
+    category: 'developer',
+    description: 'Generate random version-4 UUIDs in bulk using the OS secure random source.',
+    tags: ['uuid', 'guid', 'id', 'generator'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      producesText: true
+    }
+  },
+  {
     id: 'image-convert',
     name: 'Image Converter',
     category: 'images',
@@ -491,6 +503,7 @@ const JwtDecoderTool = lazy(() => import('./jwt-decoder/JwtDecoderTool'))
 const TimestampConverterTool = lazy(() => import('./timestamp-converter/TimestampConverterTool'))
 const HashGeneratorTool = lazy(() => import('./hash-generator/HashGeneratorTool'))
 const UrlUtilsTool = lazy(() => import('./url-utils/UrlUtilsTool'))
+const UuidGeneratorTool = lazy(() => import('./uuid-generator/UuidGeneratorTool'))
 const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
@@ -525,6 +538,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'timestamp-converter': TimestampConverterTool,
   'hash-generator': HashGeneratorTool,
   'url-utils': UrlUtilsTool,
+  'uuid-generator': UuidGeneratorTool,
   'image-convert': ImageConvertTool,
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,
