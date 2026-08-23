@@ -2,16 +2,17 @@
 
 ## Current milestone
 
-**Milestone 1 — Foundation (complete, pending installer packaging)**
+**Milestone 2 — Demonstration tools (complete).** Milestone 1 — Foundation complete.
 
 ## Status
 
-The application foundation is implemented and verified: Electron shell with secure
-boundaries, React + TypeScript + Vite renderer, Tailwind v4 design tokens, the full
-application shell (sidebar, command palette search, categories, favorites, recents),
-and the local platform layer (IPC bridge, dialogs, filesystem access, temp workspace,
-progress/cancellation model, SQLite persistence via `node:sqlite`, activity history,
-toast notifications).
+The application foundation and the full Milestone 2 demonstration-tool catalog are
+implemented and independently verified: 11 tools / 12 registry entries spanning text,
+files/archives, images, documents/PDF, and developer categories, all riding on the
+shared processing architecture (temp workspace → process → approved export → history).
+
+Remaining open items (tracked in TASKS.md): dedicated tag-filter UI (`[-]`) and
+installer packaging workflow (`[-]`); Milestone 3 (FFmpeg/media) not started.
 
 ## Completed
 
@@ -49,11 +50,12 @@ toast notifications).
 
 ## Current focus
 
-Milestone 2 — demonstration tools on top of the verified foundation. Five tools
-shipped: **JSON Formatter** (`json-format`), **Base64 Encoder/Decoder**
-(`base64-codec`), **File Metadata Viewer** (`file-metadata`), **Image Preview**
-(`image-preview`), and **QR Code Generator** (`qr-generator`) — each as a
-definition + lazy view + colocated pure logic with tests (see ADR-015/016).
+Milestone 2 is complete. All 11 demonstration tools (12 registry entries) shipped
+across four batches — text tools, binary bridge + preview/QR, sharp/jszip heavy
+processing, and the PDF suite. See batch notes below and ADR-015 through ADR-021.
+
+Next up when work resumes: Milestone 3 (FFmpeg native media) per TASKS.md, plus
+the two open `[-]` items (tag-filter UI, installer packaging).
 
 Milestone 2 batch 2 additions:
 
@@ -151,6 +153,14 @@ Milestone 2 batch 4 (PDF suite) additions:
 - Headless boot check `npx electron . --smoke-test` → prints `STASH_SMOKE_OK`, exit 0
   (validates services initialize — including sharp, jszip and pdf-lib imports — and
   SQLite opens inside the Electron main process).
+- Independent adversarial verification (@verifier): re-ran every gate with matching
+  results; confirmed registry integrity (zero orphan definitions/components, exactly
+  the claimed tool list), renderer boundary integrity under pattern grep, test
+  quality (processing tests assert real outputs), and TASKS.md accuracy. Verdict: PASS.
+- Known limitation honestly recorded: automated gates cover build/test/security;
+  a human visual QA pass over the running app (keyboard nav feel, DESIGN.md visual
+  compliance on real displays) is recommended before calling this "shipped" rather
+  than "engineering-complete".
 
 ## Notes
 
