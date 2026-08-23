@@ -28,9 +28,11 @@ function createWindow(): void {
     backgroundColor: '#16181d',
     autoHideMenuBar: true,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    // Overlay metrics are window DIPs and do not scale with renderer zoom;
+    // 44/154 match the renderer's 40/140 CSS px at the default 110% zoom.
     titleBarOverlay:
       process.platform === 'win32'
-        ? { color: '#12141a', symbolColor: '#9aa2b1', height: 40 }
+        ? { color: '#12141a', symbolColor: '#9aa2b1', height: 44 }
         : undefined,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),

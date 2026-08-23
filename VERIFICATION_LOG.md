@@ -149,6 +149,30 @@ contact sheet, cron helper, SQL/CSS formatters, user-agent parser, MIME lookup,
 HTTP status reference, prompt-organizer category) are UNCOMMITTED candidates per
 AGENTS.md scope discipline — not promised for any milestone.
 
+## Desktop checks (VERIFY.md) — automated E2E probe
+
+`scripts/e2e-probe.mjs` launches the built app over CDP and drives the real UI:
+
+- Bridge sanity (app info, typed bridge present).
+- Favorites: SQLite roundtrip via the bridge AND a real star click in the DOM
+  (aria-pressed flips, sidebar Favorites section appears).
+- Settings navigation via sidebar click — view renders, not blank.
+- Renderer exceptions + console errors captured; exit code non-zero on failure.
+
+Latest run: all green (`blank:false`, `exceptions:[]`). Known harmless noise:
+a `startupData`/`preloadScripts` console error appears only under
+`--remote-debugging-port` sessions (CDP devtools target); normal launches are
+clean. Probe cleanup kills the true Electron PID tree on Windows.
+
+Human QA findings (first user pass) and resolutions:
+
+| Report | Root cause | Resolution |
+|---|---|---|
+| "Can't favorite tools" | Stars were hover-only invisible on home cards; dev session also held stale HMR state | Stars visible at rest (60% opacity); root error boundary added; verified working via CDP probe |
+| Recents should cap at 5 | Limit was 8 | `RECENTS_LIMIT = 5` |
+| Settings = black screen | Stale-HMR crash class; no repro in fresh builds (probe proves render) | RootErrorBoundary with role=alert + Reload button |
+| UI too small | Default zoom 100% | `zoomFactor: 1.1`; titlebar overlay DIPs aligned (44/154) |
+
 ## Release gate status (VERIFY.md)
 
 - [x] Automated tests pass (319)

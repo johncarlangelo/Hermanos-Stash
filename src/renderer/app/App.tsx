@@ -75,8 +75,9 @@ export default function App() {
       <div className="flex h-full w-full overflow-hidden">
         <Sidebar />
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Draggable titlebar row; the right edge stays clear for native controls. */}
-          <header className="app-drag flex h-10 shrink-0 items-center border-b border-line bg-shell pr-[140px] pl-4">
+          {/* Draggable titlebar row; the right edge stays clear for native controls.
+            Heights/padding mirror the overlay DIP values at 110% zoom. */}
+          <header className="app-drag flex h-10 shrink-0 items-center border-b border-line bg-shell pr-[154px] pl-4">
             <div className="app-no-drag min-w-0">
               <Breadcrumb />
             </div>
