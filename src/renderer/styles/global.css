@@ -117,6 +117,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Frameless-window drag regions (titleBarStyle: hidden). */
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
+
   .anim-fade-in {
     animation: fade-in 160ms var(--ease-out-soft) both;
   }

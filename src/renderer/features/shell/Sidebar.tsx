@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Search, Settings, Star } from 'lucide-react'
+import { House, Search, Settings, Star } from 'lucide-react'
 import { CATEGORIES } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId } from '../../../shared/types/tool'
@@ -45,6 +45,7 @@ function SidebarButton({
 
 export function Sidebar() {
   const view = useNav((s) => s.view)
+  const goHome = useNav((s) => s.goHome)
   const openCategory = useNav((s) => s.openCategory)
   const openTool = useNav((s) => s.openTool)
   const openSettings = useNav((s) => s.openSettings)
@@ -74,9 +75,17 @@ export function Sidebar() {
     .filter((t): t is NonNullable<typeof t> => Boolean(t))
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col gap-5 overflow-y-auto bg-shell px-3 pt-11 pb-4">
-      {/* Brand */}
-      <div className="flex items-center gap-2.5 px-2.5">
+    <aside className="flex h-full w-60 shrink-0 flex-col gap-4 overflow-y-auto bg-shell px-3 pb-4">
+      {/* Draggable spacer above the brand (frameless window title area). */}
+      <div className="app-drag h-5 shrink-1" aria-hidden />
+
+      {/* Brand — clicking it navigates home. */}
+      <button
+        type="button"
+        onClick={goHome}
+        aria-label="Go to workspace home"
+        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1 text-left transition-colors duration-150 hover:bg-surface"
+      >
         <div className="flex h-7 w-7 items-center justify-center rounded-sm border border-line-strong bg-surface">
           <span className="font-mono text-[13px] font-semibold text-accent">S</span>
         </div>
@@ -86,7 +95,7 @@ export function Sidebar() {
           </p>
           <p className="text-[10.5px] leading-tight text-faint">local utility suite</p>
         </div>
-      </div>
+      </button>
 
       {/* Search trigger */}
       <button
@@ -100,6 +109,16 @@ export function Sidebar() {
           Ctrl K
         </kbd>
       </button>
+
+      {/* Home */}
+      <nav aria-label="Navigation">
+        <SidebarButton
+          active={view.type === 'home' || view.type === 'category'}
+          icon={<House size={14} />}
+          label="Home"
+          onClick={goHome}
+        />
+      </nav>
 
       {/* Favorites */}
       {favoriteTools.length > 0 && (
