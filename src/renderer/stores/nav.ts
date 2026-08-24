@@ -5,6 +5,7 @@ export type View =
   | { type: 'home' }
   | { type: 'category'; category: CategoryId }
   | { type: 'tool'; toolId: string }
+  | { type: 'history' }
   | { type: 'settings' }
 
 interface NavState {
@@ -15,6 +16,7 @@ interface NavState {
   goHome: () => void
   openCategory: (category: CategoryId) => void
   openTool: (toolId: string) => void
+  openHistory: () => void
   openSettings: () => void
   setPaletteOpen: (open: boolean, seedQuery?: string) => void
 }
@@ -27,6 +29,7 @@ export const useNav = create<NavState>((set) => ({
   goHome: () => set({ view: { type: 'home' } }),
   openCategory: (category) => set({ view: { type: 'category', category }, paletteOpen: false }),
   openTool: (toolId) => set({ view: { type: 'tool', toolId }, paletteOpen: false }),
+  openHistory: () => set({ view: { type: 'history' }, paletteOpen: false }),
   openSettings: () => set({ view: { type: 'settings' }, paletteOpen: false }),
   setPaletteOpen: (paletteOpen, seedQuery) =>
     set((state) => ({

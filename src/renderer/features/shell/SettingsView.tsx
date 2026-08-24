@@ -25,6 +25,7 @@ const ZOOM_PREF_KEY = 'ui.zoom'
 export function SettingsView() {
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [clearedAt, setClearedAt] = useState<string | null>(null)
+  const [confirmingClear, setConfirmingClear] = useState(false)
   const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
 
   useEffect(() => {
@@ -53,12 +54,19 @@ export function SettingsView() {
   }
 
   const clearHistory = async () => {
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      setTimeout(() => setConfirmingClear(false), 3000)
+      return
+    }
     try {
       await window.stash.history.clear()
       setClearedAt(new Date().toLocaleTimeString())
       toastSuccess('Activity history cleared')
     } catch (err) {
       toastError(err)
+    } finally {
+      setConfirmingClear(false)
     }
   }
 
@@ -133,9 +141,13 @@ export function SettingsView() {
           entry immediately and permanently.
         </p>
         <div className="mt-3 flex items-center gap-3">
-          <Button variant="danger" size="sm" onClick={() => void clearHistory()}>
+          <Button
+            variant={confirmingClear ? 'primary' : 'danger'}
+            size="sm"
+            onClick={() => void clearHistory()}
+          >
             <Trash2 size={13} aria-hidden />
-            Clear activity history
+            {confirmingClear ? 'Confirm clear?' : 'Clear activity history'}
           </Button>
           {clearedAt && <SuccessNote message={`Cleared at ${clearedAt}`} />}
         </div>

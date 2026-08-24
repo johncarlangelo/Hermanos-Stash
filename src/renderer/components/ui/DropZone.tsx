@@ -107,6 +107,7 @@ export function DropZone({
     <div className={className}>
       <div
         role="button"
+        data-dropzone
         tabIndex={disabled ? -1 : 0}
         aria-disabled={disabled}
         aria-label={`${label}. Click to browse.`}

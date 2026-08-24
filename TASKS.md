@@ -102,10 +102,10 @@ Legend:
 
 - [x] Remember last output folder per tool (persisted in prefs, pre-fills folder pickers). *(shared `use-output-dir` hook over prefs `outDir:<toolId>`; adopted by the media scaffold (5 tools), image-convert, image-compress, pdf-split, zip-extract)*
 - [x] "Open in Explorer" + copy-path actions on saved-output rows. *(new `shell:reveal-path` IPC + shared `RevealButton`/`CopyPathButton` wired into image/media/pdf-split result rows, all save-dialog summaries, zip-extract directory and qr-generator post-save state)*
-- [ ] Activity History page (list, filter by tool, navigate to tool; PRD §8 finally visible).
+- [x] Activity History page (list, filter by tool, navigate to tool; PRD §8 finally visible). *(HistoryView + sidebar nav; two-step confirm on clear here and in Settings)*
 - [x] Zoom preference in Settings (100/110/125%, persisted, live-applied, titlebar adapts). *(`app:set-zoom` clamped via shared `utils/zoom.ts`, overlay height tracks 40 DIPs × factor on win32, startup reads `ui.zoom`, header sized from `env(titlebar-area-*)`)*
-- [ ] Drop-anywhere routing (drop on window background → matching tools suggested).
-- [ ] Keyboard shortcuts (Esc → Home, Ctrl+1..5 → favorites).
+- [x] Drop-anywhere routing (drop on window background → matching tools suggested). *(`EXTENSION_TOOL_HINTS` registry-filtered map + DropRouter modal; per-tool zones unaffected — verified by e2e-drag-probe)*
+- [x] Keyboard shortcuts (Esc → Home, Ctrl+1..5 → favorites). *(global handler, skipped while typing in fields)*
 
 ## Future
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { House, Search, Settings, Star } from 'lucide-react'
+import { Clock, House, Search, Settings, Star } from 'lucide-react'
 import { CATEGORIES } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId } from '../../../shared/types/tool'
@@ -48,6 +48,7 @@ export function Sidebar() {
   const goHome = useNav((s) => s.goHome)
   const openCategory = useNav((s) => s.openCategory)
   const openTool = useNav((s) => s.openTool)
+  const openHistory = useNav((s) => s.openHistory)
   const openSettings = useNav((s) => s.openSettings)
   const setPaletteOpen = useNav((s) => s.setPaletteOpen)
 
@@ -117,6 +118,12 @@ export function Sidebar() {
           icon={<House size={14} />}
           label="Home"
           onClick={goHome}
+        />
+        <SidebarButton
+          active={view.type === 'history'}
+          icon={<Clock size={14} />}
+          label="History"
+          onClick={openHistory}
         />
       </nav>
 

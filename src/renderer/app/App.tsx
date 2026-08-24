@@ -5,6 +5,8 @@ import { CommandPalette } from '../features/shell/CommandPalette'
 import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
 import { SettingsView } from '../features/shell/SettingsView'
+import { HistoryView } from '../features/shell/HistoryView'
+import { DropRouter } from '../features/shell/DropRouter'
 import { ToastViewport } from '../components/ToastViewport'
 import { RootErrorBoundary } from '../components/RootErrorBoundary'
 import { getIcon } from '../components/icons'
@@ -32,6 +34,8 @@ function Breadcrumb() {
       const Icon = getIcon(tool.icon)
       segments.push({ label: tool.name, icon: <Icon size={12} /> })
     }
+  } else if (view.type === 'history') {
+    segments.push({ label: 'History' })
   } else if (view.type === 'settings') {
     segments.push({ label: 'Settings' })
   }
@@ -70,6 +74,40 @@ export default function App() {
     void loadLibrary()
   }, [loadLibrary])
 
+  // Global shortcuts: Esc returns Home; Ctrl/Cmd+1..5 open favorites.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const typing =
+        target &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+      if (typing) return
+
+      if ((e.ctrlKey || e.metaKey) && /^[1-5]$/.test(e.key)) {
+        const { favorites, loaded } = useLibrary.getState()
+        if (!loaded) return
+        const toolId = favorites[Number(e.key) - 1]
+        if (toolId) {
+          e.preventDefault()
+          useNav.getState().openTool(toolId)
+        }
+        return
+      }
+
+      if (e.key === 'Escape') {
+        const { paletteOpen } = useNav.getState()
+        if (paletteOpen) return // palette handles its own dismissal
+        const current = useNav.getState().view
+        if (current.type !== 'home') {
+          e.preventDefault()
+          useNav.getState().goHome()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   return (
     <RootErrorBoundary>
       <div className="flex h-full w-full overflow-hidden">
@@ -94,10 +132,12 @@ export default function App() {
             {view.type === 'home' && <HomeView />}
             {view.type === 'category' && <HomeView />}
             {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
+            {view.type === 'history' && <HistoryView />}
             {view.type === 'settings' && <SettingsView />}
           </div>
         </main>
         <CommandPalette />
+        <DropRouter />
         <ToastViewport />
       </div>
     </RootErrorBoundary>
