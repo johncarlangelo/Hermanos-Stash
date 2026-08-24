@@ -30,7 +30,11 @@ export default function VideoConvertTool() {
       progressLabel="video conversion"
       renderOptions={() => (
         <>
-          <FieldRow label="Format" htmlFor="vconv-format">
+          <FieldRow
+            label="Format"
+            htmlFor="vconv-format"
+            hint="MP4 plays almost everywhere. WebM and MKV suit web use or archiving."
+          >
             <Select
               id="vconv-format"
               value={format}
@@ -44,7 +48,11 @@ export default function VideoConvertTool() {
               ))}
             </Select>
           </FieldRow>
-          <FieldRow label="Quality" htmlFor="vconv-crf">
+          <FieldRow
+            label="Quality"
+            htmlFor="vconv-crf"
+            hint="Lower values keep more detail but produce larger files. 18-23 looks near-original; above 30 gets visibly soft."
+          >
             <input
               id="vconv-crf"
               type="range"

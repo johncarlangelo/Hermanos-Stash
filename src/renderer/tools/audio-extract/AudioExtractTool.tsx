@@ -36,7 +36,11 @@ export default function AudioExtractTool() {
       progressLabel="audio extraction"
       renderOptions={() => (
         <>
-          <FieldRow label="Format" htmlFor="aext-codec">
+          <FieldRow
+            label="Format"
+            htmlFor="aext-codec"
+            hint="WAV and FLAC are lossless; MP3, AAC and Opus trade a little fidelity for much smaller files."
+          >
             <Select
               id="aext-codec"
               value={codec}
@@ -51,7 +55,11 @@ export default function AudioExtractTool() {
             </Select>
           </FieldRow>
           {lossy && (
-            <FieldRow label="Bitrate" htmlFor="aext-bitrate">
+            <FieldRow
+              label="Bitrate"
+              htmlFor="aext-bitrate"
+              hint="Higher bitrates sound better but take more space. 192 kbps is plenty for most listening. Lossless formats ignore this."
+            >
               <Select
                 id="aext-bitrate"
                 value={bitrate}

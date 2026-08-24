@@ -25,6 +25,7 @@ function Fallback() {
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const goHome = useNav((s) => s.goHome)
+  const openHistory = useNav((s) => s.openHistory)
   const setPaletteOpen = useNav((s) => s.setPaletteOpen)
   const toggleFavorite = useLibrary((s) => s.toggleFavorite)
   const favorites = useLibrary((s) => s.favorites)
@@ -100,6 +101,15 @@ export function ToolPage({ toolId }: { toolId: string }) {
                   </button>
                 ))}
               </div>
+            )}
+            {tool.capabilities.acceptsFiles && (
+              <button
+                type="button"
+                onClick={() => openHistory(tool.id)}
+                className="mt-2 cursor-pointer text-[11.5px] text-faint underline underline-offset-2 transition-colors duration-150 hover:text-dim"
+              >
+                History for this tool
+              </button>
             )}
           </div>
           <button

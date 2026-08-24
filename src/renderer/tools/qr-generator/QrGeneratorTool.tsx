@@ -106,7 +106,11 @@ export default function QrGeneratorTool() {
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <FieldRow label="Size" htmlFor={sizeId}>
+          <FieldRow
+            label="Size"
+            htmlFor={sizeId}
+            hint="Pixel dimensions of the generated PNG. Larger codes scan more reliably from a distance."
+          >
             <Select
               id={sizeId}
               value={width}
@@ -120,7 +124,11 @@ export default function QrGeneratorTool() {
               ))}
             </Select>
           </FieldRow>
-          <FieldRow label="Error corr." htmlFor={ecId}>
+          <FieldRow
+            label="Error corr."
+            htmlFor={ecId}
+            hint="How much damage a code can survive. L holds the most data; H survives the worst conditions. M suits everyday use."
+          >
             <Select
               id={ecId}
               value={ecLevel}

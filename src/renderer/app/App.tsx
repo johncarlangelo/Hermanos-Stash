@@ -132,7 +132,9 @@ export default function App() {
             {view.type === 'home' && <HomeView />}
             {view.type === 'category' && <HomeView />}
             {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
-            {view.type === 'history' && <HistoryView />}
+            {view.type === 'history' && (
+              <HistoryView key={view.toolId ?? 'all'} seedToolId={view.toolId} />
+            )}
             {view.type === 'settings' && <SettingsView />}
           </div>
         </main>

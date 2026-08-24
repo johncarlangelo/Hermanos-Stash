@@ -21,9 +21,9 @@ function formatDuration(ms: number): string {
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`
 }
 
-export function HistoryView() {
+export function HistoryView({ seedToolId }: { seedToolId?: string }) {
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null)
-  const [toolFilter, setToolFilter] = useState('all')
+  const [toolFilter, setToolFilter] = useState(seedToolId ?? 'all')
   const [confirmingClear, setConfirmingClear] = useState(false)
   const openTool = useNav((s) => s.openTool)
 

@@ -36,7 +36,11 @@ export default function AudioConvertTool() {
       progressLabel="audio conversion"
       renderOptions={() => (
         <>
-          <FieldRow label="Format" htmlFor="aconv-codec">
+          <FieldRow
+            label="Format"
+            htmlFor="aconv-codec"
+            hint="WAV and FLAC are lossless; MP3, AAC and Opus trade a little fidelity for much smaller files."
+          >
             <Select
               id="aconv-codec"
               value={codec}
@@ -51,7 +55,11 @@ export default function AudioConvertTool() {
             </Select>
           </FieldRow>
           {lossy && (
-            <FieldRow label="Bitrate" htmlFor="aconv-bitrate">
+            <FieldRow
+              label="Bitrate"
+              htmlFor="aconv-bitrate"
+              hint="Higher bitrates sound better but take more space. 192 kbps is plenty for most listening. Lossless formats ignore this."
+            >
               <Select
                 id="aconv-bitrate"
                 value={bitrate}

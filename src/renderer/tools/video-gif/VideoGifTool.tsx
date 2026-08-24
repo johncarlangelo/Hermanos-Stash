@@ -24,7 +24,11 @@ export default function VideoGifTool() {
       note="GIFs store every frame uncompressed — expect noticeably larger files than video."
       renderOptions={() => (
         <>
-          <FieldRow label="Frame rate" htmlFor="gif-fps">
+          <FieldRow
+            label="Frame rate"
+            htmlFor="gif-fps"
+            hint="More frames make smoother GIFs that are also much larger. 15 is a good middle ground."
+          >
             <Select
               id="gif-fps"
               value={fps}
@@ -39,7 +43,11 @@ export default function VideoGifTool() {
               ))}
             </Select>
           </FieldRow>
-          <FieldRow label="Width" htmlFor="gif-width">
+          <FieldRow
+            label="Width"
+            htmlFor="gif-width"
+            hint="GIFs grow huge fast; smaller widths cut file size dramatically."
+          >
             <Select
               id="gif-width"
               value={maxWidth}

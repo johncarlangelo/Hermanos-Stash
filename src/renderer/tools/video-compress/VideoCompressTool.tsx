@@ -36,7 +36,11 @@ export default function VideoCompressTool() {
       progressLabel="video compression"
       renderOptions={() => (
         <>
-          <FieldRow label="Preset" htmlFor="vcomp-preset">
+          <FieldRow
+            label="Preset"
+            htmlFor="vcomp-preset"
+            hint="Higher compression means smaller files with more visible quality loss."
+          >
             <Select
               id="vcomp-preset"
               value={crf}
@@ -51,7 +55,11 @@ export default function VideoCompressTool() {
               ))}
             </Select>
           </FieldRow>
-          <FieldRow label="Max size" htmlFor="vcomp-maxdim">
+          <FieldRow
+            label="Max size"
+            htmlFor="vcomp-maxdim"
+            hint="Shrinks the video so its longer side is at most this many pixels, keeping the aspect ratio."
+          >
             <Select
               id="vcomp-maxdim"
               value={maxDimension}
