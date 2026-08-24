@@ -607,6 +607,35 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       producesText: true
     }
+  },
+  {
+    id: 'json-to-types',
+    name: 'JSON → TypeScript Types',
+    category: 'developer',
+    description:
+      'Infer TypeScript interfaces or type aliases from any JSON sample, with optional-field detection.',
+    tags: ['json', 'typescript', 'types', 'interface', 'codegen'],
+    icon: 'braces',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'pdf-to-text',
+    name: 'PDF → Text',
+    category: 'documents',
+    description:
+      'Pull the text layer out of PDF pages locally — copy it or save it as a .txt with a page-range filter.',
+    tags: ['pdf', 'text', 'extract', 'search'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true,
+      supportsProgress: true
+    }
   }
 ]
 
@@ -658,6 +687,8 @@ const AudioExtractTool = lazy(() => import('./audio-extract/AudioExtractTool'))
 const AudioConvertTool = lazy(() => import('./audio-convert/AudioConvertTool'))
 const ColorConverterTool = lazy(() => import('./color-converter/ColorConverterTool'))
 const BrandBibleTool = lazy(() => import('./brand-bible/BrandBibleTool'))
+const JsonToTypesTool = lazy(() => import('./json-to-types/JsonToTypesTool'))
+const PdfToTextTool = lazy(() => import('./pdf-to-text/PdfToTextTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -702,5 +733,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'extract-audio': AudioExtractTool,
   'audio-convert': AudioConvertTool,
   'color-converter': ColorConverterTool,
-  'brand-bible': BrandBibleTool
+  'brand-bible': BrandBibleTool,
+  'json-to-types': JsonToTypesTool,
+  'pdf-to-text': PdfToTextTool
 }

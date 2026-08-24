@@ -14,11 +14,17 @@ checking and shade/tint/harmony palettes; Brand Bible Creator — numbered-panel
 builder with auto shade palettes, system font pairings, computed type scale,
 voice/usage rules, deterministic Markdown composition, prefs-backed draft
 autosave and Markdown/JSON export) completes the expansion waves: the catalog
-now stands at **42 tools**.
+now stands at **42 tools**. **Wave D** adds two gap fillers — JSON →
+TypeScript Types (`json-to-types`: pure inference engine with nested-interface
+naming, array shape merging and optional-field detection; 15 logic tests) and
+PDF → Text (`pdf-to-text`: renderer-side pdf.js extraction over the shared
+bootstrap, hasEOL-aware text assembly, page-range filtering via the shared
+parser, save-as-.txt and history integration; 16 logic tests) — bringing the
+catalog to **44 tools**.
 
 ## Status
 
-42 tools registered across every category, on a verified platform: secure Electron
+44 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full

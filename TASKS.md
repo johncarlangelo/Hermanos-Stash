@@ -135,6 +135,18 @@ Legend:
 - [x] Color Converter: HEX/RGB/HSL, contrast checker, shade/tint/harmony palettes. *(pure color engine `color-converter/logic` — tolerant parsing, round-trip-safe conversions, WCAG luminance/contrast/best-text, clamped shade scales, hue-wheel harmonies; 17 logic tests; live swatch preview with best-text sample, AA pass/fail badges as text, click-to-copy-and-load palettes)*
 - [x] Brand Bible Creator: colors + auto palettes, typography pairing, voice keywords, dos/don'ts; Markdown/JSON export; draft autosave. *(numbered 01–05 panels; three color fields each with shade strip + AA-vs-white text badges; 12 system font pairings with live previews + computed type scale (1.200/1.250/1.333); deterministic `buildMarkdown`; autosave to prefs `draft:brand-bible` debounced 500 ms with two-step reset; Copy Markdown / Save Markdown… / Save JSON… via save dialog + writeTextFile; history on export; 12 logic tests)*
 
+### Wave D — gap fillers
+- [x] JSON → TypeScript types (`json-to-types`). *(pure generator `json-to-types/logic` — per-value type inference, all-keys superset merging for object arrays with optional-field detection, literal unions for short uniform string arrays, PascalCase nested naming with numeric dedup, reserved-word/digit sanitizing, JSON.parse error positions via `positionToLineColumn`; 15 logic tests; live two-pane UI with root name, interface/type style and optional-fields toggle)*
+- [x] PDF → Text extraction (`pdf-to-text`, renderer-side pdf.js). *(shared pdfjs bootstrap reused; hasEOL-based `assembleText` with preserve/flow layout modes; page-range filtering via shared `parsePageSequence`; per-page aria-live progress; Copy + Save .txt via save dialog + writeTextFile; history records; 16 logic tests)*
+
+### Wave E — completing stories
+- [ ] QR Decoder (`qr-decoder`, drop image → decoded text).
+- [ ] Passphrase Generator (`passphrase-generator`, words + passwords, strength meter).
+
+### Wave F — creator pack
+- [ ] Image Watermarker (`image-watermark`, batch text stamp via sharp).
+- [ ] Favicon / App-Icon Pack (`icon-pack`, one logo + size set zipped).
+
 ## Future
 
 - [ ] Prompt template organizer.
