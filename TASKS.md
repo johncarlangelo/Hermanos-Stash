@@ -118,6 +118,23 @@ Legend:
 - [ ] Starter pack + JSON import/export for backup.
 - [ ] Register `prompt-library` tool; update catalog docs and counts.
 
+## Milestone 6 — Expansion round
+
+### Wave A — quick wins
+- [x] SQL Formatter (`sql-formatter`, mature `sql-formatter` lib).
+- [x] Cron Explainer (parse + describe + next runs, `cron-parser` lib).
+- [x] Case Converter & Counter (camel/snake/kebab/etc., word/char stats).
+- [x] HTML Entities & Slug generator (segmented tool).
+- [x] MIME Lookup (extension ⇄ type, searchable).
+- [x] HTTP Status Reference (searchable cards).
+
+### Wave B — file operations
+- [ ] Batch Rename: folder picker (write-scoped), transform rules (replace/prefix/suffix/numbering/case/extension), dry-run preview, apply.
+
+### Wave C — color & brand
+- [ ] Color Converter: HEX/RGB/HSL, contrast checker, shade/tint/harmony palettes.
+- [ ] Brand Bible Creator: colors + auto palettes, typography pairing, voice keywords, dos/don'ts; Markdown/JSON export; draft autosave.
+
 ## Future
 
 - [ ] Prompt template organizer.

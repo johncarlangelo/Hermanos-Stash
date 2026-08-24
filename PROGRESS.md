@@ -3,15 +3,16 @@
 ## Current milestone
 
 **All planned milestones complete (M1–M5).** Milestone 5 added the Prompt
-Library — the 34th tool — with its own SQLite table (schema v2),
-`{{variable}}` template fill-in, a starter pack and JSON import/export.
-Post-milestone QoL rounds shipped earlier: output naming inputs, remembered
-folders, reveal/copy-path, zoom preference, history page, drop-anywhere
-routing, keyboard shortcuts and option help hints.
+Library — with its own SQLite table (schema v2), `{{variable}}` template
+fill-in, a starter pack and JSON import/export. Post-milestone QoL rounds
+shipped earlier: output naming inputs, remembered folders, reveal/copy-path,
+zoom preference, history page, drop-anywhere routing, keyboard shortcuts and
+option help hints. **Wave A** (six quick developer/text utilities) shipped on
+top — see below.
 
 ## Status
 
-33 tools registered across every category, on a verified platform: secure Electron
+39 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
@@ -64,6 +65,41 @@ NSIS installer output available via `npm run dist` when wanted.
   history) via built-in `node:sqlite` — no native compilation required.
 
 ## Current focus
+
+### Wave A — six quick utilities (this phase)
+
+Six pure-logic, text-in/text-out tools registered as `sql-formatter`,
+`cron-explainer`, `text-cases`, `html-entities`, `mime-lookup` and
+`http-status` (catalog now 39). Each ships a colocated vitest suite and lazy
+view; no IPC or native processing involved.
+
+- **SQL Formatter** (`sql-formatter`): wraps the new `sql-formatter`
+  dependency; dialect (standard/PostgreSQL/MySQL/SQLite) + keyword-case +
+  indentation options, structured parse-error shape with the library's raw
+  token dump stripped from user-facing messages.
+- **Cron Helper** (`cron-explainer`): wraps the new `cron-parser` (v5,
+  `CronExpressionParser.parse`) for validation + next-five runs after an
+  explicit five-field count check (v5 silently accepts 4/6 fields); friendly
+  descriptions derived from raw fields (`*`, steps, fixed times, ranges,
+  weekday/month names) with a field-by-field fallback.
+- **Case Converter** (`text-cases`): word-boundary tokenizer honoring
+  camel/Pascal/snake/kebab/acronym boundaries (`XMLHttpRequest` → XML/Http/
+  Request, digits kept attached: `v2Beta`) driving nine conversions plus live
+  counts (words/chars/no-whitespace/lines/sentences/reading time at 200 wpm).
+- **HTML Entities & Slug** (`html-entities`): three segmented modes — encode
+  (& < > " ' always named, non-ASCII named where known else numeric), decode
+  (named + decimal/hex numeric, unknown entities passed through untouched,
+  never executes markup), slugify (NFD diacritic folding, separator collapse).
+- **MIME Type Lookup** (`mime-lookup`): curated ~65-entry extension↔MIME table
+  (separate from the private runtime map in shared/utils/files.ts), forward
+  lookup, reverse lookup, substring search; click-to-copy rows.
+- **HTTP Status Codes** (`http-status`): complete 63-code 1xx–5xx reference
+  with plain-language meanings, class chips + code/name/meaning search,
+  class-tinted code numerals, click-to-copy cards. Static references — no
+  history records by design.
+- Verification: `tsc --noEmit`, `eslint .`, `prettier --write`, `vitest run`
+  (**41 files / 443 tests**, +6 files / +77 tests), `electron-vite build`,
+  plus `e2e-probe` and `e2e-drag-probe` (both exit 0).
 
 Export-flow quality-of-life batch (post-M4b) is complete — remembered output
 folders, reveal/copy-path actions on every result row, and a live zoom

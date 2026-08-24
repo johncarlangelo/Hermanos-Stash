@@ -228,6 +228,81 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'sql-formatter',
+    name: 'SQL Formatter',
+    category: 'developer',
+    description:
+      'Beautify SQL queries with dialect selection and keyword casing, entirely offline.',
+    tags: ['sql', 'format', 'query', 'beautify'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'cron-explainer',
+    name: 'Cron Helper',
+    category: 'developer',
+    description:
+      'Explain cron expressions in plain language and preview their next five run times.',
+    tags: ['cron', 'schedule', 'crontab'],
+    icon: 'clock',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true
+    }
+  },
+  {
+    id: 'text-cases',
+    name: 'Case Converter',
+    category: 'text',
+    description:
+      'Convert text between camelCase, snake_case, kebab-case and more, with live counters.',
+    tags: ['case', 'camel', 'snake', 'kebab', 'counter', 'words'],
+    icon: 'braces',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'html-entities',
+    name: 'HTML Entities & Slug',
+    category: 'text',
+    description: 'Escape and unescape HTML entities, or turn any phrase into a clean URL slug.',
+    tags: ['html', 'entities', 'escape', 'slug', 'url'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'mime-lookup',
+    name: 'MIME Type Lookup',
+    category: 'developer',
+    description: 'Search a curated reference of file extensions and MIME types — click to copy.',
+    tags: ['mime', 'content-type', 'file', 'reference'],
+    icon: 'search',
+    version: '1.0.0',
+    capabilities: {}
+  },
+  {
+    id: 'http-status',
+    name: 'HTTP Status Codes',
+    category: 'developer',
+    description:
+      'Browse all HTTP status codes by class with plain-language meanings — click to copy.',
+    tags: ['http', 'status', 'codes', 'reference'],
+    icon: 'search',
+    version: '1.0.0',
+    capabilities: {}
+  },
+  {
     id: 'image-convert',
     name: 'Image Converter',
     category: 'images',
@@ -517,6 +592,12 @@ const HashGeneratorTool = lazy(() => import('./hash-generator/HashGeneratorTool'
 const UrlUtilsTool = lazy(() => import('./url-utils/UrlUtilsTool'))
 const UuidGeneratorTool = lazy(() => import('./uuid-generator/UuidGeneratorTool'))
 const PromptLibraryTool = lazy(() => import('./prompt-library/PromptLibraryTool'))
+const SqlFormatterTool = lazy(() => import('./sql-formatter/SqlFormatterTool'))
+const CronHelperTool = lazy(() => import('./cron-helper/CronHelperTool'))
+const CaseConverterTool = lazy(() => import('./case-converter/CaseConverterTool'))
+const HtmlEntitiesTool = lazy(() => import('./html-entities/HtmlEntitiesTool'))
+const MimeLookupTool = lazy(() => import('./mime-lookup/MimeLookupTool'))
+const HttpStatusTool = lazy(() => import('./http-status/HttpStatusTool'))
 const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
@@ -553,6 +634,12 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'url-utils': UrlUtilsTool,
   'uuid-generator': UuidGeneratorTool,
   'prompt-library': PromptLibraryTool,
+  'sql-formatter': SqlFormatterTool,
+  'cron-explainer': CronHelperTool,
+  'text-cases': CaseConverterTool,
+  'html-entities': HtmlEntitiesTool,
+  'mime-lookup': MimeLookupTool,
+  'http-status': HttpStatusTool,
   'image-convert': ImageConvertTool,
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,
