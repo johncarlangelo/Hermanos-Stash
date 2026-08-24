@@ -6,7 +6,9 @@ import path from 'node:path'
 import { IPC } from '../../shared/ipc'
 import type {
   AudioCodec,
+  BatchRenameItem,
   ConvertAudioRequest,
+  DirEntry,
   ExtractAudioRequest,
   FileMetadata,
   HashAlgorithm,
@@ -93,6 +95,21 @@ const TEXT_FILE_LIMIT_BYTES = 32 * 1024 * 1024
 const BINARY_FILE_LIMIT_BYTES = 64 * 1024 * 1024
 /** Serialized preference values larger than this are rejected. */
 const PREF_VALUE_LIMIT_BYTES = 64 * 1024
+
+/** Upper bound for one batch-rename invocation. */
+const MAX_RENAMES_PER_BATCH = 1000
+
+/**
+ * Plain-language skip reason: structured StashErrors carry an actionable
+ * message; raw OS failures keep their own text.
+ */
+function skipReason(err: unknown): string {
+  if (typeof err === 'object' && err !== null) {
+    const message = (err as { userMessage?: unknown }).userMessage
+    if (typeof message === 'string' && message) return message
+  }
+  return err instanceof Error ? err.message : String(err)
+}
 
 function optionalWindow(): BrowserWindow | undefined {
   return BrowserWindow.getAllWindows()[0]
@@ -581,6 +598,27 @@ export function registerIpc(services: IpcServices): void {
     }
   })
 
+  handle(IPC.fsListDir, async (_e, raw: unknown) => {
+    const target = assertString(raw, 'path')
+    try {
+      const dirents = await fs.readdir(target, { withFileTypes: true })
+      const entries: DirEntry[] = dirents.map((d) => ({
+        name: d.name,
+        isDirectory: d.isDirectory()
+      }))
+      // Directories first, then a case-insensitive alphabetical pass.
+      entries.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+      })
+      return { entries }
+    } catch (err) {
+      throw stashError('FS_READ', `Could not read the folder "${path.basename(target)}".`, {
+        technicalMessage: String(err)
+      })
+    }
+  })
+
   handle(IPC.fsReadTextFile, async (_e, raw: unknown) => {
     if (typeof raw !== 'object' || raw === null) {
       throw stashError('VALIDATION', 'Invalid request payload.')
@@ -825,6 +863,91 @@ export function registerIpc(services: IpcServices): void {
     const outputDir = assertString(req['outputDir'], 'outputDir')
     services.writeScope.assertAllowed(outputDir)
     return extractZipArchive(zipPath, outputDir)
+  })
+
+  handle(IPC.filesBatchRename, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const dir = path.resolve(assertString(req['dir'], 'dir'))
+    // Renames touch arbitrary user folders — the folder itself must be a
+    // user-approved write target before anything else is considered.
+    if (!services.writeScope.isAllowed(dir)) {
+      throw stashError(
+        'VALIDATION',
+        'That folder has not been approved for changes. Pick it again with the folder picker.',
+        { technicalMessage: `unapproved rename dir: ${dir}` }
+      )
+    }
+    if (!Array.isArray(req['renames']) || req['renames'].length === 0) {
+      throw stashError('VALIDATION', 'Invalid request: "renames" must be a non-empty array.')
+    }
+    if (req['renames'].length > MAX_RENAMES_PER_BATCH) {
+      throw stashError(
+        'VALIDATION',
+        `Too many renames in one pass (limit is ${MAX_RENAMES_PER_BATCH}).`,
+        { technicalMessage: `count=${req['renames'].length}` }
+      )
+    }
+    for (const item of req['renames']) {
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        typeof (item as BatchRenameItem).from !== 'string' ||
+        typeof (item as BatchRenameItem).to !== 'string'
+      ) {
+        throw stashError('VALIDATION', 'Invalid request: each rename needs "from" and "to".')
+      }
+    }
+
+    /** Every old AND new name must live inside the approved directory. */
+    function resolveInside(name: string): string {
+      const resolved = path.resolve(dir, name)
+      const contained = resolved === dir || resolved.startsWith(dir + path.sep)
+      if (!contained || !services.writeScope.isAllowed(resolved)) {
+        throw stashError('VALIDATION', 'A rename target falls outside the chosen folder.', {
+          technicalMessage: `outside rename dir: ${resolved}`
+        })
+      }
+      return resolved
+    }
+
+    const renamed: Array<{ from: string; to: string }> = []
+    const skipped: Array<{ from: string; reason: string }> = []
+    for (const item of req['renames'] as BatchRenameItem[]) {
+      try {
+        const fromPath = resolveInside(item.from)
+        const toPath = resolveInside(item.to)
+        if (fromPath === toPath) {
+          skipped.push({ from: item.from, reason: 'name unchanged' })
+          continue
+        }
+        let exists = true
+        try {
+          await fs.stat(fromPath)
+        } catch {
+          exists = false
+        }
+        if (!exists) {
+          skipped.push({ from: item.from, reason: 'source not found' })
+          continue
+        }
+        let targetTaken = false
+        try {
+          await fs.stat(toPath)
+          targetTaken = true
+        } catch {
+          targetTaken = false
+        }
+        if (targetTaken) {
+          skipped.push({ from: item.from, reason: 'target exists' })
+          continue
+        }
+        await fs.rename(fromPath, toPath)
+        renamed.push({ from: fromPath, to: toPath })
+      } catch (err) {
+        skipped.push({ from: item.from, reason: skipReason(err) })
+      }
+    }
+    return { renamed, skipped }
   })
 
   // --- PDF processing --------------------------------------------------------

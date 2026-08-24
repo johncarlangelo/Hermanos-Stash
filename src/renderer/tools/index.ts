@@ -366,6 +366,19 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'batch-rename',
+    name: 'Batch Rename',
+    category: 'files',
+    description:
+      'Rename many files in a folder at once — find/replace, prefix, suffix, numbering, case and extension rules with a live dry-run preview.',
+    tags: ['rename', 'batch', 'files', 'bulk', 'pattern'],
+    icon: 'folder',
+    version: '1.0.0',
+    capabilities: {
+      supportsBatch: true
+    }
+  },
+  {
     id: 'pdf-merge',
     name: 'PDF Merger',
     category: 'documents',
@@ -602,6 +615,7 @@ const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
 const ZipExtractTool = lazy(() => import('./zip-extract/ZipExtractTool'))
+const BatchRenameTool = lazy(() => import('./batch-rename/BatchRenameTool'))
 const PdfMergeTool = lazy(() => import('./pdf-merge/PdfMergeTool'))
 const PdfSplitTool = lazy(() => import('./pdf-split/PdfSplitTool'))
 const PdfPreviewTool = lazy(() => import('./pdf-preview/PdfPreviewTool'))
@@ -644,6 +658,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,
   'zip-extract': ZipExtractTool,
+  'batch-rename': BatchRenameTool,
   'pdf-merge': PdfMergeTool,
   'pdf-split': PdfSplitTool,
   'pdf-preview': PdfPreviewTool,

@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
+  BatchRenameRequest,
   CompressImagesRequest,
   CompressVideoRequest,
   ConvertAudioRequest,
@@ -56,7 +57,7 @@ const api: StashBridge = {
   fs: {
     stat: (path: string) => invoke(IPC.fsStat, path),
     readTextFile: (req: ReadTextFileRequest) => invoke(IPC.fsReadTextFile, req),
-    writeTextFile: (path: string, content: string) => invoke(IPC.fsWriteTextFile, path, content),
+    writeTextFile: (req: { path: string; content: string }) => invoke(IPC.fsWriteTextFile, req),
     readFileBytes: (req: ReadFileBytesRequest) => invoke(IPC.fsReadFileBytes, req),
     writeFileBytes: (path: string, bytes: ArrayBuffer) =>
       invoke(IPC.fsWriteFileBytes, { path, bytes }),
@@ -121,7 +122,9 @@ const api: StashBridge = {
   files: {
     // Electron ≥ 32 removed File.path; this is the documented replacement,
     // exposed through the bridge so sandboxed renderers stay Node-free.
-    getPathForFile: (file: File) => webUtils.getPathForFile(file)
+    getPathForFile: (file: File) => webUtils.getPathForFile(file),
+    listDir: (path: string) => invoke(IPC.fsListDir, path),
+    batchRename: (req: BatchRenameRequest) => invoke(IPC.filesBatchRename, req)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

@@ -7,12 +7,13 @@ Library — with its own SQLite table (schema v2), `{{variable}}` template
 fill-in, a starter pack and JSON import/export. Post-milestone QoL rounds
 shipped earlier: output naming inputs, remembered folders, reveal/copy-path,
 zoom preference, history page, drop-anywhere routing, keyboard shortcuts and
-option help hints. **Wave A** (six quick developer/text utilities) shipped on
-top — see below.
+option help hints. **Wave A** (six quick developer/text utilities) and **Wave
+B** (Batch Rename — write-scoped folder renames with a pure shared naming
+engine, live dry-run preview and two-step confirm) shipped on top.
 
 ## Status
 
-39 tools registered across every category, on a verified platform: secure Electron
+40 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
@@ -100,6 +101,42 @@ view; no IPC or native processing involved.
 - Verification: `tsc --noEmit`, `eslint .`, `prettier --write`, `vitest run`
   (**41 files / 443 tests**, +6 files / +77 tests), `electron-vite build`,
   plus `e2e-probe` and `e2e-drag-probe` (both exit 0).
+
+### Wave B — Batch Rename (this phase)
+
+`batch-rename` registered in `files` (catalog now 40): pick a folder via the
+native directory picker (which approves it in the WriteScopeGuard), list its
+files, compose rename rules, review a live dry-run preview, then apply with a
+two-step confirm.
+
+- **Pure naming engine** (`shared/utils/rename-rules.ts`): one
+  `applyRenameRules(name, index, rules)` operating on the base name only —
+  literal/regex find+replace, prefix/suffix, three-digit numbering
+  (before/after name with configurable separator), case modes
+  (lower/UPPER/Title), optional extension rewrite filtered by source
+  extension. `buildRenamePlan()` excludes directories by default, drops
+  identity mappings, surfaces invalid regexes as an error variant (never a
+  throw) and flags case-insensitive duplicate targets as conflicts.
+- **IPC** (`fs:list-dir`, `files:batch-rename`): listing sorts
+  directories-first then alphabetically; the rename channel re-validates every
+  from/to main-side — resolved inside the user-approved directory AND passed
+  through `WriteScopeGuard.isAllowed` — before touching anything, then applies
+  sequentially, converting per-entry failures into skipped reasons instead of
+  aborting the batch. Results carry full output paths so result rows can offer
+  Show-in-Explorer directly. Cap: 1000 renames per invocation.
+- **Tool UI**: folder picker → scrollable file list (subfolders dimmed and
+  excluded) → rules panel (Find/Replace mono inputs + regex toggle with live
+  invalid-pattern error, prefix/suffix, numbering select + separator field,
+  case select, extension from→to with required-target validation) → live
+  preview table (`N of M files will be renamed · K conflicts`) → two-step
+  confirm ("Apply N renames?" for 3 s) → per-file ok/skip results with reveal
+  actions, success toast and a single history record.
+- **Security model**: the renderer never receives write authority — the only
+  trusted approval happens inside `dialog:choose-directory`; every rename path
+  is containment-checked again in main before `fs.rename`.
+- Verification: gates below plus a CDP-driven end-to-end check of both new
+  channels against the built app (rename happy path, skip reasons, unapproved
+  dir rejection, traversal containment).
 
 Export-flow quality-of-life batch (post-M4b) is complete — remembered output
 folders, reveal/copy-path actions on every result row, and a live zoom
@@ -336,7 +373,28 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Export-flow QoL gates (latest run):
+Batch Rename (Wave B) gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx}"` → applied; new files format-stable.
+- `npx vitest run` → **42 files, 457 tests passed** (up from 41 files / 443:
+  +14 — rename-rules engine suite covering each rule alone, combination
+  ordering (replace→case→prefix/suffix→numbering→ext), regex capture groups,
+  invalid-regex error variant, case-insensitive duplicate detection,
+  extension filtering, directories excluded by default, identity exclusion).
+- `npx electron-vite build` → main/preload/renderer build; `BatchRenameTool`
+  emitted as its own lazy chunk.
+- `node scripts/e2e-probe.mjs` → exit 0, no renderer exceptions/console errors.
+- `node scripts/e2e-drag-probe.mjs` → exit 0.
+- CDP-driven IPC verification against the built app: `fs:list-dir` returns
+  dirs-first sorted entries; `files:batch-rename` renames in place, skips with
+  actionable reasons (`target exists`, `source not found`, `name unchanged`,
+  traversal → "A rename target falls outside the chosen folder."), returns full
+  output paths for reveal; an unapproved directory (`C:\Windows`) is rejected
+  outright before any rename executes and no file escapes the approved folder.
+
+Export-flow QoL gates (previous run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.

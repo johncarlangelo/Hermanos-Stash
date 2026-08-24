@@ -129,7 +129,7 @@ Legend:
 - [x] HTTP Status Reference (searchable cards).
 
 ### Wave B — file operations
-- [ ] Batch Rename: folder picker (write-scoped), transform rules (replace/prefix/suffix/numbering/case/extension), dry-run preview, apply.
+- [x] Batch Rename: folder picker (write-scoped), transform rules (replace/prefix/suffix/numbering/case/extension), dry-run preview, apply. *(`fs:list-dir` + `files:batch-rename` channels; pure engine `shared/utils/rename-rules.ts` shared by renderer preview and main apply; every from/to re-validated inside the user-approved dir main-side; two-step confirm; 14 new engine tests)*
 
 ### Wave C — color & brand
 - [ ] Color Converter: HEX/RGB/HSL, contrast checker, shade/tint/harmony palettes.

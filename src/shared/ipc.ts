@@ -16,6 +16,7 @@ export const IPC = {
   dialogChooseDirectory: 'dialog:choose-directory',
 
   fsStat: 'fs:stat',
+  fsListDir: 'fs:list-dir',
   fsReadTextFile: 'fs:read-text-file',
   fsWriteTextFile: 'fs:write-text-file',
   fsReadFileBytes: 'fs:read-file-bytes',
@@ -27,6 +28,7 @@ export const IPC = {
 
   zipCreateBatch: 'files:zip-create',
   zipExtractBatch: 'files:zip-extract',
+  filesBatchRename: 'files:batch-rename',
 
   pdfMergeBatch: 'pdf:merge-batch',
   pdfGetInfo: 'pdf:get-info',
@@ -144,6 +146,44 @@ export interface WriteFileBytesResult {
 export interface ExportFileRequest {
   sourcePath: string
   targetPath: string
+}
+
+// --- Directory listing / batch rename ----------------------------------------
+
+export interface DirEntry {
+  name: string
+  isDirectory: boolean
+}
+
+export interface ListDirResult {
+  /** Sorted directories-first, then alphabetically. */
+  entries: DirEntry[]
+}
+
+export interface BatchRenameItem {
+  from: string
+  to: string
+}
+
+export interface BatchRenameRequest {
+  dir: string
+  renames: BatchRenameItem[]
+}
+
+export interface BatchRenameRenamed {
+  from: string
+  to: string
+}
+
+/** One entry the batch could not rename, with a plain-language reason. */
+export interface BatchRenameSkipped {
+  from: string
+  reason: string
+}
+
+export interface BatchRenameResult {
+  renamed: BatchRenameRenamed[]
+  skipped: BatchRenameSkipped[]
 }
 
 export type ImageOutputFormat = 'png' | 'jpeg' | 'webp' | 'avif' | 'tiff'
@@ -468,6 +508,8 @@ export interface StashBridge {
   files: {
     /** Absolute OS path for a dropped File (Electron ≥32 removed File.path). */
     getPathForFile(file: File): string
+    listDir(path: string): Promise<ListDirResult>
+    batchRename(req: BatchRenameRequest): Promise<BatchRenameResult>
   }
   dialogs: {
     openFile(req?: OpenFileDialogRequest): Promise<OpenFileDialogResult>
@@ -477,7 +519,7 @@ export interface StashBridge {
   fs: {
     stat(path: string): Promise<FileMetadata>
     readTextFile(req: ReadTextFileRequest): Promise<ReadTextFileResult>
-    writeTextFile(path: string, content: string): Promise<{ bytesWritten: number }>
+    writeTextFile(req: { path: string; content: string }): Promise<{ bytesWritten: number }>
     readFileBytes(req: ReadFileBytesRequest): Promise<ReadFileBytesResult>
     writeFileBytes(path: string, bytes: ArrayBuffer): Promise<WriteFileBytesResult>
     exportFile(req: ExportFileRequest): Promise<{ bytesWritten: number }>

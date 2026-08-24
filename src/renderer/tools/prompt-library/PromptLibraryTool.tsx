@@ -148,7 +148,10 @@ export default function PromptLibraryTool() {
         filters: [{ name: 'JSON', extensions: ['json'] }]
       })
       if (dialog.cancelled || !dialog.path) return
-      await window.stash.fs.writeTextFile(dialog.path, JSON.stringify({ prompts }, null, 2))
+      await window.stash.fs.writeTextFile({
+        path: dialog.path,
+        content: JSON.stringify({ prompts }, null, 2)
+      })
       toastSuccess(`Exported ${prompts.length} prompts`)
     } catch (err) {
       toastError(err)
