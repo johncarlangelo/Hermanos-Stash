@@ -7,6 +7,9 @@ import type { StashError } from './errors'
 export const IPC = {
   appGetInfo: 'app:get-info',
   appRevealDataFolder: 'app:reveal-data-folder',
+  appSetZoom: 'app:set-zoom',
+
+  shellRevealPath: 'shell:reveal-path',
 
   dialogOpenFile: 'dialog:open-file',
   dialogSaveFile: 'dialog:save-file',
@@ -436,6 +439,11 @@ export interface StashBridge {
   app: {
     getInfo(): Promise<{ version: string; dataFolder: string }>
     revealDataFolder(): Promise<void>
+    /** Live-apply a renderer zoom factor (clamped main-side). */
+    setZoom(factor: number): Promise<void>
+  }
+  shell: {
+    revealPath(path: string): Promise<void>
   }
   files: {
     /** Absolute OS path for a dropped File (Electron ≥32 removed File.path). */

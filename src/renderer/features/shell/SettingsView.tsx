@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react'
 import { FolderOpen, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
+import { FieldRow, Select } from '../../components/ui/Inputs'
 import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
 
 interface AppInfo {
   version: string
   dataFolder: string
 }
+
+const ZOOM_OPTIONS = [
+  { value: 1, label: '100%' },
+  { value: 1.1, label: '110%' },
+  { value: 1.25, label: '125%' }
+]
+
+const ZOOM_PREF_KEY = 'ui.zoom'
 
 /**
  * Settings shell. Only real functions live here — no decorative placeholders.
@@ -15,13 +25,32 @@ interface AppInfo {
 export function SettingsView() {
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [clearedAt, setClearedAt] = useState<string | null>(null)
+  const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
 
   useEffect(() => {
     window.stash.app
       .getInfo()
       .then(setInfo)
       .catch((err) => toastError(err))
+    window.stash.prefs
+      .get<number>(ZOOM_PREF_KEY)
+      .then((value) => {
+        if (typeof value === 'number') setZoom(clampZoomFactor(value))
+      })
+      .catch(() => {
+        // No saved preference — keep the default zoom.
+      })
   }, [])
+
+  const changeZoom = async (next: number): Promise<void> => {
+    setZoom(next)
+    try {
+      await window.stash.prefs.set(ZOOM_PREF_KEY, next)
+      await window.stash.app.setZoom(next)
+    } catch (err) {
+      toastError(err)
+    }
+  }
 
   const clearHistory = async () => {
     try {
@@ -72,6 +101,27 @@ export function SettingsView() {
             <FolderOpen size={13} aria-hidden />
             Open data folder
           </Button>
+        </div>
+      </Panel>
+
+      <Panel className="px-4 py-4">
+        <SectionHeading>Appearance</SectionHeading>
+        <div className="mt-3 flex items-center gap-3">
+          <FieldRow label="Zoom" htmlFor="settings-zoom">
+            <Select
+              id="settings-zoom"
+              value={zoom}
+              onChange={(e) => void changeZoom(Number(e.target.value))}
+              className="w-24"
+            >
+              {ZOOM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </FieldRow>
+          <p className="text-[11.5px] text-faint">Applied immediately and remembered.</p>
         </div>
       </Panel>
 

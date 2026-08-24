@@ -2,10 +2,9 @@
 
 ## Current milestone
 
-**All planned milestones complete (M1–M4).** Human QA in progress; revision
-session pending — see `TASKS.md → QA findings` (drag-and-drop regression on
-file tools: suspected Electron ≥32 `File.path` removal; click-to-browse
-unaffected).
+**All planned milestones complete (M1–M4).** Post-milestone quality-of-life
+rounds in progress (output naming done; export-flow QoL — remembered folders,
+reveal/copy-path, zoom preference — just completed and verified).
 
 ## Status
 
@@ -63,8 +62,35 @@ NSIS installer output available via `npm run dist` when wanted.
 
 ## Current focus
 
-Output-filename quality-of-life batch (post-M4b) is complete — dedicated
-output-naming controls across all 12 file-producing tools:
+Export-flow quality-of-life batch (post-M4b) is complete — remembered output
+folders, reveal/copy-path actions on every result row, and a live zoom
+preference:
+
+- Shared `tools/shared/use-output-dir.ts`: per-tool hook backed by prefs
+  (`outDir:<toolId>`), applied to the media scaffold (video-convert,
+  video-compress, video-gif, extract-audio, audio-convert) plus image-convert,
+  image-compress, pdf-split and zip-extract — a successful folder pick persists
+  and pre-fills the picker next visit.
+- New IPC domain `shell:reveal-path` (`StashBridge.shell.revealPath`, main-side
+  `shell.showItemInFolder` over a resolved absolute path) plus tiny shared
+  `result-actions.tsx` (`RevealButton` / `CopyPathButton`) wired into every
+  output surface: image batch succeeded rows, the media scaffold result row
+  (covers five tools at once), pdf-split results, pdf-merge/compress/rotate/
+  reorder summaries, images-to-pdf, zip-create, zip-extract (reveals the output
+  directory itself) and qr-generator's post-save state.
+- Zoom preference: `app:set-zoom` clamps 0.8–1.6 in main via a shared pure
+  helper (`shared/utils/zoom.ts`, unit tested), applies
+  `webContents.setZoomFactor` live, and on win32 resizes `titleBarOverlay`
+  proportionally (40 DIPs × factor, try/catch-guarded). Initial zoom is read
+  from `ui.zoom` (default 1.1) BEFORE window creation; Settings gained an
+  Appearance panel (100/110/125%) that persists and live-applies; the renderer
+  titlebar header now sizes itself from `env(titlebar-area-*)` so it adapts to
+  any overlay height instead of hardcoded 40px/154px values.
+- Verification: `tsc --noEmit`, `eslint .`, `prettier --write`, `vitest run`
+  (33 files / 348 tests), `electron-vite build`, plus `e2e-probe` and
+  `e2e-drag-probe` (both exit 0).
+
+### Output-filename quality-of-life batch (previous phase)
 
 - Shared `tools/shared/output-name.ts` (sanitize / extension / reserved-device
   / `{name}` pattern rules mirroring Windows filename constraints) with 22 unit
@@ -271,7 +297,21 @@ Milestone 2 batch 4 (PDF suite) additions:
 
 ## Verification evidence
 
-Final all-milestones gate (latest run):
+Export-flow QoL gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx}"` → applied; only formatting fixes.
+- `npx vitest run` → **33 files, 348 tests passed** (up from 31 files / 341:
+  +7 — zoom clamp/overlay-height suite and output-dir pref-key suite).
+- `npx electron-vite build` → main/preload/renderer build; shared chunks
+  `use-output-dir` and `result-actions` emitted once and reused across tools.
+- `node scripts/e2e-probe.mjs` → exit 0 (bridge sanity, favorites round-trip,
+  settings navigation, no renderer exceptions).
+- `node scripts/e2e-drag-probe.mjs` → exit 0 (real OS-backed drop received at
+  zoom 1.1; titlebar env() styling active).
+
+Final all-milestones gate (previous run):
 
 - `npx tsc --noEmit -p tsconfig.json` → clean.
 - `npx eslint .` → clean.

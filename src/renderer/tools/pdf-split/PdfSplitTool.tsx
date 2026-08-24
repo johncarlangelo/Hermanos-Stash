@@ -18,6 +18,8 @@ import type { PageRangeParse } from '../../../shared/utils/page-ranges'
 import { parsePageRanges } from '../../../shared/utils/page-ranges'
 import { formatBytes } from '../../../shared/utils/files'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
+import { useOutputDir } from '../shared/use-output-dir'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly, useProgressEvent } from '../shared/use-progress-event'
 
@@ -30,7 +32,7 @@ export default function PdfSplitTool() {
   const [pdf, setPdf] = useState<SelectedPdf | null>(null)
   const [infoLoading, setInfoLoading] = useState(false)
   const [pageSpec, setPageSpec] = useState('')
-  const [destination, setDestination] = useState<string | null>(null)
+  const [destination, setDestination] = useOutputDir('pdf-split')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<PdfSplitResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
@@ -44,7 +46,7 @@ export default function PdfSplitTool() {
   const canRun =
     pdf?.info !== null &&
     pdf !== undefined &&
-    destination !== null &&
+    destination !== '' &&
     validation !== null &&
     'groups' in validation &&
     !running
@@ -88,7 +90,7 @@ export default function PdfSplitTool() {
   }
 
   const split = async (): Promise<void> => {
-    if (!pdf?.info || !destination || !validation || !('groups' in validation)) return
+    if (!pdf?.info || destination === '' || !validation || !('groups' in validation)) return
     setRunning(true)
     setError(null)
     setResult(null)
@@ -261,7 +263,7 @@ export default function PdfSplitTool() {
           )}
           {!canRun && !running && (
             <span className="text-[11px] text-faint">
-              {!destination
+              {destination === ''
                 ? 'Choose an output folder first.'
                 : pageSpec.length === 0
                   ? 'Enter the page ranges to extract.'
@@ -290,11 +292,13 @@ export default function PdfSplitTool() {
           <SectionHeading>Results</SectionHeading>
           <ul className="flex flex-col gap-1.5">
             {result.succeeded.map((entry) => (
-              <li key={entry.output}>
-                <p className="truncate text-[12.5px] text-ok" title={entry.output}>
+              <li key={entry.output} className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-[12.5px] text-ok" title={entry.output}>
                   {entry.label}
                   <span className="tnum ml-2 text-faint">{formatBytes(entry.bytesWritten)}</span>
                 </p>
+                <RevealButton path={entry.output} />
+                <CopyPathButton path={entry.output} />
               </li>
             ))}
             {result.failed.map((entry) => (

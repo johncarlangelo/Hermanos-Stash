@@ -98,6 +98,15 @@ Legend:
 
 - [x] Drag-and-drop does not accept files in several file tools, while click-to-browse works fine. *(RESOLVED: root cause confirmed — Electron ≥ 32 removed `File.path` on dropped files, so `DropZone.filterValid()` always produced zero paths. Fixed by exposing `webUtils.getPathForFile(file)` through the preload bridge (`stash.files.getPathForFile`) and using it in DropZone — the documented Electron migration path. Verified end-to-end via `scripts/e2e-drag-probe.mjs`, which synthesizes a real OS-backed file drop over CDP onto the live UI and asserts the tool receives the absolute path.)*
 
+## Quality of life improvements
+
+- [x] Remember last output folder per tool (persisted in prefs, pre-fills folder pickers). *(shared `use-output-dir` hook over prefs `outDir:<toolId>`; adopted by the media scaffold (5 tools), image-convert, image-compress, pdf-split, zip-extract)*
+- [x] "Open in Explorer" + copy-path actions on saved-output rows. *(new `shell:reveal-path` IPC + shared `RevealButton`/`CopyPathButton` wired into image/media/pdf-split result rows, all save-dialog summaries, zip-extract directory and qr-generator post-save state)*
+- [ ] Activity History page (list, filter by tool, navigate to tool; PRD §8 finally visible).
+- [x] Zoom preference in Settings (100/110/125%, persisted, live-applied, titlebar adapts). *(`app:set-zoom` clamped via shared `utils/zoom.ts`, overlay height tracks 40 DIPs × factor on win32, startup reads `ui.zoom`, header sized from `env(titlebar-area-*)`)*
+- [ ] Drop-anywhere routing (drop on window background → matching tools suggested).
+- [ ] Keyboard shortcuts (Esc → Home, Ctrl+1..5 → favorites).
+
 ## Future
 
 - [ ] Prompt template organizer.

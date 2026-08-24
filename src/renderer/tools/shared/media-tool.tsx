@@ -14,6 +14,8 @@ import { FieldRow } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { OutputNameField } from './OutputNameField'
 import { validateOutputStem } from './output-name'
+import { CopyPathButton, RevealButton } from './result-actions'
+import { useOutputDir } from './use-output-dir'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { MediaBatchResult, MediaInfo } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
@@ -108,7 +110,7 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
   const [inputPath, setInputPath] = useState<string | null>(null)
   const [probed, setProbed] = useState<MediaInfo | null>(null)
   const [probeError, setProbeError] = useState<string | null>(null)
-  const [destination, setDestination] = useState<string | null>(null)
+  const [destination, setDestination] = useOutputDir(props.toolId)
   const [outputName, setOutputName] = useState('')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<MediaBatchResult | null>(null)
@@ -138,7 +140,7 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
 
   const canRun =
     inputPath !== null &&
-    destination !== null &&
+    destination !== '' &&
     !running &&
     (props.readyOverride ?? true) &&
     nameError === null
@@ -155,7 +157,7 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
   }
 
   const run = async (): Promise<void> => {
-    if (inputPath === null || destination === null) return
+    if (inputPath === null || destination === '') return
     setRunning(true)
     setError(null)
     setResult(null)
@@ -305,7 +307,7 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
             {nameError ??
               (inputPath === null
                 ? 'Add a file first.'
-                : destination === null
+                : destination === ''
                   ? 'Choose an output folder first.'
                   : '')}
           </span>
@@ -333,14 +335,21 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
                   : null
               return (
                 <li key={entry.source} className="flex flex-col gap-1">
-                  <p className="text-[12.5px] text-ok" title={entry.output}>
-                    {fileNameOf(entry.output)}
-                    <span className="tnum ml-2 text-faint">
-                      {original !== undefined ? `${formatBytes(original)} → ` : ''}
-                      {formatBytes(entry.bytesWritten)}
-                      {saved !== null ? ` · saved ${saved}%` : ''}
-                    </span>
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p
+                      className="min-w-0 flex-1 truncate text-[12.5px] text-ok"
+                      title={entry.output}
+                    >
+                      {fileNameOf(entry.output)}
+                      <span className="tnum ml-2 text-faint">
+                        {original !== undefined ? `${formatBytes(original)} → ` : ''}
+                        {formatBytes(entry.bytesWritten)}
+                        {saved !== null ? ` · saved ${saved}%` : ''}
+                      </span>
+                    </p>
+                    <RevealButton path={entry.output} />
+                    <CopyPathButton path={entry.output} />
+                  </div>
                   {entry.verified && <SuccessNote message="Output verified" />}
                 </li>
               )

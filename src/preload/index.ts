@@ -41,7 +41,11 @@ function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
 const api: StashBridge = {
   app: {
     getInfo: () => invoke(IPC.appGetInfo),
-    revealDataFolder: () => invoke(IPC.appRevealDataFolder)
+    revealDataFolder: () => invoke(IPC.appRevealDataFolder),
+    setZoom: (factor: number) => invoke<void>(IPC.appSetZoom, factor)
+  },
+  shell: {
+    revealPath: (path: string) => invoke<void>(IPC.shellRevealPath, path)
   },
   dialogs: {
     openFile: (req?: OpenFileDialogRequest) => invoke(IPC.dialogOpenFile, req ?? {}),

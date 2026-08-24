@@ -20,6 +20,7 @@ import type { PageSequenceParse } from '../../../shared/utils/page-ranges'
 import { parsePageSequence } from '../../../shared/utils/page-ranges'
 import { formatBytes } from '../../../shared/utils/files'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 
@@ -262,11 +263,17 @@ export default function PdfRotateTool() {
       {error && <ErrorNote error={error} />}
 
       {result && (
-        <SuccessNote
-          message={`Saved ${fileNameOf(result.target)} — ${result.rotatedCount} page${
-            result.rotatedCount === 1 ? '' : 's'
-          } turned ${angle}° clockwise, ${formatBytes(result.bytesWritten)}`}
-        />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SuccessNote
+              message={`Saved ${fileNameOf(result.target)} — ${result.rotatedCount} page${
+                result.rotatedCount === 1 ? '' : 's'
+              } turned ${angle}° clockwise, ${formatBytes(result.bytesWritten)}`}
+            />
+          </div>
+          <RevealButton path={result.target} />
+          <CopyPathButton path={result.target} />
+        </div>
       )}
     </div>
   )

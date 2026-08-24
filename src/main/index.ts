@@ -7,6 +7,7 @@ import { TempWorkspaceManager } from './services/temp-workspace'
 import { ProgressBus } from './ipc/progress'
 import { WriteScopeGuard } from './ipc/write-scope'
 import { registerIpc } from './ipc/register'
+import { clampZoomFactor, DEFAULT_ZOOM_FACTOR, overlayHeightFor } from '../shared/utils/zoom'
 
 // Prevent GPU cache issues in some environments; harmless elsewhere.
 app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication')
@@ -18,7 +19,7 @@ let progressBus: ProgressBus | null = null
 const isSmokeTest = process.argv.includes('--smoke-test')
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
-function createWindow(): void {
+function createWindow(zoomFactor: number): void {
   mainWindow = new BrowserWindow({
     width: 1180,
     height: 760,
@@ -29,10 +30,14 @@ function createWindow(): void {
     autoHideMenuBar: true,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     // Overlay metrics are window DIPs and do not scale with renderer zoom;
-    // 44/154 match the renderer's 40/140 CSS px at the default 110% zoom.
+    // the height tracks 40 CSS px per zoom unit (see shared/utils/zoom).
     titleBarOverlay:
       process.platform === 'win32'
-        ? { color: '#12141a', symbolColor: '#9aa2b1', height: 44 }
+        ? {
+            color: '#12141a',
+            symbolColor: '#9aa2b1',
+            height: overlayHeightFor(zoomFactor)
+          }
         : undefined,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -40,7 +45,7 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: false,
-      zoomFactor: 1.1
+      zoomFactor
     }
   })
 
@@ -73,11 +78,19 @@ function createWindow(): void {
   })
 }
 
-function initializeServices(): void {
+function initializeServices(): number {
   const userData = app.getPath('userData')
   const { db } = openDatabase(userData)
   tempManager = new TempWorkspaceManager(os.tmpdir())
   tempManager.purgeStale()
+
+  let zoomFactor = DEFAULT_ZOOM_FACTOR
+  try {
+    const prefs = new PrefsStore(db)
+    zoomFactor = clampZoomFactor(prefs.get('ui.zoom'))
+  } catch {
+    // A broken prefs row must never block startup — fall back to the default.
+  }
 
   const progress = new ProgressBus()
   progressBus = progress
@@ -90,6 +103,7 @@ function initializeServices(): void {
     progress,
     writeScope: new WriteScopeGuard(() => tempManager!.rootPath)
   })
+  return zoomFactor
 }
 
 const gotLock = app.requestSingleInstanceLock()
@@ -104,7 +118,7 @@ if (!gotLock && !isSmokeTest) {
   })
 
   app.whenReady().then(() => {
-    initializeServices()
+    const zoomFactor = initializeServices()
 
     if (isSmokeTest) {
       // Headless verification mode: services initialized, then exit cleanly.
@@ -113,10 +127,10 @@ if (!gotLock && !isSmokeTest) {
       return
     }
 
-    createWindow()
+    createWindow(zoomFactor)
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      if (BrowserWindow.getAllWindows().length === 0) createWindow(zoomFactor)
     })
   })
 

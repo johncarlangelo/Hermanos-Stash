@@ -16,6 +16,8 @@ import { formatBytes } from '../../../shared/utils/files'
 import type { ConvertImagesRequest, ImageBatchResult, ImageOutputFormat } from '../../../shared/ipc'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { FileListPanel } from '../shared/file-list-panel'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
+import { useOutputDir } from '../shared/use-output-dir'
 import { fileNameOf, useFileList } from '../shared/use-file-list'
 import { recordHistoryQuietly, useProgressEvent } from '../shared/use-progress-event'
 
@@ -35,7 +37,7 @@ export default function ImageConvertTool() {
   const [format, setFormat] = useState<ImageOutputFormat>('webp')
   const [quality, setQuality] = useState(80)
   const [namePattern, setNamePattern] = useState('')
-  const [destination, setDestination] = useState<string | null>(null)
+  const [destination, setDestination] = useOutputDir('image-convert')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<ImageBatchResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
@@ -49,7 +51,7 @@ export default function ImageConvertTool() {
       : null
 
   const lossy = (LOSSY_FORMATS as readonly string[]).includes(format)
-  const canRun = items.length > 0 && destination !== null && !running && patternError === null
+  const canRun = items.length > 0 && destination !== '' && !running && patternError === null
   // While the batch invoke is awaiting its result, progress events carry the
   // operation id — bind the bar and cancel button to whatever is live.
   const live = running && liveEvent?.status === 'active' ? liveEvent : null
@@ -101,7 +103,7 @@ export default function ImageConvertTool() {
   }
 
   const convert = async (): Promise<void> => {
-    if (!destination) return
+    if (destination === '') return
     setRunning(true)
     setError(null)
     setResult(null)
@@ -262,11 +264,13 @@ export default function ImageConvertTool() {
           <SectionHeading>Results</SectionHeading>
           <ul className="flex flex-col gap-1.5">
             {result.succeeded.map((entry) => (
-              <li key={entry.source}>
-                <p className="truncate text-[12.5px] text-ok" title={entry.output}>
+              <li key={entry.source} className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-[12.5px] text-ok" title={entry.output}>
                   {fileNameOf(entry.source)} → {fileNameOf(entry.output)}
                   <span className="tnum ml-2 text-faint">{formatBytes(entry.bytesWritten)}</span>
                 </p>
+                <RevealButton path={entry.output} />
+                <CopyPathButton path={entry.output} />
               </li>
             ))}
             {result.failed.map((entry) => (

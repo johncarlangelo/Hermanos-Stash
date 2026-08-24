@@ -69,6 +69,7 @@ import {
   type MediaToolsContext
 } from '../processing/media'
 import { parsePageRanges, parsePageSequence } from '../../shared/utils/page-ranges'
+import { clampZoomFactor, overlayHeightFor } from '../../shared/utils/zoom'
 
 export interface IpcServices {
   prefs: PrefsStore
@@ -475,6 +476,28 @@ export function registerIpc(services: IpcServices): void {
 
   handle(IPC.appRevealDataFolder, async () => {
     await shell.openPath(app.getPath('userData'))
+  })
+
+  handle(IPC.appSetZoom, (event: Electron.IpcMainInvokeEvent, raw: unknown) => {
+    const factor = clampZoomFactor(assertNumber(raw, 'factor'))
+    event.sender.setZoomFactor(factor)
+    if (process.platform === 'win32') {
+      try {
+        BrowserWindow.fromWebContents(event.sender)?.setTitleBarOverlay({
+          height: overlayHeightFor(factor),
+          color: '#12141a',
+          symbolColor: '#9aa2b1'
+        })
+      } catch {
+        // Overlay metrics only apply while native window controls are shown.
+      }
+    }
+  })
+
+  handle(IPC.shellRevealPath, (_e, raw: unknown) => {
+    const target = assertString(raw, 'path')
+    // Resolve first so relative renderer paths cannot misdirect the reveal.
+    shell.showItemInFolder(path.resolve(target))
   })
 
   // --- Dialogs ------------------------------------------------------------

@@ -17,6 +17,7 @@ import { normalizeError, type StashError } from '../../../shared/errors'
 import type { PdfCompressResult, PdfInfoResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 
@@ -203,17 +204,27 @@ export default function PdfCompressTool() {
       {result && (
         <>
           {savedBytes !== null && savedBytes >= 0 ? (
-            <SuccessNote
-              message={`${formatBytes(sizeBefore ?? 0)} → ${formatBytes(result.bytesWritten)} · ${formatBytes(savedBytes)} smaller (${savedPercent}%)`}
-            />
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <SuccessNote
+                  message={`${formatBytes(sizeBefore ?? 0)} → ${formatBytes(result.bytesWritten)} · ${formatBytes(savedBytes)} smaller (${savedPercent}%)`}
+                />
+              </div>
+              <RevealButton path={result.target} />
+              <CopyPathButton path={result.target} />
+            </div>
           ) : (
-            <Panel className="border-line px-3 py-2.5">
-              <p className="text-[12.5px] leading-snug text-dim">
-                The optimized copy came out slightly larger ({formatBytes(sizeBefore ?? 0)} →{' '}
-                {formatBytes(result.bytesWritten)}) — this document was already efficiently
-                structured.
-              </p>
-            </Panel>
+            <div className="flex items-center gap-2">
+              <Panel className="min-w-0 flex-1 border-line px-3 py-2.5">
+                <p className="text-[12.5px] leading-snug text-dim">
+                  The optimized copy came out slightly larger ({formatBytes(sizeBefore ?? 0)} →{' '}
+                  {formatBytes(result.bytesWritten)}) — this document was already efficiently
+                  structured.
+                </p>
+              </Panel>
+              <RevealButton path={result.target} />
+              <CopyPathButton path={result.target} />
+            </div>
           )}
         </>
       )}

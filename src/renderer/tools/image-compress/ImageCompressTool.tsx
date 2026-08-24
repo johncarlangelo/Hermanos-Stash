@@ -16,6 +16,8 @@ import type { CompressImagesRequest, ImageBatchResult } from '../../../shared/ip
 import { formatBytes } from '../../../shared/utils/files'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { FileListPanel } from '../shared/file-list-panel'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
+import { useOutputDir } from '../shared/use-output-dir'
 import { fileNameOf, useFileList } from '../shared/use-file-list'
 import { recordHistoryQuietly, useProgressEvent } from '../shared/use-progress-event'
 
@@ -28,7 +30,7 @@ export default function ImageCompressTool() {
   const [quality, setQuality] = useState(75)
   const [maxDimension, setMaxDimension] = useState<number>(0)
   const [namePattern, setNamePattern] = useState('')
-  const [destination, setDestination] = useState<string | null>(null)
+  const [destination, setDestination] = useOutputDir('image-compress')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<ImageBatchResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
@@ -41,7 +43,7 @@ export default function ImageCompressTool() {
       ? 'Pattern must include {name}.'
       : null
 
-  const canRun = items.length > 0 && destination !== null && !running && patternError === null
+  const canRun = items.length > 0 && destination !== '' && !running && patternError === null
   const live = running && liveEvent?.status === 'active' ? liveEvent : null
 
   const fetchSize = useCallback(async (path: string): Promise<void> => {
@@ -73,7 +75,7 @@ export default function ImageCompressTool() {
   }
 
   const compress = async (): Promise<void> => {
-    if (!destination) return
+    if (destination === '') return
     setRunning(true)
     setError(null)
     setResult(null)
@@ -278,8 +280,8 @@ export default function ImageCompressTool() {
                   ? Math.max(0, Math.round((1 - entry.bytesWritten / original) * 100))
                   : null
               return (
-                <li key={entry.source}>
-                  <p className="truncate text-[12.5px] text-ok" title={entry.output}>
+                <li key={entry.source} className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-[12.5px] text-ok" title={entry.output}>
                     {fileNameOf(entry.source)} → {fileNameOf(entry.output)}
                     <span className="tnum ml-2 text-faint">
                       {original !== undefined ? `${formatBytes(original)} → ` : ''}
@@ -287,6 +289,8 @@ export default function ImageCompressTool() {
                       {saved !== null ? ` · saved ${saved}%` : ''}
                     </span>
                   </p>
+                  <RevealButton path={entry.output} />
+                  <CopyPathButton path={entry.output} />
                 </li>
               )
             })}

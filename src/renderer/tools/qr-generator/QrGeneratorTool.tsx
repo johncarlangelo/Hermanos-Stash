@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button'
 import { ErrorNote, Panel, SectionHeading } from '../../components/ui/Feedback'
 import { FieldRow, Select, TextArea } from '../../components/ui/Inputs'
 import { normalizeError, type StashError } from '../../../shared/errors'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { OutputNameField } from '../shared/OutputNameField'
 import { validateOutputName } from '../shared/output-name'
@@ -17,6 +18,7 @@ export default function QrGeneratorTool() {
   const [width, setWidth] = useState<number>(512)
   const [ecLevel, setEcLevel] = useState<ErrorCorrectionLevel>('M')
   const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [savedPath, setSavedPath] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<StashError | null>(null)
   const [outputName, setOutputName] = useState('qrcode.png')
@@ -62,6 +64,7 @@ export default function QrGeneratorTool() {
       if (dialog.cancelled || !dialog.path) return
       const bytes = await (await fetch(dataUrl)).arrayBuffer()
       await window.stash.fs.writeFileBytes(dialog.path, bytes)
+      setSavedPath(dialog.path)
       try {
         await window.stash.history.record({
           toolId: 'qr-generator',
@@ -173,6 +176,12 @@ export default function QrGeneratorTool() {
                 <Button size="sm" disabled={!outputCheck.ok} onClick={() => void saveImage()}>
                   <Download size={13} /> Save…
                 </Button>
+                {savedPath && (
+                  <>
+                    <RevealButton path={savedPath} />
+                    <CopyPathButton path={savedPath} />
+                  </>
+                )}
               </div>
             </div>
             <p className="tnum text-[10.5px] text-faint">

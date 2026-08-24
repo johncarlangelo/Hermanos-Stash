@@ -13,17 +13,19 @@ import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { ZipExtractResult } from '../../../shared/ipc'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
+import { useOutputDir } from '../shared/use-output-dir'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 
 export default function ZipExtractTool() {
   const [zipPath, setZipPath] = useState<string | null>(null)
-  const [destination, setDestination] = useState<string | null>(null)
+  const [destination, setDestination] = useOutputDir('zip-extract')
   const [extracting, setExtracting] = useState(false)
-  const [result, setResult] = useState<ZipExtractResult | null>(null)
+  const [result, setResult] = useState<(ZipExtractResult & { outputDir: string }) | null>(null)
   const [error, setError] = useState<StashError | null>(null)
 
-  const canRun = zipPath !== null && destination !== null && !extracting
+  const canRun = zipPath !== null && destination !== '' && !extracting
 
   const chooseDestination = async (): Promise<void> => {
     try {
@@ -41,7 +43,7 @@ export default function ZipExtractTool() {
     setResult(null)
     try {
       const res = await window.stash.archives.extractZip({ zipPath, outputDir: destination })
-      setResult(res)
+      setResult({ ...res, outputDir: destination })
       toastSuccess(
         `Extracted ${res.extractedCount} file${res.extractedCount === 1 ? '' : 's'}`,
         res.skipped.length > 0
@@ -132,11 +134,17 @@ export default function ZipExtractTool() {
 
       {result && (
         <>
-          <SuccessNote
-            message={`Extracted ${result.extractedCount} file${
-              result.extractedCount === 1 ? '' : 's'
-            } into ${result.topLevelCount} top-level item${result.topLevelCount === 1 ? '' : 's'}.`}
-          />
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <SuccessNote
+                message={`Extracted ${result.extractedCount} file${
+                  result.extractedCount === 1 ? '' : 's'
+                } into ${result.topLevelCount} top-level item${result.topLevelCount === 1 ? '' : 's'}.`}
+              />
+            </div>
+            <RevealButton path={result.outputDir} />
+            <CopyPathButton path={result.outputDir} />
+          </div>
           {result.skipped.length > 0 && (
             <>
               <SectionHeading>Skipped (unsafe paths)</SectionHeading>

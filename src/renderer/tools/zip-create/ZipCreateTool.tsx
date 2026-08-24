@@ -17,6 +17,7 @@ import type { ZipCreateResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { FileListPanel } from '../shared/file-list-panel'
+import { CopyPathButton, RevealButton } from '../shared/result-actions'
 import { fileNameOf, useFileList } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 
@@ -137,11 +138,17 @@ export default function ZipCreateTool() {
       {error && <ErrorNote error={error} />}
 
       {result && (
-        <SuccessNote
-          message={`Created ${fileNameOf(result.target)} — ${result.fileCount} file${
-            result.fileCount === 1 ? '' : 's'
-          }, ${formatBytes(result.bytesWritten)}`}
-        />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SuccessNote
+              message={`Created ${fileNameOf(result.target)} — ${result.fileCount} file${
+                result.fileCount === 1 ? '' : 's'
+              }, ${formatBytes(result.bytesWritten)}`}
+            />
+          </div>
+          <RevealButton path={result.target} />
+          <CopyPathButton path={result.target} />
+        </div>
       )}
     </div>
   )
