@@ -111,12 +111,12 @@ Legend:
 
 ## Milestone 5 — Prompt library (`future` category)
 
-- [-] Storage: `prompts` table (schema v2 migration) + PromptsStore CRUD with tests.
-- [ ] IPC surface: list/save/delete channels behind the typed bridge.
-- [ ] Tool UI: searchable list, create/edit/delete/duplicate, tag filtering.
-- [ ] Template variables: `{{variable}}` detection + fill-in-and-copy flow.
-- [ ] Starter pack + JSON import/export for backup.
-- [ ] Register `prompt-library` tool; update catalog docs and counts.
+- [x] Storage: `prompts` table (schema v2 migration) + PromptsStore CRUD with tests.
+- [x] IPC surface: list/save/delete channels behind the typed bridge.
+- [x] Tool UI: searchable list, create/edit/delete/duplicate, tag filtering.
+- [x] Template variables: `{{variable}}` detection + fill-in-and-copy flow.
+- [x] Starter pack + JSON import/export for backup.
+- [x] Register `prompt-library` tool; update catalog docs and counts. *(34 tools at ship; restored to checked after a stale-copy regression during Milestone 6 doc edits)*
 
 ## Milestone 6 — Expansion round
 
