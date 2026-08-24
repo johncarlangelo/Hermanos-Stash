@@ -148,6 +148,17 @@ Legend:
 - [x] Favicon / App-Icon Pack (`icon-pack`, one logo → full size set). *(renamed from "zipped" to loose-file export for fewer moving parts; `icons:generate-pack` derives a 512 center-crop master then writes icon-16…icon-512 plus favicon.ico built by a minimal pure-JS PNG-in-ICO container writer (22-byte header, Vista+ valid); cancel between sizes, fixed artifact names with collision suffixing; 4 tests incl. ICO header fields and favicon signature)*
 - [x] Social Preset Resizer (`social-resizer`, file × preset batch smart crop). *(`social:resize-batch`; shared `PRESET_LIST` in `shared/utils/social-presets.ts` drives UI checkboxes and main-side validation; 8 presets — OG image, X card, Instagram square/portrait/story, YouTube thumb, LinkedIn, Facebook link; `sharp resize fit:'cover' position:'attention'`; outputs `<stem>-<presetId><ext>`, labeled rows like "photo.jpg · OG Image", per-item progress + cancel; preset-integrity and exact-dimension tests)*
 
+## Milestone 7 — shadcn/ui adoption *(planned from user QA feedback)*
+
+**Goal:** replace clunky native-feeling controls with shadcn/ui (Radix-based)
+components while keeping DESIGN.md's charcoal/amber identity.
+
+- [ ] Init: run shadcn CLI (Tailwind v4 mode); map shadcn CSS variables onto our existing tokens (`--color-base`→background, `--color-accent` #d9a35c→primary, surface/radius scale) so components inherit the Stash look — NOT default zinc.
+- [ ] Migrate behavior-critical controls first: `Select` → Radix Select (biggest native-clunk offender), then Dialog / AlertDialog (two-step confirms), Tooltip (replaces custom Hint popover), DropdownMenu, ScrollArea, Popover.
+- [ ] Rebuild command palette on `cmdk` (keeps fuzzy search, gains standard palette UX).
+- [ ] Reconcile existing primitives: keep DropZone (bespoke), port Button/Input/Toggle visuals onto shadcn variants; delete duplicated styling once parity confirmed.
+- [ ] Sweep all 50 tools for replaced components; visual pass against DESIGN.md; update VERIFICATION_LOG UX entries.
+
 ## Future
 
 - [x] Prompt template organizer. *(delivered as the Prompt Library tool, Milestone 5)*
