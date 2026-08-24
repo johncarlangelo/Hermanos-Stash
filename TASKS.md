@@ -96,7 +96,7 @@ Legend:
 
 ## QA findings — pending revision
 
-- [!] Drag-and-drop does not accept files in several file tools, while click-to-browse works fine. *(Suspected root cause: Electron ≥ 32 removed the `File.path` property on dropped files; `DropZone.tsx` reads `file.path`, which is now `undefined`, so every drop resolves to zero valid paths. Click-to-browse is unaffected because it uses the native dialog IPC which returns real paths. Fix direction: expose `webUtils.getPathForFile(file)` through the preload bridge and use it in `filterValid()`. Affects every tool built on the shared DropZone: image-preview, image-convert, image-compress, image-exif, pdf-* , zip-*, video-*, audio-*, file-metadata. Verify each after fixing, then flip this box.)*
+- [x] Drag-and-drop does not accept files in several file tools, while click-to-browse works fine. *(RESOLVED: root cause confirmed — Electron ≥ 32 removed `File.path` on dropped files, so `DropZone.filterValid()` always produced zero paths. Fixed by exposing `webUtils.getPathForFile(file)` through the preload bridge (`stash.files.getPathForFile`) and using it in DropZone — the documented Electron migration path. Verified end-to-end via `scripts/e2e-drag-probe.mjs`, which synthesizes a real OS-backed file drop over CDP onto the live UI and asserts the tool receives the absolute path.)*
 
 ## Future
 

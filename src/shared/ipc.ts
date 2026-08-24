@@ -423,6 +423,10 @@ export interface StashBridge {
     getInfo(): Promise<{ version: string; dataFolder: string }>
     revealDataFolder(): Promise<void>
   }
+  files: {
+    /** Absolute OS path for a dropped File (Electron ≥32 removed File.path). */
+    getPathForFile(file: File): string
+  }
   dialogs: {
     openFile(req?: OpenFileDialogRequest): Promise<OpenFileDialogResult>
     saveFile(req?: SaveFileDialogRequest): Promise<SaveFileDialogResult>

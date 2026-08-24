@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC } from '../shared/ipc'
 import type {
@@ -107,6 +107,11 @@ const api: StashBridge = {
   crypto: {
     hashText: (req: HashTextRequest) => invoke(IPC.cryptoHashText, req),
     hashFile: (req: HashFileRequest) => invoke(IPC.cryptoHashFile, req)
+  },
+  files: {
+    // Electron ≥ 32 removed File.path; this is the documented replacement,
+    // exposed through the bridge so sandboxed renderers stay Node-free.
+    getPathForFile: (file: File) => webUtils.getPathForFile(file)
   },
   progress: {
     subscribe: (listener: (event: ProgressEvent) => void) => {

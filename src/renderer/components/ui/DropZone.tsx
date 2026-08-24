@@ -44,8 +44,8 @@ export function DropZone({
     (files: ArrayLike<File>): string[] => {
       const paths: string[] = []
       for (const file of Array.from(files)) {
-        // Electron augments File with the absolute path.
-        const filePath = (file as File & { path?: string }).path
+        // Electron ≥32 removed File.path; resolve via the preload bridge.
+        const filePath = window.stash.files.getPathForFile(file)
         if (!filePath) continue
         if (accept.length > 0 && !accept.includes(extensionOf(filePath))) continue
         paths.push(filePath)
