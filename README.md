@@ -1,6 +1,6 @@
 # Hermanos Stash
 
-**A local-first desktop toolbox.** One window, 34 focused tools for files, documents, images, video, audio, text, developer work and reusable AI prompts — everything processed on your machine, nothing sent anywhere.
+**A local-first desktop toolbox.** One window, 43 focused tools for files, documents, images, video, audio, text, developer work and reusable AI prompts — everything processed on your machine, nothing sent anywhere.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -46,6 +46,8 @@ Stash is the opposite bet: **one installed app you can trust**, where every byte
 | YAML ⇄ JSON | Two-way conversion with source-mapped errors |
 | CSV ⇄ JSON | Strict RFC 4180 parser, delimiter control, header-row toggle |
 | Text Diff | Line-by-line LCS diff with add/remove highlighting |
+| Case Converter & Counter | camel/snake/kebab/title and more, with word/char/reading-time stats |
+| HTML Entities & Slug | Encode/decode entities and generate clean URL slugs |
 
 ### Files & Archives
 
@@ -54,6 +56,7 @@ Stash is the opposite bet: **one installed app you can trust**, where every byte
 | File Metadata Viewer | Size, dates, MIME type, full path — multi-file |
 | ZIP Creator | Pack any mix of files into one archive |
 | ZIP Extractor | Extract archives with zip-slip protection |
+| Batch Rename | Pattern-based bulk renaming with dry-run preview and safety checks |
 
 ### Images
 
@@ -100,12 +103,17 @@ Every media output is re-probed after processing — container type and duration
 | UUID Generator | Bulk v4 UUIDs from the OS secure random source |
 | URL Utilities | Parse components, inspect query params, encode/decode |
 | QR Code Generator | Scannable codes with copy-image and save-to-PNG |
+| SQL Formatter | Pretty-print SQL across dialects with keyword casing |
+| Cron Explainer | Describe cron schedules in plain language with next-run preview |
+| MIME Lookup | Searchable extension-to-type reference |
+| HTTP Status Reference | Every status code explained, searchable |
+| Color Converter | HEX/RGB/HSL, WCAG contrast checks, shade and harmony palettes |
 
 ### Prompt Library *(local, no AI API)*
 
 | Tool | What it does |
 |---|---|
-| Prompt Library | Build a personal library of reusable prompts with `{{variables}}` — fill them in before copying. Search, tags, starter pack, JSON import/export. |
+| Prompt Library | Build a personal library of reusable prompts with `{{variables}}` — fill them in before copying. Search, tags, starter pack, JSON import/export. |`n| Brand Bible Creator | Compose a brand guide: colors with auto palettes and contrast, type scale, voice, usage rules � export as Markdown/JSON. |
 
 ---
 

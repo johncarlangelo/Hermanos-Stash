@@ -9,11 +9,16 @@ shipped earlier: output naming inputs, remembered folders, reveal/copy-path,
 zoom preference, history page, drop-anywhere routing, keyboard shortcuts and
 option help hints. **Wave A** (six quick developer/text utilities) and **Wave
 B** (Batch Rename — write-scoped folder renames with a pure shared naming
-engine, live dry-run preview and two-step confirm) shipped on top.
+engine, live dry-run preview and two-step confirm) shipped on top. **Wave C** (Color Converter — HEX/RGB/HSL with WCAG contrast
+checking and shade/tint/harmony palettes; Brand Bible Creator — numbered-panel
+builder with auto shade palettes, system font pairings, computed type scale,
+voice/usage rules, deterministic Markdown composition, prefs-backed draft
+autosave and Markdown/JSON export) completes the expansion waves: the catalog
+now stands at **42 tools**.
 
 ## Status
 
-40 tools registered across every category, on a verified platform: secure Electron
+42 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
@@ -503,6 +508,24 @@ Earlier Milestone 2 evidence:
   a human visual QA pass over the running app (keyboard nav feel, DESIGN.md visual
   compliance on real displays) is recommended before calling this "shipped" rather
   than "engineering-complete".
+
+Wave C gates:
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx}"` → applied; check clean.
+- `npx vitest run` → **44 files, 486 tests passed**, including 29 new tests:
+  color parsing variants/invalids, hex⇄rgb⇄hsl round trips within tolerance,
+  WCAG luminance anchors (#000=0, #fff=1) and contrast (21:1 black/white),
+  best-text selection, shade-scale count/ordering, harmony hue math, brand
+  Markdown composition (all section headings, hex values, contrast table,
+  type scale table), empty-draft validity, determinism, and autosave
+  serialize→parse round-trip with partial-merge/junk rejection.
+- `npx electron-vite build` → main/preload/renderer all build; new lazy chunks
+  `ColorConverterTool`, `BrandBibleTool` emitted; catalog integrity suite
+  passes over the two new registrations (42 definitions ↔ components).
+- `node scripts/e2e-probe.mjs` → exit 0, no exceptions.
+- `node scripts/e2e-drag-probe.mjs` → exit 0, drop verified against the live UI.
 
 ## Notes
 

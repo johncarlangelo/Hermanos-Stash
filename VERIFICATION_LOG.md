@@ -194,3 +194,19 @@ Human QA findings (first user pass) and resolutions:
 - [x] No known blocker remains
 - [x] PROGRESS.md contains evidence
 - [x] TASKS.md accurate
+
+Wave additions (M6): registry rows 35-43.
+
+| # | Tool id | Category | Tests | Notes |
+|---|---|---|---|---|
+| 35 | sql-formatter | developer | 7 | mature `sql-formatter` lib wrapper |
+| 36 | cron-explainer | developer | 11 | 5-field enforcement, next-run preview |
+| 37 | text-cases | text | 20 | boundary tokenizer incl. acronyms |
+| 38 | html-entities | text | 20 | encode/decode/slug modes |
+| 39 | mime-lookup | developer | 9 | curated ~65-entry table |
+| 40 | http-status | developer | 10 | full 63-code reference |
+| 41 | batch-rename | files | 14 + live CDP probe | write-scoped folder ops, dry-run plan |
+| 42 | color-converter | developer | 17 | WCAG contrast, harmonies |
+| 43 | brand-bible | future | 12 | Markdown/JSON export, prefs autosave |
+
+Also fixed: preload `fs.writeTextFile` payload mismatch (latent bug — channel always rejected; prompt-library export restored).

@@ -581,6 +581,32 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       supportsCancellation: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'color-converter',
+    name: 'Color Converter',
+    category: 'developer',
+    description:
+      'Convert HEX/RGB/HSL, check WCAG contrast and build shade, tint and harmony palettes.',
+    tags: ['color', 'hex', 'rgb', 'hsl', 'palette', 'contrast'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      producesText: true
+    }
+  },
+  {
+    id: 'brand-bible',
+    name: 'Brand Bible Creator',
+    category: 'future',
+    description:
+      'Compose an exportable brand guide — colors with auto palettes, type pairing, voice and usage rules.',
+    tags: ['brand', 'guidelines', 'identity', 'palette', 'style'],
+    icon: 'sparkles',
+    version: '1.0.0',
+    capabilities: {
+      producesText: true
+    }
   }
 ]
 
@@ -630,6 +656,8 @@ const VideoCompressTool = lazy(() => import('./video-compress/VideoCompressTool'
 const VideoGifTool = lazy(() => import('./video-gif/VideoGifTool'))
 const AudioExtractTool = lazy(() => import('./audio-extract/AudioExtractTool'))
 const AudioConvertTool = lazy(() => import('./audio-convert/AudioConvertTool'))
+const ColorConverterTool = lazy(() => import('./color-converter/ColorConverterTool'))
+const BrandBibleTool = lazy(() => import('./brand-bible/BrandBibleTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -672,5 +700,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'video-compress': VideoCompressTool,
   'video-to-gif': VideoGifTool,
   'extract-audio': AudioExtractTool,
-  'audio-convert': AudioConvertTool
+  'audio-convert': AudioConvertTool,
+  'color-converter': ColorConverterTool,
+  'brand-bible': BrandBibleTool
 }
