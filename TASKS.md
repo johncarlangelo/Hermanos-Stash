@@ -106,6 +106,8 @@ Legend:
 - [x] Zoom preference in Settings (100/110/125%, persisted, live-applied, titlebar adapts). *(`app:set-zoom` clamped via shared `utils/zoom.ts`, overlay height tracks 40 DIPs × factor on win32, startup reads `ui.zoom`, header sized from `env(titlebar-area-*)`)*
 - [x] Drop-anywhere routing (drop on window background → matching tools suggested). *(`EXTENSION_TOOL_HINTS` registry-filtered map + DropRouter modal; per-tool zones unaffected — verified by e2e-drag-probe)*
 - [x] Keyboard shortcuts (Esc → Home, Ctrl+1..5 → favorites). *(global handler, skipped while typing in fields)*
+- [x] Option help hints. *(accessible `?` affordance on FieldRow — hover AND keyboard-focus tooltips — wired into video/audio/image/QR options explaining CRF, bitrates, error correction etc.)*
+- [x] Per-tool history link. *(`HistoryView` accepts a seed tool id; tools that accept files show a quiet "History for this tool" link in their header)*
 
 ## Future
 
