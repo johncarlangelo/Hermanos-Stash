@@ -1,6 +1,6 @@
 # Hermanos Stash
 
-**A local-first desktop toolbox.** One window, 33 focused tools for files, documents, images, video, audio, text and developer work — everything processed on your machine, nothing sent anywhere.
+**A local-first desktop toolbox.** One window, 34 focused tools for files, documents, images, video, audio, text, developer work and reusable AI prompts — everything processed on your machine, nothing sent anywhere.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -100,6 +100,12 @@ Every media output is re-probed after processing — container type and duration
 | UUID Generator | Bulk v4 UUIDs from the OS secure random source |
 | URL Utilities | Parse components, inspect query params, encode/decode |
 | QR Code Generator | Scannable codes with copy-image and save-to-PNG |
+
+### Prompt Library *(local, no AI API)*
+
+| Tool | What it does |
+|---|---|
+| Prompt Library | Build a personal library of reusable prompts with `{{variables}}` — fill them in before copying. Search, tags, starter pack, JSON import/export. |
 
 ---
 

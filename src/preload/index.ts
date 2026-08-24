@@ -12,6 +12,7 @@ import type {
   HashFileRequest,
   HashTextRequest,
   HistoryEntryInput,
+  PromptSaveInput,
   ImagesToPdfRequest,
   OpenFileDialogRequest,
   PdfCompressRequest,
@@ -81,6 +82,11 @@ const api: StashBridge = {
     list: (limit?: number) => invoke(IPC.historyList, limit),
     record: (entry: HistoryEntryInput) => invoke(IPC.historyRecord, entry),
     clear: () => invoke<void>(IPC.historyClear)
+  },
+  prompts: {
+    list: () => invoke(IPC.promptsList),
+    save: (input: PromptSaveInput) => invoke(IPC.promptsSave, input),
+    delete: (id: number) => invoke(IPC.promptsDelete, id)
   },
   processing: {
     convertImages: (req: ConvertImagesRequest) => invoke(IPC.imagesConvertBatch, req),

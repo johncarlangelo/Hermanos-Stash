@@ -109,6 +109,15 @@ Legend:
 - [x] Option help hints. *(accessible `?` affordance on FieldRow — hover AND keyboard-focus tooltips — wired into video/audio/image/QR options explaining CRF, bitrates, error correction etc.)*
 - [x] Per-tool history link. *(`HistoryView` accepts a seed tool id; tools that accept files show a quiet "History for this tool" link in their header)*
 
+## Milestone 5 — Prompt library (`future` category)
+
+- [-] Storage: `prompts` table (schema v2 migration) + PromptsStore CRUD with tests.
+- [ ] IPC surface: list/save/delete channels behind the typed bridge.
+- [ ] Tool UI: searchable list, create/edit/delete/duplicate, tag filtering.
+- [ ] Template variables: `{{variable}}` detection + fill-in-and-copy flow.
+- [ ] Starter pack + JSON import/export for backup.
+- [ ] Register `prompt-library` tool; update catalog docs and counts.
+
 ## Future
 
 - [ ] Prompt template organizer.

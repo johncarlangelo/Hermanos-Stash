@@ -2,7 +2,13 @@ import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import { openDatabase } from './services/db'
-import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from './services/stores'
+import {
+  FavoritesStore,
+  HistoryStore,
+  PrefsStore,
+  PromptsStore,
+  RecentsStore
+} from './services/stores'
 import { TempWorkspaceManager } from './services/temp-workspace'
 import { ProgressBus } from './ipc/progress'
 import { WriteScopeGuard } from './ipc/write-scope'
@@ -99,6 +105,7 @@ function initializeServices(): number {
     favorites: new FavoritesStore(db),
     recents: new RecentsStore(db),
     history: new HistoryStore(db),
+    prompts: new PromptsStore(db),
     temp: tempManager,
     progress,
     writeScope: new WriteScopeGuard(() => tempManager!.rootPath)

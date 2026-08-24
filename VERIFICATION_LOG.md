@@ -8,7 +8,7 @@ Static gates at time of logging: `tsc` clean · `eslint` clean · `prettier` cle
 **319/319 vitest tests (30 files)** · `electron-vite build` clean (per-tool lazy
 chunks) · smoke boot `STASH_SMOKE_OK`.
 
-## Registry (33 tools)
+## Registry (34 tools)
 
 | # | Tool id | Category | Logic tests | Progress + Cancel | History records |
 |---|---|---|---|---|---|
@@ -45,6 +45,7 @@ chunks) · smoke boot `STASH_SMOKE_OK`.
 | 31 | video-to-gif | video | ↑ | two-pass split progress + cancel | yes |
 | 32 | extract-audio | audio | ↑ | same + duration verify ±10% | yes |
 | 33 | audio-convert | audio | ↑ | same + duration verify ±10% | yes |
+| 34 | prompt-library | future | logic 12 + store 2 | n/a (local CRUD) | n/a (own storage) |
 
 ## TOOL_SPEC.md — "Adding a tool checklist"
 

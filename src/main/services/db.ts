@@ -11,7 +11,7 @@ import path from 'node:path'
  * - Migrations run in order; `PRAGMA user_version` tracks the applied level.
  */
 
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 const MIGRATIONS: string[] = [
   // v1: initial schema
@@ -44,6 +44,18 @@ const MIGRATIONS: string[] = [
     message TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON activity (timestamp_ms DESC);
+  `,
+  // v2: prompt library
+  `
+  CREATE TABLE IF NOT EXISTS prompts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    tags_json TEXT NOT NULL DEFAULT '[]',
+    created_ms INTEGER NOT NULL,
+    updated_ms INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_prompts_updated ON prompts (updated_ms DESC);
   `
 ]
 

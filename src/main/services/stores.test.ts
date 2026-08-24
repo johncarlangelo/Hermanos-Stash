@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { openDatabase, CURRENT_SCHEMA_VERSION } from './db'
-import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from './stores'
+import { FavoritesStore, HistoryStore, PrefsStore, PromptsStore, RecentsStore } from './stores'
 
 function freshStores() {
   const { db } = openDatabase(':memory:')
@@ -13,7 +13,8 @@ function freshStores() {
     prefs: new PrefsStore(db),
     favorites: new FavoritesStore(db),
     recents: new RecentsStore(db),
-    history: new HistoryStore(db)
+    history: new HistoryStore(db),
+    prompts: new PromptsStore(db)
   }
 }
 
@@ -151,5 +152,50 @@ describe('HistoryStore', () => {
   it('exposes the underlying DatabaseSync for direct use', () => {
     const s = freshStores()
     expect(s.db).toBeInstanceOf(DatabaseSync)
+  })
+})
+
+describe('PromptsStore', () => {
+  it('creates, lists newest-first, updates and deletes prompts', () => {
+    const s = freshStores()
+    expect(s.prompts.count()).toBe(0)
+
+    const created = s.prompts.save(
+      { title: 'Code Review', body: 'Review {{lang}} code.', tags: ['Code', 'review'] },
+      1000
+    )
+    expect(created.id).toBeGreaterThan(0)
+    expect(created.tags).toEqual(['code', 'review'])
+
+    s.prompts.save({ title: 'Blog Outline', body: 'Outline {{topic}}', tags: [] }, 2000)
+    let rows = s.prompts.list()
+    expect(rows.map((r) => r.title)).toEqual(['Blog Outline', 'Code Review'])
+
+    const updated = s.prompts.save(
+      { id: created.id, title: 'Deep Code Review', body: 'updated', tags: ['deep'] },
+      3000
+    )
+    expect(updated.id).toBe(created.id)
+    rows = s.prompts.list()
+    expect(rows[0]!.title).toBe('Deep Code Review')
+    expect(rows[0]!.updatedAtMs).toBe(3000)
+    expect(rows[0]!.createdAtMs).toBe(1000)
+
+    s.prompts.delete(created.id)
+    rows = s.prompts.list()
+    expect(rows.map((r) => r.title)).toEqual(['Blog Outline'])
+    // Updating a deleted prompt fails cleanly.
+    expect(() => s.prompts.save({ id: created.id, title: 'x', body: 'y', tags: [] })).toThrow()
+  })
+
+  it('rejects malformed prompt input', () => {
+    const s = freshStores()
+    expect(() => s.prompts.save({ title: '  ', body: 'b', tags: [] })).toThrow()
+    expect(() => s.prompts.save({ title: 't', body: '', tags: [] })).toThrow()
+    expect(() =>
+      s.prompts.save({ title: 't', body: 'b', tags: [42 as unknown as string] })
+    ).toThrow()
+    expect(() => s.prompts.save({ title: 't'.repeat(121), body: 'b', tags: [] })).toThrow()
+    expect(s.prompts.count()).toBe(0)
   })
 })

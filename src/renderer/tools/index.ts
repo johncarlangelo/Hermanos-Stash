@@ -214,6 +214,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'prompt-library',
+    name: 'Prompt Library',
+    category: 'future',
+    description:
+      'Build a local library of reusable prompts with {{variables}} you fill in before copying.',
+    tags: ['prompt', 'ai', 'templates', 'library', 'snippets'],
+    icon: 'sparkles',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
     id: 'image-convert',
     name: 'Image Converter',
     category: 'images',
@@ -502,6 +516,7 @@ const TimestampConverterTool = lazy(() => import('./timestamp-converter/Timestam
 const HashGeneratorTool = lazy(() => import('./hash-generator/HashGeneratorTool'))
 const UrlUtilsTool = lazy(() => import('./url-utils/UrlUtilsTool'))
 const UuidGeneratorTool = lazy(() => import('./uuid-generator/UuidGeneratorTool'))
+const PromptLibraryTool = lazy(() => import('./prompt-library/PromptLibraryTool'))
 const ImageConvertTool = lazy(() => import('./image-convert/ImageConvertTool'))
 const ImageCompressTool = lazy(() => import('./image-compress/ImageCompressTool'))
 const ZipCreateTool = lazy(() => import('./zip-create/ZipCreateTool'))
@@ -537,6 +552,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'hash-generator': HashGeneratorTool,
   'url-utils': UrlUtilsTool,
   'uuid-generator': UuidGeneratorTool,
+  'prompt-library': PromptLibraryTool,
   'image-convert': ImageConvertTool,
   'image-compress': ImageCompressTool,
   'zip-create': ZipCreateTool,

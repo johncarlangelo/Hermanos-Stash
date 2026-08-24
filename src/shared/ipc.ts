@@ -63,6 +63,10 @@ export const IPC = {
   historyRecord: 'history:record',
   historyClear: 'history:clear',
 
+  promptsList: 'prompts:list',
+  promptsSave: 'prompts:save',
+  promptsDelete: 'prompts:delete',
+
   /** main → renderer push channel for long-running operations. */
   progressEvent: 'progress:event',
   progressCancel: 'progress:cancel'
@@ -434,6 +438,22 @@ export interface HistoryEntry extends HistoryEntryInput {
   timestampMs: number
 }
 
+export interface PromptRecord {
+  id: number
+  title: string
+  body: string
+  tags: string[]
+  createdAtMs: number
+  updatedAtMs: number
+}
+
+export interface PromptSaveInput {
+  id?: number
+  title: string
+  body: string
+  tags: string[]
+}
+
 /** Shape exposed on `window.stash` by the preload bridge. */
 export interface StashBridge {
   app: {
@@ -482,6 +502,11 @@ export interface StashBridge {
     list(limit?: number): Promise<HistoryEntry[]>
     record(entry: HistoryEntryInput): Promise<HistoryEntry>
     clear(): Promise<void>
+  }
+  prompts: {
+    list(): Promise<PromptRecord[]>
+    save(input: PromptSaveInput): Promise<PromptRecord>
+    delete(id: number): Promise<void>
   }
   processing: {
     convertImages(req: ConvertImagesRequest): Promise<ImageBatchResult>

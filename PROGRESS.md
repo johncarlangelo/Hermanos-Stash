@@ -2,9 +2,12 @@
 
 ## Current milestone
 
-**All planned milestones complete (M1–M4).** Post-milestone quality-of-life
-rounds in progress (output naming done; export-flow QoL — remembered folders,
-reveal/copy-path, zoom preference — just completed and verified).
+**All planned milestones complete (M1–M5).** Milestone 5 added the Prompt
+Library — the 34th tool — with its own SQLite table (schema v2),
+`{{variable}}` template fill-in, a starter pack and JSON import/export.
+Post-milestone QoL rounds shipped earlier: output naming inputs, remembered
+folders, reveal/copy-path, zoom preference, history page, drop-anywhere
+routing, keyboard shortcuts and option help hints.
 
 ## Status
 

@@ -26,7 +26,13 @@ import type {
   PdfSplitSuccess
 } from '../../shared/ipc'
 import { serializeStashError, stashError } from '../../shared/errors'
-import { FavoritesStore, HistoryStore, PrefsStore, RecentsStore } from '../services/stores'
+import {
+  FavoritesStore,
+  HistoryStore,
+  PrefsStore,
+  PromptsStore,
+  RecentsStore
+} from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
 import { ProgressBus } from './progress'
@@ -76,6 +82,7 @@ export interface IpcServices {
   favorites: FavoritesStore
   recents: RecentsStore
   history: HistoryStore
+  prompts: PromptsStore
   temp: TempWorkspaceManager
   progress: ProgressBus
   writeScope: WriteScopeGuard
@@ -1191,6 +1198,24 @@ export function registerIpc(services: IpcServices): void {
   )
   handle(IPC.historyRecord, (_e, entry: HistoryEntryInput) => services.history.record(entry))
   handle(IPC.historyClear, () => services.history.clear())
+
+  // --- Prompt library ---------------------------------------------------------
+  handle(IPC.promptsList, () => services.prompts.list())
+  handle(IPC.promptsSave, (_e, input: unknown) => {
+    if (typeof input !== 'object' || input === null) {
+      throw stashError('VALIDATION', 'Invalid prompt payload.')
+    }
+    const req = input as Record<string, unknown>
+    return services.prompts.save({
+      id: req['id'] === undefined ? undefined : assertNumber(req['id'], 'id'),
+      title: typeof req['title'] === 'string' ? req['title'] : '',
+      body: typeof req['body'] === 'string' ? req['body'] : '',
+      tags: Array.isArray(req['tags'])
+        ? (req['tags'] as unknown[]).filter((t): t is string => typeof t === 'string')
+        : []
+    })
+  })
+  handle(IPC.promptsDelete, (_e, id: unknown) => services.prompts.delete(assertNumber(id, 'id')))
 
   // --- Progress / cancellation ----------------------------------------------
   handle(IPC.progressCancel, (_e, operationId: unknown) =>

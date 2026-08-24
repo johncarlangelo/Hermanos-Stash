@@ -200,3 +200,119 @@ export class HistoryStore {
     this.db.exec('DELETE FROM activity')
   }
 }
+
+// ---------------------------------------------------------------------------
+// Prompt library
+// ---------------------------------------------------------------------------
+
+export interface PromptRecord {
+  id: number
+  title: string
+  body: string
+  tags: string[]
+  createdAtMs: number
+  updatedAtMs: number
+}
+
+export interface PromptSaveInput {
+  id?: number
+  title: string
+  body: string
+  tags: string[]
+}
+
+const PROMPT_LIMITS = { title: 120, body: 32_000, tags: 12, tagLength: 24 }
+
+export function assertPromptInput(input: PromptSaveInput): void {
+  const fail = (detail: string): never => {
+    throw stashError('VALIDATION', 'The prompt is malformed.', { technicalMessage: detail })
+  }
+  if (typeof input.title !== 'string' || !input.title.trim()) fail('title')
+  if (input.title.length > PROMPT_LIMITS.title) fail('title too long')
+  if (typeof input.body !== 'string' || !input.body.trim()) fail('body')
+  if (input.body.length > PROMPT_LIMITS.body) fail('body too long')
+  if (!Array.isArray(input.tags) || !input.tags.every((t) => typeof t === 'string')) fail('tags')
+  if ((input.tags as string[]).length > PROMPT_LIMITS.tags) fail('too many tags')
+  for (const tag of input.tags) {
+    if (!tag.trim() || tag.length > PROMPT_LIMITS.tagLength) fail('tag length')
+  }
+  if (input.id !== undefined && !Number.isInteger(input.id)) fail('id')
+}
+
+const clampTags = (tags: string[]): string[] =>
+  tags
+    .map((t) => t.trim().toLowerCase().slice(0, PROMPT_LIMITS.tagLength))
+    .filter(Boolean)
+    .slice(0, PROMPT_LIMITS.tags)
+
+export class PromptsStore {
+  constructor(private db: DatabaseSync) {}
+
+  list(): PromptRecord[] {
+    const rows = this.db
+      .prepare(
+        `SELECT id, title, body, tags_json, created_ms AS createdAtMs, updated_ms AS updatedAtMs
+         FROM prompts ORDER BY updated_ms DESC`
+      )
+      .all() as Array<Record<string, unknown>>
+    return rows.map((row) => ({
+      id: Number(row['id']),
+      title: String(row['title']),
+      body: String(row['body']),
+      tags: readJsonArray(row['tags_json']),
+      createdAtMs: Number(row['createdAtMs']),
+      updatedAtMs: Number(row['updatedAtMs'])
+    }))
+  }
+
+  save(input: PromptSaveInput, now: number = Date.now()): PromptRecord {
+    assertPromptInput(input)
+    const tagsJson = JSON.stringify(clampTags(input.tags))
+    let id = input.id
+    if (id === undefined) {
+      const result = this.db
+        .prepare(
+          'INSERT INTO prompts (title, body, tags_json, created_ms, updated_ms) VALUES (?, ?, ?, ?, ?)'
+        )
+        .run(input.title.trim(), input.body, tagsJson, now, now)
+      id = Number(result.lastInsertRowid)
+    } else {
+      const result = this.db
+        .prepare(
+          'UPDATE prompts SET title = ?, body = ?, tags_json = ?, updated_ms = ? WHERE id = ?'
+        )
+        .run(input.title.trim(), input.body, tagsJson, now, id)
+      if (Number(result.changes) === 0) {
+        throw stashError('VALIDATION', 'That prompt no longer exists.', {
+          technicalMessage: `id ${id} not found`
+        })
+      }
+    }
+    const row = this.db
+      .prepare(
+        `SELECT id, title, body, tags_json, created_ms AS createdAtMs, updated_ms AS updatedAtMs
+         FROM prompts WHERE id = ?`
+      )
+      .get(id) as Record<string, unknown>
+    return {
+      id: Number(row['id']),
+      title: String(row['title']),
+      body: String(row['body']),
+      tags: readJsonArray(row['tags_json']),
+      createdAtMs: Number(row['createdAtMs']),
+      updatedAtMs: Number(row['updatedAtMs'])
+    }
+  }
+
+  delete(id: number): void {
+    this.db.prepare('DELETE FROM prompts WHERE id = ?').run(id)
+  }
+
+  count(): number {
+    return Number(
+      Object.values(
+        this.db.prepare('SELECT COUNT(*) AS n FROM prompts').get() as Record<string, unknown>
+      )[0]
+    )
+  }
+}
