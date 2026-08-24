@@ -231,6 +231,10 @@ export default function PdfSplitTool() {
               </span>
             )}
           </div>
+          <p className="mt-2.5 text-[11.5px] leading-relaxed text-faint">
+            Outputs are named automatically from the document name — e.g. report-p1.pdf,
+            report-p1-p3.pdf, one file per group.
+          </p>
         </Panel>
       )}
 

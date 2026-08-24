@@ -9,7 +9,7 @@ import {
   SectionHeading
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
-import { FieldRow, Select } from '../../components/ui/Inputs'
+import { FieldRow, Input, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { CompressImagesRequest, ImageBatchResult } from '../../../shared/ipc'
@@ -27,13 +27,21 @@ export default function ImageCompressTool() {
   const [sizes, setSizes] = useState<Map<string, number>>(new Map())
   const [quality, setQuality] = useState(75)
   const [maxDimension, setMaxDimension] = useState<number>(0)
+  const [namePattern, setNamePattern] = useState('')
   const [destination, setDestination] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<ImageBatchResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
   const liveEvent = useProgressEvent()
 
-  const canRun = items.length > 0 && destination !== null && !running
+  // Live pattern validation; the main process re-checks the token at the IPC
+  // boundary before any file is written.
+  const patternError =
+    namePattern.trim().length > 0 && !namePattern.includes('{name}')
+      ? 'Pattern must include {name}.'
+      : null
+
+  const canRun = items.length > 0 && destination !== null && !running && patternError === null
   const live = running && liveEvent?.status === 'active' ? liveEvent : null
 
   const fetchSize = useCallback(async (path: string): Promise<void> => {
@@ -74,7 +82,8 @@ export default function ImageCompressTool() {
         paths: items.map((item) => item.path),
         outputDir: destination,
         quality,
-        ...(maxDimension > 0 ? { maxDimension } : {})
+        ...(maxDimension > 0 ? { maxDimension } : {}),
+        ...(namePattern.trim().length > 0 ? { namePattern } : {})
       }
       const res = await window.stash.processing.compressImages(req)
       setResult(res)
@@ -180,6 +189,29 @@ export default function ImageCompressTool() {
               ))}
             </Select>
           </FieldRow>
+        </div>
+
+        <div className="mt-2 flex flex-col gap-1">
+          <FieldRow label="Name pattern" htmlFor="compress-pattern">
+            <Input
+              id="compress-pattern"
+              mono
+              value={namePattern}
+              placeholder="{name}-min"
+              invalid={patternError !== null}
+              spellCheck={false}
+              onChange={(e) => setNamePattern(e.target.value)}
+            />
+          </FieldRow>
+          {patternError !== null ? (
+            <p role="alert" className="pl-[5.75rem] text-[11.5px] leading-snug text-danger">
+              {patternError}
+            </p>
+          ) : (
+            <p className="pl-[5.75rem] text-[11.5px] text-faint">
+              Use {'{name}'} for the original file name.
+            </p>
+          )}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">

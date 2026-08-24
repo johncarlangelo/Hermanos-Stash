@@ -56,8 +56,14 @@ export default function VideoGifTool() {
           </FieldRow>
         </>
       )}
-      runRequest={(path, outputDir) =>
-        window.stash.media.videoToGif({ path, outputDir, fps, maxWidth })
+      runRequest={(path, outputDir, fileName) =>
+        window.stash.media.videoToGif({
+          path,
+          outputDir,
+          fps,
+          maxWidth,
+          ...(fileName ? { fileName } : {})
+        })
       }
     />
   )

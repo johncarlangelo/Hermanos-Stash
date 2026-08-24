@@ -317,6 +317,9 @@ export default function PdfToImagesTool() {
             Every page is rendered locally and packed into a single ZIP archive — you'll pick the
             .zip destination when you press Export.
           </p>
+          <p className="text-[11.5px] leading-relaxed text-faint">
+            Pages export as page-001.png, page-002.png … inside the chosen .zip.
+          </p>
         </Panel>
       )}
 

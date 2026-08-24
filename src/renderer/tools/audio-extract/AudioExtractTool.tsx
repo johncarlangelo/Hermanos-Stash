@@ -68,12 +68,13 @@ export default function AudioExtractTool() {
           )}
         </>
       )}
-      runRequest={(path, outputDir) =>
+      runRequest={(path, outputDir, fileName) =>
         window.stash.media.extractAudio({
           path,
           outputDir,
           codec,
-          ...(lossy ? { bitrateKbps: bitrate } : {})
+          ...(lossy ? { bitrateKbps: bitrate } : {}),
+          ...(fileName ? { fileName } : {})
         })
       }
     />

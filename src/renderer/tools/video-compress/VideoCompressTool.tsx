@@ -68,12 +68,13 @@ export default function VideoCompressTool() {
           </FieldRow>
         </>
       )}
-      runRequest={(path, outputDir) =>
+      runRequest={(path, outputDir, fileName) =>
         window.stash.media.compressVideo({
           path,
           outputDir,
           crfQuality: crf,
-          ...(maxDimension > 0 ? { maxDimension } : {})
+          ...(maxDimension > 0 ? { maxDimension } : {}),
+          ...(fileName ? { fileName } : {})
         })
       }
     />

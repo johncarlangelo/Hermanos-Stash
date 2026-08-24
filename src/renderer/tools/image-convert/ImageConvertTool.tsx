@@ -9,7 +9,7 @@ import {
   SectionHeading
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
-import { FieldRow, Select } from '../../components/ui/Inputs'
+import { FieldRow, Input, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import { formatBytes } from '../../../shared/utils/files'
@@ -34,14 +34,22 @@ export default function ImageConvertTool() {
   const { items, addPaths, removePath, clearAll } = useFileList()
   const [format, setFormat] = useState<ImageOutputFormat>('webp')
   const [quality, setQuality] = useState(80)
+  const [namePattern, setNamePattern] = useState('')
   const [destination, setDestination] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<ImageBatchResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
   const liveEvent = useProgressEvent()
 
+  // Live pattern validation; the main process re-checks the token at the IPC
+  // boundary before any file is written.
+  const patternError =
+    namePattern.trim().length > 0 && !namePattern.includes('{name}')
+      ? 'Pattern must include {name}.'
+      : null
+
   const lossy = (LOSSY_FORMATS as readonly string[]).includes(format)
-  const canRun = items.length > 0 && destination !== null && !running
+  const canRun = items.length > 0 && destination !== null && !running && patternError === null
   // While the batch invoke is awaiting its result, progress events carry the
   // operation id — bind the bar and cancel button to whatever is live.
   const live = running && liveEvent?.status === 'active' ? liveEvent : null
@@ -102,7 +110,8 @@ export default function ImageConvertTool() {
         paths: items.map((item) => item.path),
         outputDir: destination,
         format,
-        quality
+        quality,
+        ...(namePattern.trim().length > 0 ? { namePattern } : {})
       }
       const res = await window.stash.processing.convertImages(req)
       setResult(res)
@@ -169,6 +178,29 @@ export default function ImageConvertTool() {
               />
               <span className="tnum w-8 text-[12px] text-dim">{quality}</span>
             </FieldRow>
+          )}
+        </div>
+
+        <div className="mt-2 flex flex-col gap-1">
+          <FieldRow label="Name pattern" htmlFor="convert-pattern">
+            <Input
+              id="convert-pattern"
+              mono
+              value={namePattern}
+              placeholder="{name}"
+              invalid={patternError !== null}
+              spellCheck={false}
+              onChange={(e) => setNamePattern(e.target.value)}
+            />
+          </FieldRow>
+          {patternError !== null ? (
+            <p role="alert" className="pl-[5.75rem] text-[11.5px] leading-snug text-danger">
+              {patternError}
+            </p>
+          ) : (
+            <p className="pl-[5.75rem] text-[11.5px] text-faint">
+              Use {'{name}'} for the original file name.
+            </p>
           )}
         </div>
 

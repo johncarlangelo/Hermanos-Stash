@@ -11,6 +11,8 @@ import {
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
+import { OutputNameField } from '../shared/OutputNameField'
+import { validateOutputName } from '../shared/output-name'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { PdfCompressResult, PdfInfoResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
@@ -29,8 +31,12 @@ export default function PdfCompressTool() {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<(PdfCompressResult & { target: string }) | null>(null)
   const [error, setError] = useState<StashError | null>(null)
+  const [outputName, setOutputName] = useState('')
 
-  const canRun = pdf !== null && pdf.info !== null && !running
+  const outputCheck = validateOutputName(outputName, '.pdf')
+  const nameError = outputCheck.ok ? null : outputCheck.error
+
+  const canRun = pdf !== null && pdf.info !== null && !running && outputCheck.ok
 
   const loadFile = useCallback(async (paths: string[]): Promise<void> => {
     const path = paths[0]
@@ -38,6 +44,7 @@ export default function PdfCompressTool() {
     setPdf({ path, info: null })
     setResult(null)
     setError(null)
+    setOutputName(defaultCompressedName(path))
     setInfoLoading(true)
     try {
       const info = await window.stash.pdfs.getInfo(path)
@@ -66,7 +73,7 @@ export default function PdfCompressTool() {
     setResult(null)
     try {
       const dialog = await window.stash.dialogs.saveFile({
-        defaultName: defaultCompressedName(pdf.path),
+        defaultName: outputName,
         filters: [{ name: 'PDF document', extensions: ['pdf'] }],
         title: 'Save optimized PDF as…'
       })
@@ -166,16 +173,22 @@ export default function PdfCompressTool() {
       </Panel>
 
       {pdf && !infoLoading && pdf.info && (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="primary"
-            loading={running}
-            disabled={!canRun}
-            onClick={() => void compress()}
-          >
-            <FileDown size={13} /> Save optimized copy…
-          </Button>
-        </div>
+        <>
+          <OutputNameField value={outputName} onChange={setOutputName} error={nameError} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              loading={running}
+              disabled={!canRun}
+              onClick={() => void compress()}
+            >
+              <FileDown size={13} /> Save optimized copy…
+            </Button>
+            {!canRun && !running && nameError !== null && (
+              <span className="text-[11px] text-faint">{nameError}</span>
+            )}
+          </div>
+        </>
       )}
 
       {running && (

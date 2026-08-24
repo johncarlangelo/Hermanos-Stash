@@ -11,6 +11,8 @@ import {
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
+import { OutputNameField } from '../shared/OutputNameField'
+import { validateOutputName } from '../shared/output-name'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { PdfMergeResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
@@ -27,8 +29,12 @@ export default function ImagesToPdfTool() {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<(PdfMergeResult & { target: string }) | null>(null)
   const [error, setError] = useState<StashError | null>(null)
+  const [outputName, setOutputName] = useState('images.pdf')
 
-  const canRun = paths.length > 0 && !running
+  const outputCheck = validateOutputName(outputName, '.pdf')
+  const nameError = outputCheck.ok ? null : outputCheck.error
+
+  const canRun = paths.length > 0 && !running && outputCheck.ok
 
   const addPaths = (incoming: string[]): void => {
     setPaths((prev) => [...prev, ...incoming.filter((p) => !prev.includes(p))])
@@ -61,7 +67,7 @@ export default function ImagesToPdfTool() {
     setResult(null)
     try {
       const dialog = await window.stash.dialogs.saveFile({
-        defaultName: 'images.pdf',
+        defaultName: outputName,
         filters: [{ name: 'PDF document', extensions: ['pdf'] }],
         title: 'Save images as PDF…'
       })
@@ -178,18 +184,23 @@ export default function ImagesToPdfTool() {
           <FileText size={14} className="shrink-0 text-faint" aria-hidden /> You'll pick the save
           location when you press Build.
         </p>
-        <div className="mt-3 flex items-center gap-2">
-          <Button
-            variant="primary"
-            loading={running}
-            disabled={!canRun}
-            onClick={() => void build()}
-          >
-            <FileText size={13} /> Build PDF…
-          </Button>
-          {!canRun && !running && (
-            <span className="text-[11px] text-faint">Add at least one image first.</span>
-          )}
+        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+          <OutputNameField value={outputName} onChange={setOutputName} error={nameError} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              loading={running}
+              disabled={!canRun}
+              onClick={() => void build()}
+            >
+              <FileText size={13} /> Build PDF…
+            </Button>
+            {!canRun && !running && (
+              <span className="text-[11px] text-faint">
+                {nameError ?? 'Add at least one image first.'}
+              </span>
+            )}
+          </div>
         </div>
       </Panel>
 

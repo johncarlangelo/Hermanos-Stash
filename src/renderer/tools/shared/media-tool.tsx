@@ -12,6 +12,8 @@ import {
 import { IconButton } from '../../components/ui/IconButton'
 import { FieldRow } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
+import { OutputNameField } from './OutputNameField'
+import { validateOutputStem } from './output-name'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { MediaBatchResult, MediaInfo } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
@@ -98,7 +100,7 @@ export interface SingleFileMediaToolProps {
   /** Extra readiness gate beyond file + folder (e.g. an option picked). */
   readyOverride?: boolean
   renderOptions: () => React.ReactNode
-  runRequest: (inputPath: string, outputDir: string) => Promise<MediaBatchResult>
+  runRequest: (inputPath: string, outputDir: string, fileName?: string) => Promise<MediaBatchResult>
 }
 
 export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.Element {
@@ -107,10 +109,18 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
   const [probed, setProbed] = useState<MediaInfo | null>(null)
   const [probeError, setProbeError] = useState<string | null>(null)
   const [destination, setDestination] = useState<string | null>(null)
+  const [outputName, setOutputName] = useState('')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<MediaBatchResult | null>(null)
   const [error, setError] = useState<StashError | null>(null)
   const liveEvent = useProgressEvent()
+
+  // Empty means "derive the name from the source file" — the main process
+  // keeps force-matching the extension to the chosen format/codec either way.
+  const requestedName = outputName.trim()
+  const outputCheck =
+    requestedName.length > 0 ? validateOutputStem(outputName) : ({ ok: true, value: '' } as const)
+  const nameError = outputCheck.ok ? null : outputCheck.error
 
   const handleFile = useCallback((paths: string[]) => {
     const next = paths[0] ?? null
@@ -127,7 +137,11 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
   }, [])
 
   const canRun =
-    inputPath !== null && destination !== null && !running && (props.readyOverride ?? true)
+    inputPath !== null &&
+    destination !== null &&
+    !running &&
+    (props.readyOverride ?? true) &&
+    nameError === null
 
   const live = running && liveEvent?.status === 'active' ? liveEvent : null
 
@@ -146,7 +160,11 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
     setError(null)
     setResult(null)
     try {
-      const res = await props.runRequest(inputPath, destination)
+      const res = await props.runRequest(
+        inputPath,
+        destination,
+        outputCheck.ok && requestedName.length > 0 ? outputCheck.value : undefined
+      )
       setResult(res)
 
       for (const entry of res.succeeded) {
@@ -244,7 +262,13 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
           {props.renderOptions()}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">
+        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+          <OutputNameField
+            value={outputName}
+            onChange={setOutputName}
+            error={nameError}
+            placeholder="Automatic"
+          />
           <FieldRow label="Save to">
             <Button size="sm" onClick={() => void chooseDestination()}>
               Choose folder…
@@ -278,11 +302,12 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
         )}
         {!canRun && !running && (
           <span className="text-[11px] text-faint">
-            {inputPath === null
-              ? 'Add a file first.'
-              : destination === null
-                ? 'Choose an output folder first.'
-                : ''}
+            {nameError ??
+              (inputPath === null
+                ? 'Add a file first.'
+                : destination === null
+                  ? 'Choose an output folder first.'
+                  : '')}
           </span>
         )}
       </div>

@@ -146,6 +146,8 @@ export interface ConvertImagesRequest {
   outputDir: string
   format: ImageOutputFormat
   quality?: number
+  /** Optional naming template; must contain {name}. Extension stays format-driven. */
+  namePattern?: string
 }
 
 export interface CompressImagesRequest {
@@ -153,6 +155,8 @@ export interface CompressImagesRequest {
   outputDir: string
   quality: number
   maxDimension?: number
+  /** Optional naming template; must contain {name}. Extension stays source-driven. */
+  namePattern?: string
 }
 
 /** One successfully processed file inside a batch. */
@@ -321,6 +325,8 @@ export interface ConvertVideoRequest {
   outputDir: string
   format: VideoOutputFormat
   crfQuality?: number
+  /** Optional output base name; the format still forces the extension. */
+  fileName?: string
 }
 
 export interface CompressVideoRequest {
@@ -328,6 +334,8 @@ export interface CompressVideoRequest {
   outputDir: string
   crfQuality: number
   maxDimension?: number
+  /** Optional output base name; .mp4 stays forced. */
+  fileName?: string
 }
 
 export interface VideoToGifRequest {
@@ -335,6 +343,8 @@ export interface VideoToGifRequest {
   outputDir: string
   fps: number
   maxWidth: number
+  /** Optional output base name; .gif stays forced. */
+  fileName?: string
 }
 
 export interface ExtractAudioRequest {
@@ -342,6 +352,8 @@ export interface ExtractAudioRequest {
   outputDir: string
   codec: AudioCodec
   bitrateKbps?: number
+  /** Optional output base name; the codec still forces the extension. */
+  fileName?: string
 }
 
 export interface ConvertAudioRequest {
@@ -349,6 +361,8 @@ export interface ConvertAudioRequest {
   outputDir: string
   codec: AudioCodec
   bitrateKbps?: number
+  /** Optional output base name; the codec still forces the extension. */
+  fileName?: string
 }
 
 /** One successfully processed media file. */

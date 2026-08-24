@@ -31,7 +31,14 @@ import { TempWorkspaceManager } from '../services/temp-workspace'
 import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
 import { ProgressBus } from './progress'
 import { WriteScopeGuard } from './write-scope'
-import { assertNumber, assertOptionalString, assertString, parseFilters } from './validate'
+import {
+  assertNumber,
+  assertOptionalString,
+  assertString,
+  parseFilters,
+  parseOptionalFileName,
+  parseOptionalNamePattern
+} from './validate'
 import { createZipArchive, extractZipArchive } from '../processing/archives'
 import {
   SUPPORTED_FORMATS,
@@ -132,6 +139,27 @@ function swapExtension(name: string, format: ImageOutputFormat): string {
   const dot = name.lastIndexOf('.')
   const stem = dot <= 0 ? name : name.slice(0, dot)
   return stem + EXTENSION_BY_FORMAT[format]
+}
+
+/** File stem of a base name, e.g. "photo.png" → "photo". */
+function stemOf(base: string): string {
+  const dot = base.lastIndexOf('.')
+  return dot <= 0 ? base : base.slice(0, dot)
+}
+
+/**
+ * Expand a validated naming template against one source stem. The pattern was
+ * already checked for the {name} token at the IPC boundary.
+ */
+function applyPatternToName(pattern: string, sourceStem: string): string {
+  let stripped = ''
+  for (const character of sourceStem) {
+    const code = character.charCodeAt(0)
+    if ('<>:"/\\|?*'.includes(character) || code <= 31 || code === 127) continue
+    stripped += character
+  }
+  const stem = stripped.trim().slice(0, 120) || 'file'
+  return pattern.split('{name}').join(stem)
 }
 
 /** Case-insensitive collision handling so batch exports never overwrite each other. */
@@ -327,7 +355,7 @@ interface MediaOpPlan {
  */
 async function runMediaOperation(
   services: IpcServices,
-  req: { path: string; outputDir: string },
+  req: { path: string; outputDir: string; fileName?: string },
   plan: MediaOpPlan
 ): Promise<MediaBatchResult> {
   services.writeScope.assertAllowed(req.outputDir)
@@ -352,7 +380,10 @@ async function runMediaOperation(
     } else {
       const sourceName = path.basename(req.path)
       handle.report(null, sourceName)
-      const name = uniqueName(plan.outputNameFor(sourceName), new Set())
+      const fallbackName = uniqueName(plan.outputNameFor(sourceName), new Set())
+      // A user-chosen name replaces the source-derived one; the extension was
+      // already force-matched to the chosen format/codec at the IPC boundary.
+      const name = req.fileName === undefined ? fallbackName : uniqueName(req.fileName, new Set())
       const tempOutput = path.join(opDir, name)
       try {
         const result = await plan.process(ctx, req.path, tempOutput, {
@@ -697,13 +728,19 @@ export function registerIpc(services: IpcServices): void {
     const format = parseImageFormat(req['format'])
     const quality =
       req['quality'] === undefined ? undefined : assertNumber(req['quality'], 'quality')
+    const namePattern = parseOptionalNamePattern(req['namePattern'])
     return runImageBatch(
       services,
       { paths, outputDir },
       {
         prefix: 'image-convert',
         message: 'Converting images…',
-        outputNameFor: (source) => swapExtension(path.basename(source), format),
+        outputNameFor: (source) => {
+          const base = path.basename(source)
+          const named =
+            namePattern === undefined ? base : applyPatternToName(namePattern, stemOf(base))
+          return swapExtension(named, format)
+        },
         process: (input, tempOutput) =>
           convertImage(input, tempOutput, { format, quality }).then((r) => r.bytesWritten)
       }
@@ -722,6 +759,7 @@ export function registerIpc(services: IpcServices): void {
     if (maxDimension !== undefined && (maxDimension < 1 || !Number.isInteger(maxDimension))) {
       throw stashError('VALIDATION', 'Invalid request: "maxDimension" must be a positive integer.')
     }
+    const namePattern = parseOptionalNamePattern(req['namePattern'])
     return runImageBatch(
       services,
       { paths, outputDir },
@@ -731,9 +769,10 @@ export function registerIpc(services: IpcServices): void {
         outputNameFor: (source) => {
           const base = path.basename(source)
           const dot = base.lastIndexOf('.')
-          const stem = dot <= 0 ? base : base.slice(0, dot)
           const ext = formatForExtension(dot <= 0 ? '' : base.slice(dot)) ?? ''
-          return `${stem}-min${ext}`
+          const stem = stemOf(base)
+          const named = namePattern === undefined ? stem : applyPatternToName(namePattern, stem)
+          return `${named}${ext}`
         },
         process: (input, tempOutput) =>
           compressImage(input, tempOutput, { quality, maxDimension }).then((r) => r.bytesWritten)
@@ -935,9 +974,10 @@ export function registerIpc(services: IpcServices): void {
     const format = parseVideoFormat(req['format'])
     const crfQuality =
       req['crfQuality'] === undefined ? undefined : assertNumber(req['crfQuality'], 'crfQuality')
+    const fileName = parseOptionalFileName(req['fileName'], VIDEO_EXTENSIONS_BY_FORMAT[format])
     return runMediaOperation(
       services,
-      { path: inputPath, outputDir },
+      { path: inputPath, outputDir, ...(fileName !== undefined ? { fileName } : {}) },
       {
         prefix: 'media-convert-video',
         message: 'Converting video…',
@@ -957,9 +997,10 @@ export function registerIpc(services: IpcServices): void {
       req['maxDimension'] === undefined
         ? undefined
         : assertNumber(req['maxDimension'], 'maxDimension')
+    const fileName = parseOptionalFileName(req['fileName'], '.mp4')
     return runMediaOperation(
       services,
-      { path: inputPath, outputDir },
+      { path: inputPath, outputDir, ...(fileName !== undefined ? { fileName } : {}) },
       {
         prefix: 'media-compress-video',
         message: 'Compressing video…',
@@ -980,9 +1021,10 @@ export function registerIpc(services: IpcServices): void {
     const outputDir = assertString(req['outputDir'], 'outputDir')
     const fps = assertNumber(req['fps'], 'fps')
     const maxWidth = assertNumber(req['maxWidth'], 'maxWidth')
+    const fileName = parseOptionalFileName(req['fileName'], '.gif')
     return runMediaOperation(
       services,
-      { path: inputPath, outputDir },
+      { path: inputPath, outputDir, ...(fileName !== undefined ? { fileName } : {}) },
       {
         prefix: 'media-video-to-gif',
         message: 'Building GIF…',
@@ -1014,9 +1056,10 @@ export function registerIpc(services: IpcServices): void {
       codec,
       ...(bitrateKbps !== undefined ? { bitrateKbps } : {})
     }
+    const fileName = parseOptionalFileName(req['fileName'], AUDIO_EXTENSION_BY_CODEC[codec])
     return runMediaOperation(
       services,
-      { path: inputPath, outputDir },
+      { path: inputPath, outputDir, ...(fileName !== undefined ? { fileName } : {}) },
       {
         prefix: 'media-extract-audio',
         message: 'Extracting audio…',
@@ -1040,9 +1083,10 @@ export function registerIpc(services: IpcServices): void {
       codec,
       ...(bitrateKbps !== undefined ? { bitrateKbps } : {})
     }
+    const fileName = parseOptionalFileName(req['fileName'], AUDIO_EXTENSION_BY_CODEC[codec])
     return runMediaOperation(
       services,
-      { path: inputPath, outputDir },
+      { path: inputPath, outputDir, ...(fileName !== undefined ? { fileName } : {}) },
       {
         prefix: 'media-convert-audio',
         message: 'Converting audio…',

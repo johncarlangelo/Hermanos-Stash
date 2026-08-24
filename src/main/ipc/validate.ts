@@ -37,6 +37,62 @@ export function assertNumber(value: unknown, field: string): number {
   return value
 }
 
+// --- Output file naming ------------------------------------------------------
+
+/** Characters Windows forbids in file names. */
+const FORBIDDEN_NAME_CHARACTERS = '<>:"/\\|?*'
+
+const RESERVED_DEVICE_NAMES = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
+
+const MAX_FILE_NAME_LENGTH = 120
+
+/**
+ * Renderer-supplied output names are untrusted input: re-sanitize them
+ * main-side with the same rules the renderer applies for UX feedback.
+ */
+function sanitizeFileNameInput(name: string): string {
+  let stripped = ''
+  for (const character of name) {
+    const code = character.charCodeAt(0)
+    if (FORBIDDEN_NAME_CHARACTERS.includes(character) || code <= 31 || code === 127) continue
+    stripped += character
+  }
+  return stripped
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_FILE_NAME_LENGTH)
+    .replace(/[.\s]+$/, '')
+}
+
+/**
+ * Optional user-chosen output base name. Any extension the caller supplied is
+ * discarded — the operation's format/codec always decides the real one.
+ */
+export function parseOptionalFileName(value: unknown, forcedExtension: string): string | undefined {
+  if (value === undefined) return undefined
+  const cleaned = sanitizeFileNameInput(assertString(value, 'fileName'))
+  if (cleaned.length === 0) {
+    throw stashError('VALIDATION', 'Invalid request: "fileName" contains no usable characters.')
+  }
+  const firstDot = cleaned.indexOf('.')
+  if (RESERVED_DEVICE_NAMES.test(firstDot === -1 ? cleaned : cleaned.slice(0, firstDot))) {
+    throw stashError('VALIDATION', 'Invalid request: "fileName" is a reserved device name.')
+  }
+  const lastDot = cleaned.lastIndexOf('.')
+  const stem = lastDot <= 0 ? cleaned : cleaned.slice(0, lastDot)
+  return stem + forcedExtension
+}
+
+/** Optional batch naming template; every entry must carry the {name} token. */
+export function parseOptionalNamePattern(value: unknown): string | undefined {
+  if (value === undefined) return undefined
+  const pattern = assertString(value, 'namePattern')
+  if (!pattern.includes('{name}')) {
+    throw stashError('VALIDATION', 'Invalid request: "namePattern" must include {name}.')
+  }
+  return pattern
+}
+
 export interface FileFilterInput {
   name: string
   extensions: string[]

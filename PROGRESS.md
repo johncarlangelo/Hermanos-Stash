@@ -63,8 +63,38 @@ NSIS installer output available via `npm run dist` when wanted.
 
 ## Current focus
 
-Milestone 4b (document & image expansion batch) is complete — six new tools plus
-shared infrastructure extensions:
+Output-filename quality-of-life batch (post-M4b) is complete — dedicated
+output-naming controls across all 12 file-producing tools:
+
+- Shared `tools/shared/output-name.ts` (sanitize / extension / reserved-device
+  / `{name}` pattern rules mirroring Windows filename constraints) with 22 unit
+  tests, plus `OutputNameField.tsx` so every tool renders the identical labeled
+  input with an inline `role=alert` error line.
+- Save-dialog tools (qr-generator, pdf-merge, pdf-compress, pdf-rotate,
+  pdf-reorder, images-to-pdf, zip-create) seed the field from their previous
+  hardcoded/dynamic defaults and pass it as the dialog `defaultName`; Run is
+  disabled with an inline reason while invalid. Dialog confirmation (and the
+  write-scope model) is unchanged.
+- Media scaffold tools (video-convert, video-compress, video-to-gif,
+  extract-audio, audio-convert) accept an optional `fileName` on every media
+  IPC request; empty means automatic (source-derived). Main re-sanitizes and
+  force-matches the extension to the chosen format/codec in
+  `parseOptionalFileName`; result rows already display the real final filename
+  including collision suffixes.
+- Batch image tools (image-convert, image-compress) gained an optional mono
+  `Name pattern` field validated live for the `{name}` token and threaded
+  through `namePattern` on both image batch requests; main re-validates the
+  token and applies it per source stem with collision suffixing preserved.
+- Numbered-output tools (pdf-split, pdf-to-images) intentionally got NO name
+  input — only honest dim hints stating the automatic naming scheme
+  (principle 11).
+- Verification: `tsc --noEmit`, `eslint .`, `prettier --write`, `vitest run`
+  (31 files / 341 tests), `electron-vite build`, plus `e2e-probe` and
+  `e2e-drag-probe` (both exit 0).
+
+### Milestone 4b (document & image expansion batch)
+
+Milestone 4b is complete — six new tools plus shared infrastructure extensions:
 
 - `parsePageSequence` added beside (not replacing) `parsePageRanges`: same
   "1-3, 7" grammar but returning a FLAT ordered array exactly as written

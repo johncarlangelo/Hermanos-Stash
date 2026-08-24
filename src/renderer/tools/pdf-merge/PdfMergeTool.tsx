@@ -11,6 +11,8 @@ import {
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
+import { OutputNameField } from '../shared/OutputNameField'
+import { validateOutputName } from '../shared/output-name'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { PdfMergeResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
@@ -27,8 +29,12 @@ export default function PdfMergeTool() {
   const [merging, setMerging] = useState(false)
   const [result, setResult] = useState<(PdfMergeResult & { target: string }) | null>(null)
   const [error, setError] = useState<StashError | null>(null)
+  const [outputName, setOutputName] = useState('merged.pdf')
 
-  const canRun = paths.length > 1 && !merging
+  const outputCheck = validateOutputName(outputName, '.pdf')
+  const nameError = outputCheck.ok ? null : outputCheck.error
+
+  const canRun = paths.length > 1 && !merging && outputCheck.ok
 
   const addPaths = (incoming: string[]): void => {
     setPaths((prev) => [...prev, ...incoming.filter((p) => !prev.includes(p))])
@@ -60,7 +66,7 @@ export default function PdfMergeTool() {
     setResult(null)
     try {
       const dialog = await window.stash.dialogs.saveFile({
-        defaultName: 'merged.pdf',
+        defaultName: outputName,
         filters: [{ name: 'PDF document', extensions: ['pdf'] }],
         title: 'Save merged PDF as…'
       })
@@ -174,22 +180,26 @@ export default function PdfMergeTool() {
           <FileText size={14} className="shrink-0 text-faint" aria-hidden /> You'll pick the save
           location when you press Merge.
         </p>
-        <div className="mt-3 flex items-center gap-2">
-          <Button
-            variant="primary"
-            loading={merging}
-            disabled={!canRun}
-            onClick={() => void merge()}
-          >
-            <FileText size={13} /> Merge PDFs…
-          </Button>
-          {!canRun && !merging && (
-            <span className="text-[11px] text-faint">
-              {paths.length === 0
-                ? 'Add at least two PDFs first.'
-                : `Add another PDF to merge (${paths.length} queued).`}
-            </span>
-          )}
+        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+          <OutputNameField value={outputName} onChange={setOutputName} error={nameError} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              loading={merging}
+              disabled={!canRun}
+              onClick={() => void merge()}
+            >
+              <FileText size={13} /> Merge PDFs…
+            </Button>
+            {!canRun && !merging && (
+              <span className="text-[11px] text-faint">
+                {nameError ??
+                  (paths.length === 0
+                    ? 'Add at least two PDFs first.'
+                    : `Add another PDF to merge (${paths.length} queued).`)}
+              </span>
+            )}
+          </div>
         </div>
       </Panel>
 

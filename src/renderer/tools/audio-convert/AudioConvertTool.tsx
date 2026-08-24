@@ -68,12 +68,13 @@ export default function AudioConvertTool() {
           )}
         </>
       )}
-      runRequest={(path, outputDir) =>
+      runRequest={(path, outputDir, fileName) =>
         window.stash.media.convertAudio({
           path,
           outputDir,
           codec,
-          ...(lossy ? { bitrateKbps: bitrate } : {})
+          ...(lossy ? { bitrateKbps: bitrate } : {}),
+          ...(fileName ? { fileName } : {})
         })
       }
     />

@@ -5,6 +5,8 @@ import { ErrorNote, Panel, SectionHeading } from '../../components/ui/Feedback'
 import { FieldRow, Select, TextArea } from '../../components/ui/Inputs'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import { toastError, toastSuccess } from '../../stores/toasts'
+import { OutputNameField } from '../shared/OutputNameField'
+import { validateOutputName } from '../shared/output-name'
 import { generateQrDataUrl, type ErrorCorrectionLevel } from './logic'
 
 const SIZES = [256, 512, 1024] as const
@@ -17,6 +19,10 @@ export default function QrGeneratorTool() {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<StashError | null>(null)
+  const [outputName, setOutputName] = useState('qrcode.png')
+
+  const outputCheck = validateOutputName(outputName, '.png')
+  const nameError = outputCheck.ok ? null : outputCheck.error
 
   const contentId = useId()
   const sizeId = useId()
@@ -50,7 +56,7 @@ export default function QrGeneratorTool() {
     if (!dataUrl) return
     try {
       const dialog = await window.stash.dialogs.saveFile({
-        defaultName: 'qrcode.png',
+        defaultName: outputName,
         filters: [{ name: 'PNG image', extensions: ['png'] }]
       })
       if (dialog.cancelled || !dialog.path) return
@@ -154,13 +160,20 @@ export default function QrGeneratorTool() {
               className="h-auto max-w-full rounded-sm"
               style={{ imageRendering: width > 512 ? 'auto' : 'pixelated' }}
             />
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => void copyImage()}>
-                <Copy size={13} /> Copy image
-              </Button>
-              <Button size="sm" onClick={() => void saveImage()}>
-                <Download size={13} /> Save…
-              </Button>
+            <div className="flex w-full max-w-sm flex-col gap-2">
+              <OutputNameField
+                value={outputName}
+                onChange={setOutputName}
+                error={hasGenerated ? nameError : null}
+              />
+              <div className="flex items-center justify-center gap-2">
+                <Button size="sm" onClick={() => void copyImage()}>
+                  <Copy size={13} /> Copy image
+                </Button>
+                <Button size="sm" disabled={!outputCheck.ok} onClick={() => void saveImage()}>
+                  <Download size={13} /> Save…
+                </Button>
+              </div>
             </div>
             <p className="tnum text-[10.5px] text-faint">
               {width} × {width} px · error correction {ecLevel}

@@ -12,6 +12,8 @@ import {
 import { IconButton } from '../../components/ui/IconButton'
 import { FieldRow, Input, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
+import { OutputNameField } from '../shared/OutputNameField'
+import { validateOutputName } from '../shared/output-name'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import type { PdfInfoResult, PdfRotateResult } from '../../../shared/ipc'
 import type { PageSequenceParse } from '../../../shared/utils/page-ranges'
@@ -36,6 +38,7 @@ export default function PdfRotateTool() {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<(PdfRotateResult & { target: string }) | null>(null)
   const [error, setError] = useState<StashError | null>(null)
+  const [outputName, setOutputName] = useState('')
 
   // Empty spec means every page; anything else is validated live.
   const isAll = pageSpec.trim().toLowerCase() === 'all'
@@ -44,7 +47,11 @@ export default function PdfRotateTool() {
       ? parsePageSequence(pageSpec, pdf.info.pageCount)
       : null
 
-  const canRun = pdf !== null && pdf.info !== null && !running && validation === null
+  const outputCheck = validateOutputName(outputName, '.pdf')
+  const nameError = outputCheck.ok ? null : outputCheck.error
+
+  const canRun =
+    pdf !== null && pdf.info !== null && !running && validation === null && outputCheck.ok
 
   const loadFile = useCallback(async (paths: string[]): Promise<void> => {
     const path = paths[0]
@@ -53,6 +60,7 @@ export default function PdfRotateTool() {
     setResult(null)
     setError(null)
     setPageSpec('')
+    setOutputName(defaultRotatedName(path))
     setInfoLoading(true)
     try {
       const info = await window.stash.pdfs.getInfo(path)
@@ -81,7 +89,7 @@ export default function PdfRotateTool() {
     setResult(null)
     try {
       const dialog = await window.stash.dialogs.saveFile({
-        defaultName: defaultRotatedName(pdf.path),
+        defaultName: outputName,
         filters: [{ name: 'PDF document', extensions: ['pdf'] }],
         title: 'Save rotated PDF as…'
       })
@@ -224,19 +232,24 @@ export default function PdfRotateTool() {
       )}
 
       {pdf && !infoLoading && pdf.info && (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="primary"
-            loading={running}
-            disabled={!canRun}
-            onClick={() => void rotate()}
-          >
-            <RotateCw size={13} /> Save rotated PDF…
-          </Button>
-          {!canRun && !running && (
-            <span className="text-[11px] text-faint">Fix the highlighted pages first.</span>
-          )}
-        </div>
+        <>
+          <OutputNameField value={outputName} onChange={setOutputName} error={nameError} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              loading={running}
+              disabled={!canRun}
+              onClick={() => void rotate()}
+            >
+              <RotateCw size={13} /> Save rotated PDF…
+            </Button>
+            {!canRun && !running && (
+              <span className="text-[11px] text-faint">
+                {nameError ?? 'Fix the highlighted pages first.'}
+              </span>
+            )}
+          </div>
+        </>
       )}
 
       {running && (

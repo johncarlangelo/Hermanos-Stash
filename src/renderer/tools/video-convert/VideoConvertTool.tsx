@@ -62,8 +62,14 @@ export default function VideoConvertTool() {
           </FieldRow>
         </>
       )}
-      runRequest={(path, outputDir) =>
-        window.stash.media.convertVideo({ path, outputDir, format, crfQuality: crf })
+      runRequest={(path, outputDir, fileName) =>
+        window.stash.media.convertVideo({
+          path,
+          outputDir,
+          format,
+          crfQuality: crf,
+          ...(fileName ? { fileName } : {})
+        })
       }
     />
   )
