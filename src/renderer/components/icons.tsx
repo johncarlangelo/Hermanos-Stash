@@ -12,6 +12,7 @@ import {
   Folder,
   Image,
   Loader2,
+  Lock,
   Music,
   Search,
   Settings,
@@ -43,7 +44,8 @@ const ICONS: Record<string, LucideIcon> = {
   chevron: ChevronRight,
   upload: UploadCloud,
   alert: TriangleAlert,
-  loader: Loader2
+  loader: Loader2,
+  lock: Lock
 }
 
 /** Resolve a Lucide icon by name with a neutral fallback. */

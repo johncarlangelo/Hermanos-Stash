@@ -214,6 +214,32 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'qr-decoder',
+    name: 'QR Decoder',
+    category: 'developer',
+    description: 'Extract the text payload out of any QR code image, entirely offline.',
+    tags: ['qr', 'decode', 'scanner', 'qrcode'],
+    icon: 'code',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'passphrase-generator',
+    name: 'Passphrase Generator',
+    category: 'developer',
+    description:
+      'Create strong diceware-style passphrases or random passwords with live entropy feedback.',
+    tags: ['password', 'passphrase', 'security', 'generator', 'entropy'],
+    icon: 'lock',
+    version: '1.0.0',
+    capabilities: {
+      producesText: true
+    }
+  },
+  {
     id: 'prompt-library',
     name: 'Prompt Library',
     category: 'future',
@@ -653,6 +679,8 @@ const TextDiffTool = lazy(() => import('./text-diff/TextDiffTool'))
 const FileMetadataTool = lazy(() => import('./file-metadata/FileMetadataTool'))
 const ImagePreviewTool = lazy(() => import('./image-preview/ImagePreviewTool'))
 const QrGeneratorTool = lazy(() => import('./qr-generator/QrGeneratorTool'))
+const QrDecoderTool = lazy(() => import('./qr-decoder/QrDecoderTool'))
+const PassphraseGeneratorTool = lazy(() => import('./passphrase-generator/PassphraseGeneratorTool'))
 const RegexTesterTool = lazy(() => import('./regex-tester/RegexTesterTool'))
 const JwtDecoderTool = lazy(() => import('./jwt-decoder/JwtDecoderTool'))
 const TimestampConverterTool = lazy(() => import('./timestamp-converter/TimestampConverterTool'))
@@ -700,6 +728,8 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'file-metadata': FileMetadataTool,
   'image-preview': ImagePreviewTool,
   'qr-generator': QrGeneratorTool,
+  'qr-decoder': QrDecoderTool,
+  'passphrase-generator': PassphraseGeneratorTool,
   'regex-tester': RegexTesterTool,
   'jwt-decoder': JwtDecoderTool,
   'timestamp-converter': TimestampConverterTool,

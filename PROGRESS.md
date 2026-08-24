@@ -20,11 +20,18 @@ naming, array shape merging and optional-field detection; 15 logic tests) and
 PDF → Text (`pdf-to-text`: renderer-side pdf.js extraction over the shared
 bootstrap, hasEOL-aware text assembly, page-range filtering via the shared
 parser, save-as-.txt and history integration; 16 logic tests) — bringing the
-catalog to **44 tools**.
+catalog to **44 tools**. **Wave E** completes the stories with two more
+developer tools: QR Decoder (`qr-decoder`: renderer-side jsQR decoding over an
+OffscreenCanvas pipeline with injected, unit-testable canvas construction,
+guidance-styled no-QR state, honest copy-only URL handling) and Passphrase
+Generator (`passphrase-generator`: embedded 256-word diceware list,
+rejection-sampled CSPRNG for passphrases and Fisher–Yates passwords, live
+entropy meter with labeled strength bands; nothing recorded to history by
+design) — bringing the catalog to **47 tools**.
 
 ## Status
 
-44 tools registered across every category, on a verified platform: secure Electron
+47 tools registered across every category, on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
@@ -383,6 +390,29 @@ Milestone 2 batch 4 (PDF suite) additions:
   and file change).
 
 ## Verification evidence
+
+Wave E gates (latest run):
+
+- `npx tsc --noEmit -p tsconfig.json` — clean.
+- `npx eslint .` — clean.
+- `npx prettier --write "src/**/*.{ts,tsx}"` — applied; new files format-stable.
+- `npx vitest run` — **48 files, 541 tests passed** (up from 46 files / 517:
+  +24 — qr-decoder canvas-construction injection (offscreen preference,
+  fallback, null-context skip, both-fail throw), downscale math incl.
+  degenerate sizes, extractResult miss/blank handling; passphrase wordlist
+  invariants (exactly 256 unique 3–7-letter words), 50-iteration passphrase
+  pattern checks across separator/casing/digit options, password class
+  presence/absence and length guards, exact entropy math, threshold
+  boundaries).
+- `npx electron-vite build` — clean build; new lazy chunks `QrDecoderTool`,
+  `PassphraseGeneratorTool` emitted; catalog integrity suite passes over the
+  two new registrations (47 definitions ↔ components).
+- `node scripts/e2e-probe.mjs` — exit 0, no renderer exceptions.
+- `node scripts/e2e-drag-probe.mjs` — exit 0.
+- Ad-hoc CDP smoke of both shipped views: palette navigation lands on each
+  tool, passphrase output renders (`Heart-Crest-Boat-Dragon98`, ≈32 bits for
+  4 words), password mode yields all selected classes with slider at 20,
+  QR Decoder shows dropzone + empty state; zero exceptions.
 
 Batch Rename (Wave B) gates (latest run):
 
