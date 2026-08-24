@@ -150,8 +150,8 @@ Legend:
 
 ## Future
 
-- [ ] Prompt template organizer.
-- [ ] Prompt formatter.
-- [ ] Prompt variable builder.
-- [ ] Local prompt history.
+- [x] Prompt template organizer. *(delivered as the Prompt Library tool, Milestone 5)*
+- [x] Prompt formatter. *(template variables + fill-in flow in the Prompt Library)*
+- [x] Prompt variable builder. *(`{{variable}}` detection and fill-in-and-copy in the Prompt Library)*
+- [x] Local prompt history. *(prompts persisted in SQLite via the Prompt Library)*
 - [ ] Additional tool categories discovered through real usage.
