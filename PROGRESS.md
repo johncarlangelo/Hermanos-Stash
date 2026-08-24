@@ -563,6 +563,29 @@ Wave C gates:
 - `node scripts/e2e-probe.mjs` → exit 0, no exceptions.
 - `node scripts/e2e-drag-probe.mjs` → exit 0, drop verified against the live UI.
 
+Wave F gates:
+
+- `npx tsc --noEmit -p tsconfig.json` → clean.
+- `npx eslint .` → clean.
+- `npx prettier --write "src/**/*.{ts,tsx}"` → applied; check clean.
+- `npx vitest run` → **50 files, 553 tests passed**, including 12 new Wave F tests:
+  watermark stamping preserves dimensions with bytesWritten > 0, invalid hex
+  colors rejected as VALIDATION, opacity/font-size clamping, watermark text
+  normalization (control chars stripped, 60-char cap), ICO container header
+  fields (reserved/type/count/planes/bitcount/payload size/offset, byte 0 ==
+  256), full pack generation from a runtime 512px logo asserting all nine PNG
+  dimensions plus favicon.ico signature bytes and embedded PNG payload,
+  missing-logo structured error, PRESET_LIST integrity (unique ids, positive
+  integer dims, defaults subset), and exact output dimensions for two social
+  presets via attention crop.
+- `npx electron-vite build` → main/preload/renderer all build; new lazy chunks
+  `ImageWatermarkTool`, `IconPackTool`, `SocialResizerTool` emitted; catalog
+  integrity suite passes over the three new registrations (50 definitions ↔
+  components, no orphans).
+- `node scripts/e2e-probe.mjs` → exit 0 (bridge sanity, favorites toggle/restore,
+  star click, settings navigation; known benign sandbox-bundle console noise).
+- `node scripts/e2e-drag-probe.mjs` → exit 0, drop verified against the live UI.
+
 ## Notes
 
 - Do not treat the initial tool catalog as exhaustive. New tools can be added after the architecture is proven.

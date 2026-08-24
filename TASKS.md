@@ -144,8 +144,9 @@ Legend:
 - [x] Passphrase Generator (`passphrase-generator`, words + passwords, strength meter). *(embedded 256-word list (3–7 letters, unique); rejection-sampled crypto.getRandomValues for words, digits, and Fisher–Yates password shuffles with ≥1 char per selected class; entropy = n·log2(256) or length·log2(alphabet), thresholds Weak<45≤Fair<60≤Strong<80≤Excellent; 13 logic tests incl. wordlist invariants and 50-iteration pattern checks; Passphrase/Password segmented modes, word count/separator/toggles, 8–64 slider with class toggles, labeled strength meter (never color-only) + bits caption; records nothing to history by design)*
 
 ### Wave F — creator pack
-- [ ] Image Watermarker (`image-watermark`, batch text stamp via sharp).
-- [ ] Favicon / App-Icon Pack (`icon-pack`, one logo + size set zipped).
+- [x] Image Watermarker (`image-watermark`, batch text stamp via sharp). *(`images:watermark-batch` on the shared job lifecycle — SVG text overlay composited via sharp, text sanitized 1–60 chars, 3×3 position grid, font size 12–144, hex color pair field + native picker, opacity 5–100%, per-file progress/cancel/collision-suffix export; 5 new processing tests incl. dimension preservation and color/opacity validation)*
+- [x] Favicon / App-Icon Pack (`icon-pack`, one logo → full size set). *(renamed from "zipped" to loose-file export for fewer moving parts; `icons:generate-pack` derives a 512 center-crop master then writes icon-16…icon-512 plus favicon.ico built by a minimal pure-JS PNG-in-ICO container writer (22-byte header, Vista+ valid); cancel between sizes, fixed artifact names with collision suffixing; 4 tests incl. ICO header fields and favicon signature)*
+- [x] Social Preset Resizer (`social-resizer`, file × preset batch smart crop). *(`social:resize-batch`; shared `PRESET_LIST` in `shared/utils/social-presets.ts` drives UI checkboxes and main-side validation; 8 presets — OG image, X card, Instagram square/portrait/story, YouTube thumb, LinkedIn, Facebook link; `sharp resize fit:'cover' position:'attention'`; outputs `<stem>-<presetId><ext>`, labeled rows like "photo.jpg · OG Image", per-item progress + cancel; preset-integrity and exact-dimension tests)*
 
 ## Future
 

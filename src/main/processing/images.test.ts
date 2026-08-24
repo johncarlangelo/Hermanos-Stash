@@ -5,7 +5,16 @@ import path from 'node:path'
 import sharp from 'sharp'
 import type { Metadata } from 'sharp'
 import { isStashError } from '../../shared/errors'
-import { compressImage, convertImage, formatForExtension } from './images'
+import {
+  clampWatermarkFontSize,
+  compressImage,
+  convertImage,
+  formatForExtension,
+  isValidWatermarkColor,
+  normalizeWatermarkText,
+  socialResizeImage,
+  watermarkImage
+} from './images'
 
 async function makeTempDir(): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), 'stash-images-'))
@@ -163,6 +172,85 @@ describe('compressImage', () => {
       await expect(
         compressImage(input, path.join(dir, 'out.gif'), { quality: 75 })
       ).rejects.toSatisfy((err: unknown) => isStashError(err) && err.code === 'UNSUPPORTED')
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('watermarkImage', () => {
+  it('stamps text without changing output dimensions', async () => {
+    const dir = await makeTempDir()
+    try {
+      const input = await writeNoisyPng(dir, 'photo.png', 200)
+      const output = path.join(dir, 'photo-watermarked.png')
+      const { bytesWritten } = await watermarkImage(input, output, {
+        text: '© Hermanos',
+        position: 'bottom-right'
+      })
+      expect(bytesWritten).toBeGreaterThan(0)
+      const meta = await metadataOf(output)
+      expect(meta).toMatchObject({ width: 200, height: 200, format: 'png' })
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects invalid hex colors with a validation error', async () => {
+    const dir = await makeTempDir()
+    try {
+      const input = await writeNoisyPng(dir, 'photo.png', 64)
+      const output = path.join(dir, 'out.png')
+      for (const color of ['red', '#12345', '#gggggg', 'ffffff']) {
+        await expect(
+          watermarkImage(input, output, { text: 'x', position: 'center', color })
+        ).rejects.toSatisfy((err: unknown) => isStashError(err) && err.code === 'VALIDATION')
+      }
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('clamps out-of-range opacity and font size instead of failing', async () => {
+    const dir = await makeTempDir()
+    try {
+      const input = await writeNoisyPng(dir, 'photo.png', 64)
+      const output = path.join(dir, 'clamped.png')
+      const { bytesWritten } = await watermarkImage(input, output, {
+        text: 'edge',
+        position: 'center',
+        opacity: 42,
+        fontSize: 9999
+      })
+      expect(bytesWritten).toBeGreaterThan(0)
+      expect(clampWatermarkFontSize(-5)).toBe(12)
+      expect(clampWatermarkFontSize(32.4)).toBe(32)
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('normalizes watermark text (control chars stripped, capped at 60)', () => {
+    expect(normalizeWatermarkText('  hello\u0007 world\t')).toBe('hello world')
+    expect(normalizeWatermarkText('x'.repeat(100)).length).toBe(60)
+    expect(normalizeWatermarkText('\t\n\r')).toBe('')
+    expect(isValidWatermarkColor('#fff')).toBe(true)
+    expect(isValidWatermarkColor('#AbC123')).toBe(true)
+    expect(isValidWatermarkColor('#12')).toBe(false)
+  })
+})
+
+describe('socialResizeImage', () => {
+  it('produces exact preset dimensions via attention crop', async () => {
+    const dir = await makeTempDir()
+    try {
+      const input = await writeNoisyPng(dir, 'photo.jpg', 400)
+      const ogOutput = path.join(dir, 'photo-og-image.jpg')
+      const storyOutput = path.join(dir, 'photo-instagram-story.jpg')
+      await socialResizeImage(input, ogOutput, { w: 1200, h: 630 })
+      await socialResizeImage(input, storyOutput, { w: 1080, h: 1920 })
+      expect(await metadataOf(ogOutput)).toMatchObject({ width: 1200, height: 630 })
+      expect(await metadataOf(storyOutput)).toMatchObject({ width: 1080, height: 1920 })
     } finally {
       await fs.rm(dir, { recursive: true, force: true })
     }

@@ -649,6 +649,58 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'image-watermark',
+    name: 'Image Watermarker',
+    category: 'images',
+    description:
+      'Stamp a text watermark onto images with position, size, color and opacity control.',
+    tags: ['watermark', 'brand', 'stamp', 'overlay'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'icon-pack',
+    name: 'Icon Pack Generator',
+    category: 'developer',
+    description:
+      'Turn one logo into a complete app icon set — nine PNG sizes plus a favicon.ico, locally.',
+    tags: ['favicon', 'icons', 'app', 'pack', 'export'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'social-resizer',
+    name: 'Social Preset Resizer',
+    category: 'images',
+    description:
+      'Crop images to social sizes — OG image, X card, Instagram, YouTube, LinkedIn — with smart cropping.',
+    tags: ['social', 'og-image', 'resize', 'presets', 'crop'],
+    icon: 'crop',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      acceptsMultipleFiles: true,
+      supportsProgress: true,
+      supportsCancellation: true,
+      supportsBatch: true,
+      producesFiles: true
+    }
+  },
+  {
     id: 'pdf-to-text',
     name: 'PDF → Text',
     category: 'documents',
@@ -717,6 +769,9 @@ const ColorConverterTool = lazy(() => import('./color-converter/ColorConverterTo
 const BrandBibleTool = lazy(() => import('./brand-bible/BrandBibleTool'))
 const JsonToTypesTool = lazy(() => import('./json-to-types/JsonToTypesTool'))
 const PdfToTextTool = lazy(() => import('./pdf-to-text/PdfToTextTool'))
+const ImageWatermarkTool = lazy(() => import('./image-watermark/ImageWatermarkTool'))
+const IconPackTool = lazy(() => import('./icon-pack/IconPackTool'))
+const SocialResizerTool = lazy(() => import('./social-resizer/SocialResizerTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -765,5 +820,8 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'color-converter': ColorConverterTool,
   'brand-bible': BrandBibleTool,
   'json-to-types': JsonToTypesTool,
-  'pdf-to-text': PdfToTextTool
+  'pdf-to-text': PdfToTextTool,
+  'image-watermark': ImageWatermarkTool,
+  'icon-pack': IconPackTool,
+  'social-resizer': SocialResizerTool
 }

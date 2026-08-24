@@ -25,6 +25,9 @@ export const IPC = {
 
   imagesConvertBatch: 'images:convert-batch',
   imagesCompressBatch: 'images:compress-batch',
+  imagesWatermarkBatch: 'images:watermark-batch',
+  socialResizeBatch: 'social:resize-batch',
+  iconsGeneratePack: 'icons:generate-pack',
 
   zipCreateBatch: 'files:zip-create',
   zipExtractBatch: 'files:zip-extract',
@@ -224,6 +227,75 @@ export interface ImageBatchResult {
   failed: ImageBatchFailure[]
   cancelled: boolean
   operationId: string
+}
+
+export interface WatermarkImagesRequest {
+  paths: string[]
+  outputDir: string
+  text: string
+  position: WatermarkPosition
+  fontSize?: number
+  color?: string
+  opacity?: number
+  marginRatio?: number
+}
+
+export type WatermarkPosition =
+  | 'bottom-right'
+  | 'bottom-center'
+  | 'bottom-left'
+  | 'top-right'
+  | 'top-center'
+  | 'top-left'
+  | 'center'
+
+/** One generated icon-pack artifact, e.g. "icon-128.png" or "favicon.ico". */
+export interface IconPackFile {
+  name: string
+  path: string
+  bytesWritten: number
+}
+
+export interface IconPackFailure {
+  name: string
+  error: StashError
+}
+
+export interface IconPackRequest {
+  path: string
+  outputDir: string
+}
+
+export interface IconPackResult {
+  succeeded: IconPackFile[]
+  failed: IconPackFailure[]
+  cancelled: boolean
+}
+
+export interface SocialResizeRequest {
+  paths: string[]
+  outputDir: string
+  /** Preset ids validated against the shared PRESET_LIST; must be non-empty. */
+  presets: string[]
+}
+
+/** One file × preset output, labeled for display like "photo.jpg · OG Image". */
+export interface SocialResizeSuccess {
+  source: string
+  label: string
+  output: string
+  bytesWritten: number
+}
+
+export interface SocialResizeFailure {
+  label: string
+  error: StashError
+}
+
+export interface SocialResizeResult {
+  succeeded: SocialResizeSuccess[]
+  failed: SocialResizeFailure[]
+  cancelled: boolean
 }
 
 export interface ZipCreateRequest {
@@ -553,6 +625,11 @@ export interface StashBridge {
   processing: {
     convertImages(req: ConvertImagesRequest): Promise<ImageBatchResult>
     compressImages(req: CompressImagesRequest): Promise<ImageBatchResult>
+    watermarkImages(req: WatermarkImagesRequest): Promise<ImageBatchResult>
+    socialResize(req: SocialResizeRequest): Promise<SocialResizeResult>
+  }
+  icons: {
+    generatePack(req: IconPackRequest): Promise<IconPackResult>
   }
   archives: {
     createZip(req: ZipCreateRequest): Promise<ZipCreateResult>

@@ -8,7 +8,7 @@ Static gates at time of logging: `tsc` clean · `eslint` clean · `prettier` cle
 **319/319 vitest tests (30 files)** · `electron-vite build` clean (per-tool lazy
 chunks) · smoke boot `STASH_SMOKE_OK`.
 
-## Registry (34 tools)
+## Registry (50 tools)
 
 | # | Tool id | Category | Logic tests | Progress + Cancel | History records |
 |---|---|---|---|---|---|

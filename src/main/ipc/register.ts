@@ -14,9 +14,8 @@ import type {
   HashAlgorithm,
   HashFileResult,
   HistoryEntryInput,
-  ImageBatchFailure,
+  IconPackResult,
   ImageBatchResult,
-  ImageBatchSuccess,
   ImageOutputFormat,
   MediaBatchFailure,
   MediaBatchResult,
@@ -25,9 +24,10 @@ import type {
   VideoOutputFormat,
   PdfSplitFailure,
   PdfSplitResult,
-  PdfSplitSuccess
+  PdfSplitSuccess,
+  SocialResizeResult
 } from '../../shared/ipc'
-import { serializeStashError, stashError } from '../../shared/errors'
+import { serializeStashError, stashError, type StashError } from '../../shared/errors'
 import {
   FavoritesStore,
   HistoryStore,
@@ -50,10 +50,24 @@ import {
 import { createZipArchive, extractZipArchive } from '../processing/archives'
 import {
   SUPPORTED_FORMATS,
+  WATERMARK_POSITIONS,
+  clampWatermarkFontSize,
   compressImage,
   convertImage,
-  formatForExtension
+  formatForExtension,
+  isValidWatermarkColor,
+  normalizeWatermarkText,
+  socialResizeImage,
+  watermarkImage
 } from '../processing/images'
+import {
+  FAVICON_NAME,
+  ICON_PACK_SIZES,
+  iconFileName,
+  loadSquareLogo,
+  writeFaviconIco,
+  writeIconPng
+} from '../processing/icons'
 import {
   IMAGES_TO_PDF_EXTENSIONS,
   PDF_INPUT_LIMIT_BYTES,
@@ -77,6 +91,8 @@ import {
   type MediaToolsContext
 } from '../processing/media'
 import { parsePageRanges, parsePageSequence } from '../../shared/utils/page-ranges'
+import { socialPresetById } from '../../shared/utils/social-presets'
+import type { WatermarkPosition } from '../../shared/ipc'
 import { clampZoomFactor, overlayHeightFor } from '../../shared/utils/zoom'
 
 export interface IpcServices {
@@ -173,6 +189,25 @@ function stemOf(base: string): string {
 }
 
 /**
+ * Output extension that keeps the source's own format when sharp can encode
+ * it; otherwise falls back to PNG.
+ */
+function outputExtensionFor(source: string): string {
+  const dot = path.basename(source).lastIndexOf('.')
+  const extension = dot <= 0 ? '' : path.basename(source).slice(dot).toLowerCase()
+  return formatForExtension(extension) !== null ? extension : '.png'
+}
+
+function parseWatermarkPosition(value: unknown): WatermarkPosition {
+  if (typeof value === 'string' && (WATERMARK_POSITIONS as readonly string[]).includes(value)) {
+    return value as WatermarkPosition
+  }
+  throw stashError('VALIDATION', 'Invalid request: "position" is not a watermark position.', {
+    technicalMessage: `position=${JSON.stringify(value)}`
+  })
+}
+
+/**
  * Expand a validated naming template against one source stem. The pattern was
  * already checked for the {name} token at the IPC boundary.
  */
@@ -202,56 +237,83 @@ function uniqueName(name: string, used: Set<string>): string {
   return candidate
 }
 
-interface ImageBatchPlan {
-  prefix: string
-  message: string
-  outputNameFor(source: string): string
-  process(inputPath: string, tempOutput: string): Promise<number>
+interface BatchJob {
+  source: string
+  label: string
+  outputName: string
+  process(tempOutput: string): Promise<void>
+}
+
+interface CompletedJob {
+  source: string
+  label: string
+  output: string
+  bytesWritten: number
+}
+
+interface FailedJob {
+  source: string
+  label: string
+  error: StashError
+}
+
+interface JobBatchOutcome {
+  operationId: string
+  completed: CompletedJob[]
+  failed: FailedJob[]
+  cancelled: boolean
 }
 
 /**
- * Full lifecycle for one image batch: temp workspace → process → verify →
- * export to the user-approved folder → cleanup, with cooperative cancellation.
+ * Core batch lifecycle every file-producing tool shares: temp workspace →
+ * process → verify → export to the user-approved folder → cleanup, with
+ * cooperative cancellation checked between jobs.
  */
-async function runImageBatch(
+async function runJobBatch(
   services: IpcServices,
-  req: { paths: string[]; outputDir: string },
-  plan: ImageBatchPlan
-): Promise<ImageBatchResult> {
-  services.writeScope.assertAllowed(req.outputDir)
-  const opDir = services.temp.createOperation(plan.prefix)
-  const { id, handle } = services.progress.begin(plan.message)
-  const succeeded: ImageBatchSuccess[] = []
-  const failed: ImageBatchFailure[] = []
+  outputDir: string,
+  opts: { prefix: string; message: string },
+  jobs: BatchJob[]
+): Promise<JobBatchOutcome> {
+  services.writeScope.assertAllowed(outputDir)
+  const opDir = services.temp.createOperation(opts.prefix)
+  const { id, handle } = services.progress.begin(opts.message)
+  const completed: CompletedJob[] = []
+  const failed: FailedJob[] = []
   let cancelled = false
   try {
     const usedNames = new Set<string>()
     let index = 0
-    for (const source of req.paths) {
+    for (const job of jobs) {
       if (services.progress.isCancelled(id)) {
         cancelled = true
         break
       }
-      handle.report(req.paths.length === 0 ? null : index / req.paths.length, path.basename(source))
+      handle.report(jobs.length === 0 ? null : index / jobs.length, job.label)
       try {
-        const name = uniqueName(plan.outputNameFor(source), usedNames)
+        const name = uniqueName(job.outputName, usedNames)
         const tempOutput = path.join(opDir, `${index}-${name}`)
-        await plan.process(source, tempOutput)
+        await job.process(tempOutput)
         // Verify the temp output exists before promoting it to the target.
         await fs.stat(tempOutput)
-        const target = path.join(req.outputDir, name)
+        const target = path.join(outputDir, name)
         await fs.mkdir(path.dirname(target), { recursive: true })
         await fs.copyFile(tempOutput, target)
         const stat = await fs.stat(target)
-        succeeded.push({ source, output: target, bytesWritten: stat.size })
+        completed.push({
+          source: job.source,
+          label: job.label,
+          output: target,
+          bytesWritten: stat.size
+        })
       } catch (err) {
-        failed.push({ source, error: serializeStashError(err) })
+        failed.push({ source: job.source, label: job.label, error: serializeStashError(err) })
       }
       index += 1
     }
   } finally {
     if (!cancelled) {
-      if (succeeded.length === 0 && failed.length > 0 && failed.length === req.paths.length) {
+      if (completed.length === 0 && failed.length > 0 && failed.length === jobs.length) {
         handle.fail(failed[0]!.error)
       } else {
         handle.done()
@@ -259,7 +321,46 @@ async function runImageBatch(
     }
     services.temp.cleanup(opDir)
   }
-  return { succeeded, failed, cancelled, operationId: id }
+  return { operationId: id, completed, failed, cancelled }
+}
+
+function outcomeToImageBatch(outcome: JobBatchOutcome): ImageBatchResult {
+  return {
+    succeeded: outcome.completed.map((entry) => ({
+      source: entry.source,
+      output: entry.output,
+      bytesWritten: entry.bytesWritten
+    })),
+    failed: outcome.failed.map((entry) => ({ source: entry.source, error: entry.error })),
+    cancelled: outcome.cancelled,
+    operationId: outcome.operationId
+  }
+}
+
+interface ImageBatchPlan {
+  prefix: string
+  message: string
+  outputNameFor(source: string): string
+  process(inputPath: string, tempOutput: string): Promise<number>
+}
+
+/** One-output-per-input image batch on the shared job lifecycle. */
+async function runImageBatch(
+  services: IpcServices,
+  req: { paths: string[]; outputDir: string },
+  plan: ImageBatchPlan
+): Promise<ImageBatchResult> {
+  const jobs: BatchJob[] = req.paths.map((source) => ({
+    source,
+    label: path.basename(source),
+    outputName: plan.outputNameFor(source),
+    process: async (tempOutput) => {
+      await plan.process(source, tempOutput)
+    }
+  }))
+  return outcomeToImageBatch(
+    await runJobBatch(services, req.outputDir, { prefix: plan.prefix, message: plan.message }, jobs)
+  )
 }
 
 /**
@@ -846,6 +947,155 @@ export function registerIpc(services: IpcServices): void {
           compressImage(input, tempOutput, { quality, maxDimension }).then((r) => r.bytesWritten)
       }
     )
+  })
+
+  handle(IPC.imagesWatermarkBatch, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const text = normalizeWatermarkText(assertString(req['text'], 'text', { allowEmpty: true }))
+    if (text.length === 0) {
+      throw stashError('VALIDATION', 'Invalid request: the watermark text is empty.')
+    }
+    const position = parseWatermarkPosition(req['position'])
+    const fontSize =
+      req['fontSize'] === undefined
+        ? undefined
+        : clampWatermarkFontSize(assertNumber(req['fontSize'], 'fontSize'))
+    const color = req['color'] === undefined ? undefined : assertString(req['color'], 'color')
+    if (color !== undefined && !isValidWatermarkColor(color)) {
+      throw stashError(
+        'VALIDATION',
+        'Invalid request: "color" must be a #rgb or #rrggbb hex color.',
+        {
+          technicalMessage: `color=${JSON.stringify(color)}`
+        }
+      )
+    }
+    const opacity =
+      req['opacity'] === undefined ? undefined : assertNumber(req['opacity'], 'opacity')
+    if (opacity !== undefined && (opacity < 0.05 || opacity > 1)) {
+      throw stashError('VALIDATION', 'Invalid request: "opacity" must be between 0.05 and 1.')
+    }
+    const marginRatio =
+      req['marginRatio'] === undefined ? undefined : assertNumber(req['marginRatio'], 'marginRatio')
+    if (marginRatio !== undefined && (marginRatio < 0.02 || marginRatio > 0.15)) {
+      throw stashError(
+        'VALIDATION',
+        'Invalid request: "marginRatio" must be between 0.02 and 0.15.'
+      )
+    }
+    return runImageBatch(
+      services,
+      { paths, outputDir },
+      {
+        prefix: 'image-watermark',
+        message: 'Watermarking images…',
+        outputNameFor: (source) =>
+          `${stemOf(path.basename(source))}-watermarked${outputExtensionFor(source)}`,
+        process: (input, tempOutput) =>
+          watermarkImage(input, tempOutput, {
+            text,
+            position,
+            ...(fontSize !== undefined ? { fontSize } : {}),
+            ...(color !== undefined ? { color } : {}),
+            ...(opacity !== undefined ? { opacity } : {}),
+            ...(marginRatio !== undefined ? { marginRatio } : {})
+          }).then((r) => r.bytesWritten)
+      }
+    )
+  })
+
+  handle(IPC.socialResizeBatch, async (_e, raw: unknown): Promise<SocialResizeResult> => {
+    const req = assertPayload(raw)
+    const paths = assertPathsArray(req['paths'])
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+    const presetIds = req['presets']
+    if (!Array.isArray(presetIds) || presetIds.length === 0) {
+      throw stashError('VALIDATION', 'Invalid request: select at least one social preset.')
+    }
+    const presets = presetIds.map((id) => {
+      const preset = socialPresetById(String(id))
+      if (!preset) {
+        throw stashError('VALIDATION', 'Invalid request: unknown social preset.', {
+          technicalMessage: `preset=${JSON.stringify(id)}`
+        })
+      }
+      return preset
+    })
+    // Flatten file × preset so every unit reports its own progress label.
+    const jobs: BatchJob[] = []
+    for (const source of paths) {
+      const base = path.basename(source)
+      const extension = outputExtensionFor(source)
+      for (const preset of presets) {
+        jobs.push({
+          source,
+          label: `${base} · ${preset.label}`,
+          outputName: `${stemOf(base)}-${preset.id}${extension}`,
+          process: async (tempOutput) => {
+            await socialResizeImage(source, tempOutput, preset)
+          }
+        })
+      }
+    }
+    const outcome = await runJobBatch(
+      services,
+      outputDir,
+      { prefix: 'social-resize', message: 'Resizing to social presets…' },
+      jobs
+    )
+    return {
+      succeeded: outcome.completed.map((entry) => ({
+        source: entry.source,
+        label: entry.label,
+        output: entry.output,
+        bytesWritten: entry.bytesWritten
+      })),
+      failed: outcome.failed.map((entry) => ({ label: entry.label, error: entry.error })),
+      cancelled: outcome.cancelled
+    }
+  })
+
+  handle(IPC.iconsGeneratePack, async (_e, raw: unknown): Promise<IconPackResult> => {
+    const req = assertPayload(raw)
+    const inputPath = assertString(req['path'], 'path')
+    const outputDir = assertString(req['outputDir'], 'outputDir')
+
+    const squareMaster = await loadSquareLogo(inputPath)
+    // Fixed artifact names — the 256px PNG is additionally wrapped as favicon.ico.
+    const jobs: BatchJob[] = ICON_PACK_SIZES.map((size) => ({
+      source: inputPath,
+      label: iconFileName(size),
+      outputName: iconFileName(size),
+      process: async (tempOutput) => {
+        await writeIconPng(squareMaster, size, tempOutput)
+      }
+    }))
+    jobs.push({
+      source: inputPath,
+      label: FAVICON_NAME,
+      outputName: FAVICON_NAME,
+      process: async (tempOutput) => {
+        await writeFaviconIco(squareMaster, tempOutput)
+      }
+    })
+
+    const outcome = await runJobBatch(
+      services,
+      outputDir,
+      { prefix: 'icon-pack', message: 'Generating icon pack…' },
+      jobs
+    )
+    return {
+      succeeded: outcome.completed.map((entry) => ({
+        name: entry.label,
+        path: entry.output,
+        bytesWritten: entry.bytesWritten
+      })),
+      failed: outcome.failed.map((entry) => ({ name: entry.label, error: entry.error })),
+      cancelled: outcome.cancelled
+    }
   })
 
   // --- ZIP archives -----------------------------------------------------------

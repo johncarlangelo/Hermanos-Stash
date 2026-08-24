@@ -1,6 +1,6 @@
 # Hermanos Stash
 
-**A local-first desktop toolbox.** One window, 43 focused tools for files, documents, images, video, audio, text, developer work and reusable AI prompts — everything processed on your machine, nothing sent anywhere.
+**A local-first desktop toolbox.** One window, 50 focused tools for files, documents, images, video, audio, text, developer work and reusable AI prompts — everything processed on your machine, nothing sent anywhere.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -66,6 +66,8 @@ Stash is the opposite bet: **one installed app you can trust**, where every byte
 | Image Converter | Batch-convert PNG / JPEG / WebP / AVIF / TIFF |
 | Image Compressor | Batch-compress with optional downscaling, shows bytes saved |
 | EXIF Inspector | Camera, lens, exposure, date and GPS metadata |
+| Image Watermarker | Batch-stamp text over images with position/opacity control |
+| Social Preset Resizer | og:image, X card, Instagram, YouTube sizes with smart crop |
 
 ### Documents & PDF
 
@@ -108,6 +110,11 @@ Every media output is re-probed after processing — container type and duration
 | MIME Lookup | Searchable extension-to-type reference |
 | HTTP Status Reference | Every status code explained, searchable |
 | Color Converter | HEX/RGB/HSL, WCAG contrast checks, shade and harmony palettes |
+| Icon Pack Generator | One logo to every standard size (16-512) plus favicon.ico |
+| JSON-to-TypeScript | Paste JSON, get clean interface definitions |
+| QR Decoder | Drop an image, read the code |
+| Passphrase Generator | Words or characters, entropy metered, OS secure randomness |
+| PDF-to-Text | Extract searchable text from any PDF |
 
 ### Prompt Library *(local, no AI API)*
 

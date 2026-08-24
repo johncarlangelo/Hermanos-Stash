@@ -13,6 +13,7 @@ import type {
   HashFileRequest,
   HashTextRequest,
   HistoryEntryInput,
+  IconPackRequest,
   PromptSaveInput,
   ImagesToPdfRequest,
   OpenFileDialogRequest,
@@ -25,8 +26,10 @@ import type {
   ReadFileBytesRequest,
   ReadTextFileRequest,
   SaveFileDialogRequest,
+  SocialResizeRequest,
   StashBridge,
   VideoToGifRequest,
+  WatermarkImagesRequest,
   ZipCreateRequest,
   ZipExtractRequest
 } from '../shared/ipc'
@@ -91,7 +94,12 @@ const api: StashBridge = {
   },
   processing: {
     convertImages: (req: ConvertImagesRequest) => invoke(IPC.imagesConvertBatch, req),
-    compressImages: (req: CompressImagesRequest) => invoke(IPC.imagesCompressBatch, req)
+    compressImages: (req: CompressImagesRequest) => invoke(IPC.imagesCompressBatch, req),
+    watermarkImages: (req: WatermarkImagesRequest) => invoke(IPC.imagesWatermarkBatch, req),
+    socialResize: (req: SocialResizeRequest) => invoke(IPC.socialResizeBatch, req)
+  },
+  icons: {
+    generatePack: (req: IconPackRequest) => invoke(IPC.iconsGeneratePack, req)
   },
   archives: {
     createZip: (req: ZipCreateRequest) => invoke(IPC.zipCreateBatch, req),
