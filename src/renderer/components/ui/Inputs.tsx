@@ -1,5 +1,7 @@
-import { forwardRef, useId } from 'react'
+import { forwardRef } from 'react'
 import { X } from 'lucide-react'
+
+import { Hint } from './Overlays'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean
@@ -55,44 +57,19 @@ export interface FieldRowProps {
 }
 
 /**
- * Small keyboard-accessible help affordance. The tooltip appears on hover
- * and on keyboard focus (group-focus-within), and is exposed to screen
- * readers through the button's aria-label + describedby relationship.
+ * Help affordance is now the Radix-based Hint from Overlays.tsx — hover AND
+ * keyboard focus, portal positioning, collision-aware placement.
  */
-function Hint({ text, id }: { text: string; id: string }) {
-  return (
-    <span className="group/hint relative inline-flex shrink-0">
-      <button
-        type="button"
-        aria-label={`About ${text}`}
-        aria-describedby={id}
-        className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-line text-faint transition-colors duration-150 hover:border-line-strong hover:text-dim group-focus-within/hint:border-accent/60 group-focus-within/hint:text-accent"
-      >
-        <span aria-hidden className="font-mono text-[9px] leading-none">
-          ?
-        </span>
-      </button>
-      <span
-        role="tooltip"
-        id={id}
-        className="pointer-events-none invisible absolute top-full right-0 z-20 mt-1.5 w-56 rounded-md border border-line-strong bg-overlay px-2.5 py-2 text-[11.5px] leading-snug font-normal text-dim shadow-lg shadow-black/25 group-hover/hint:visible group-focus-within/hint:visible"
-      >
-        {text}
-      </span>
-    </span>
-  )
-}
 
 /** Compact labeled option row used across tool workspaces. */
 export function FieldRow({ label, htmlFor, children, hint }: FieldRowProps) {
-  const hintId = useId()
   return (
     <div className="flex items-center gap-2.5">
       <label htmlFor={htmlFor} className="w-20 shrink-0 text-right text-[12px] text-faint">
         {label}
       </label>
       {children}
-      {hint && <Hint text={hint} id={hintId} />}
+      {hint && <Hint text={hint} />}
     </div>
   )
 }
