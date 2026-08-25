@@ -209,6 +209,37 @@ Build on a fresh `ux-polish` branch; commit per feature; merge after review.
 - Drag-to-reorder pins (dnd-kit; up/down buttons suffice for v1).
 - Light theme (dark-only stays per product constraint).
 
+## Milestone 8 — UX polish round *(launcher-grade interaction, post-overhaul)*
+
+**Goal:** push the shell to launcher-grade quality (Raycast/PowerToys tier) for a 50-tool
+app. Full spec: `.hermes/plans/2026-08-25_170000-ux-polish-round.md`. Build order =
+dependency order below; each feature = own commit series on `ux-polish` branch.
+
+- [ ] **Toasts → sonner** (shadcn-standard): glass cards, swipe-dismiss, pause-on-hover.
+      Keep `toastSuccess/toastError` API identical so tool call sites don't change.
+- [ ] **Quick-Switch `Ctrl+Tab`**: overlay cycling last ~8 recents (Alt-Tab for tools);
+      `Shift+Tab` reverses; keyboard-only. Fallback `Ctrl+Q` if Windows blocks the chord.
+- [ ] **Pinned tools dock**: ordered `pinnedTools` pref, PINNED sidebar section above
+      Favorites, up/down reorder buttons (drag-reorder deferred).
+- [ ] **Command palette upgrades**: right-side glass preview card on arrow-key selection
+      (description/tags/last-used); `Ctrl+Enter` open-in-background (records recent, stays).
+- [ ] **Density preference**: Comfortable/Compact segmented control in Settings →
+      Appearance; `ui.density` pref applied pre-paint; scales renderer content only,
+      never titlebar chrome. Component: shadcn ToggleGroup (new adoption).
+- [ ] **Empty-state storytelling**: contextual guidance per state (no favorites / no
+      recents / empty category with nearest-category suggestions).
+- [ ] **Micro-interaction pass**: advanced media options into Collapsibles; stagger-in
+      batch result rows; DropZone accepted-file pulse; sidebar count badge tick animation.
+- [ ] **First-run coach marks**: max 3 one-time hints (Ctrl+K, drop-anywhere, pinning);
+      prefs `onboarding.done`; never re-shown.
+
+**Component adoptions riding along:** sonner, ToggleGroup, shadcn Breadcrumb
+(replace hand-rolled breadcrumb in App.tsx). Everything else in the current
+inventory already has call sites — nothing adopted without one (scope discipline).
+
+**Deferred / out of scope:** global summon hotkey (main-process OS work, its own
+milestone), drag-to-reorder pins (dnd-kit, v2), themes beyond accent (dark-only stays).
+
 ## Future
 
 - [x] Prompt template organizer. *(delivered as the Prompt Library tool, Milestone 5)*
