@@ -80,7 +80,8 @@ export function HistoryView({ seedToolId }: { seedToolId?: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-8 py-8">
+    <div className="relative">
+      <div className="relative mx-auto w-full max-w-3xl px-8 py-8">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-[19px] font-semibold tracking-tight text-ink">Activity History</h1>
@@ -198,6 +199,7 @@ export function HistoryView({ seedToolId }: { seedToolId?: string }) {
           )}
         </Panel>
       )}
+      </div>
     </div>
   )
 }

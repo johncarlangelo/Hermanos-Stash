@@ -92,7 +92,8 @@ export function SettingsView() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
+    <div className="relative">
+      <div className="relative mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
       <div>
         <h1 className="text-[19px] font-semibold tracking-tight text-ink">Settings</h1>
         <p className="mt-0.5 text-[12.5px] text-dim">
@@ -171,6 +172,7 @@ export function SettingsView() {
       <p className="text-center text-[11px] text-faint">
         Hermanos Stash runs entirely offline. Files you process never leave this machine.
       </p>
+      </div>
     </div>
   )
 }

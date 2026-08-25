@@ -9,6 +9,7 @@ import {
   SectionHeading
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
+import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Input } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -193,32 +194,28 @@ export default function ImageWatermarkTool() {
             </div>
           </FieldRow>
 
-          <FieldRow label="Size" htmlFor="wm-size">
-            <input
-              id="wm-size"
-              type="range"
+          <FieldRow label="Size">
+            <Slider
               min={12}
               max={144}
               step={1}
               value={fontSize}
               aria-label={`Font size, ${fontSize} pixels`}
-              onChange={(e) => setFontSize(Number(e.target.value))}
-              className="w-40 cursor-pointer accent-accent"
+              onValueChange={setFontSize}
+              className="w-40"
             />
             <span className="tnum w-12 text-[12px] text-dim">{fontSize}px</span>
           </FieldRow>
 
-          <FieldRow label="Opacity" htmlFor="wm-opacity">
-            <input
-              id="wm-opacity"
-              type="range"
+          <FieldRow label="Opacity">
+            <Slider
               min={5}
               max={100}
               step={1}
               value={opacityPct}
               aria-label={`Opacity, ${opacityPct} percent`}
-              onChange={(e) => setOpacityPct(Number(e.target.value))}
-              className="w-40 cursor-pointer accent-accent"
+              onValueChange={setOpacityPct}
+              className="w-40"
             />
             <span className="tnum w-12 text-[12px] text-dim">{opacityPct}%</span>
           </FieldRow>

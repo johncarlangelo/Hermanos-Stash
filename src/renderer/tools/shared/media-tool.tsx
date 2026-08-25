@@ -315,9 +315,13 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
       </div>
 
       {live && (
-        <div role="status" aria-live="polite" className="flex flex-col gap-1.5">
+        <div
+          role="status"
+          aria-live="polite"
+          className="border-beam flex flex-col gap-1.5 rounded-md border border-line bg-surface px-3 py-2.5"
+        >
           <ProgressBar ratio={live.ratio ?? null} label={props.progressLabel} />
-          <p className="tnum text-[11.5px] text-faint">{live.message}</p>
+          <p className="tnum font-mono text-[11px] text-faint">{live.message}</p>
         </div>
       )}
 
@@ -341,7 +345,7 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
                       title={entry.output}
                     >
                       {fileNameOf(entry.output)}
-                      <span className="tnum ml-2 text-faint">
+                      <span className="ticker tnum ml-2 inline-block text-faint">
                         {original !== undefined ? `${formatBytes(original)} → ` : ''}
                         {formatBytes(entry.bytesWritten)}
                         {saved !== null ? ` · saved ${saved}%` : ''}

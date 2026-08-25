@@ -8,48 +8,56 @@
  */
 
 @theme {
-  /* Surfaces: base < sidebar/shell < elevated */
-  --color-base: #16181d;
-  --color-shell: #121419;
-  --color-surface: #1d2027;
-  --color-raised: #232732;
-  --color-overlay: #262a35;
+  /*
+   * ui-overhaul v3 — "deep space glass."
+   *
+   * Rich near-black blue surfaces with real depth steps, glow-capable accent
+   * tokens, larger radii, and ambient gradient atmosphere. Hierarchy comes
+   * from light: surfaces catch it, the accent radiates it.
+   */
 
-  /* Lines */
-  --color-line: #2b2f3a;
-  --color-line-strong: #3b4150;
+  /* Surfaces: window < sidebar < card < raised < overlay (bigger steps) */
+  --color-base: #08090d;
+  --color-shell: #0b0d13;
+  --color-surface: #12151e;
+  --color-raised: #1a1f2b;
+  --color-overlay: #212736;
+
+  /* Lines: visible but soft */
+  --color-line: #232a38;
+  --color-line-strong: #354055;
 
   /* Text hierarchy */
-  --color-ink: #e9ebef;
-  --color-dim: #9aa2b1;
+  --color-ink: #eceef4;
+  --color-dim: #9ba5ba;
   /* ≥4.5:1 on base/surface for WCAG AA at small sizes */
-  --color-faint: #7d8695;
+  --color-faint: #6d7789;
 
-  /* The single accent (overridable at runtime by the theme picker) */
-  --color-accent: #d9a35c;
-  --color-accent-hover: #e5b678;
-  --color-accent-soft: rgba(217, 163, 92, 0.13);
-  /* Button-label color on accent fills — engine output for the amber default
-     (deriveContrast('#d9a35c')); kept in sync by accent-theme tests. */
+  /* The single accent + glow derivatives (runtime-overridable) */
+  --color-accent: #e0a95e;
+  --color-accent-hover: #ecbd79;
+  --color-accent-soft: rgba(224, 169, 94, 0.14);
   --color-accent-contrast: #16181d;
+  --color-accent-glow: rgba(224, 169, 94, 0.35);
+  --color-accent-glow-strong: rgba(224, 169, 94, 0.6);
 
-  /* Status (used sparingly, never as category colors) */
-  --color-ok: #85bb90;
+  /* Status */
+  --color-ok: #7fc08d;
   --color-warn: #d9bd72;
-  --color-danger: #d97f6f;
+  --color-danger: #e08373;
 
   /* Typography */
   --font-sans:
     'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
   --font-mono: 'Cascadia Code', 'Cascadia Mono', ui-monospace, Consolas, monospace;
 
-  /* Radii: modest by design */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 9px;
-  --radius-lg: 13px;
+  /* Radii: generous, soft-glass geometry */
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 
-  /* Motion scale (DESIGN.md: 120–220ms) */
+  /* Motion scale: snappy, state-reporting */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -253,6 +261,248 @@
 
 .anim-indeterminate {
   animation: indeterminate 1.15s var(--ease-out-soft) infinite;
+}
+
+/*
+ * ui-overhaul microinteractions — motion that reports state.
+ */
+
+/* Border beam: a light tracing the card edge while processing runs.
+   Applied via a conic-gradient pseudo-element rotating around the card. */
+@keyframes border-beam {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.border-beam {
+  position: relative;
+}
+
+.border-beam::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 300deg,
+    var(--color-accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-beam 2.4s linear infinite;
+  pointer-events: none;
+}
+
+/* Number ticker: results counting up. */
+@keyframes ticker-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticker {
+  animation: ticker-rise 220ms var(--ease-out-soft) both;
+}
+
+/* View transition: tool/home surfaces entering. */
+.view-enter {
+  animation: view-enter 150ms var(--ease-out-soft) both;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal choreography: scrim fades, card springs up with a settle. */
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -52%) scale(0.97);
+  }
+}
+
+.anim-modal-in {
+  animation:
+    scrim-in 140ms var(--ease-out-soft) both,
+    modal-in 200ms var(--ease-out-soft) both;
+}
+
+.anim-modal-out {
+  animation: modal-out 120ms ease-in both;
+}
+
+/* Giant workspace wordmark — the "HERMANOS" backdrop.
+   Playfair Display 800 (bundled, OFL): the high-contrast display serif
+   matching the Hermes wordmark's letterforms.
+
+   FIXED to the window: `position: fixed` keeps it pinned behind content
+   while lists scroll — it never moves with the page. Sized to fit the
+   word within the viewport width (8 characters + tracking) at ~14vw. */
+@font-face {
+  font-family: 'Wordmark Serif';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/playfair-display-800.woff2') format('woff2');
+}
+
+.wordmark {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  /* Center within the content area (right of the 14rem sidebar) */
+  left: 14rem;
+  right: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wordmark > span {
+  font-family: 'Wordmark Serif', Georgia, 'Times New Roman', serif;
+  font-weight: 800;
+  font-size: clamp(64px, 10vw, 150px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-ink) 8%, transparent),
+    color-mix(in srgb, var(--color-ink) 2%, transparent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+}
+
+/*
+ * ui-overhaul v3 — atmosphere & glow.
+ *
+ * The app background carries two fixed radial glows (top-left accent warmth,
+ * right-side cool depth) that sit behind everything. Surfaces are glass:
+ * translucent fills over the atmosphere, backdrop-blurred.
+ */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      1100px 700px at 12% -8%,
+      color-mix(in srgb, var(--color-accent) 9%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(900px 640px at 105% 8%, rgba(84, 110, 168, 0.1), transparent 60%),
+    radial-gradient(1000px 800px at 50% 118%, rgba(64, 84, 130, 0.08), transparent 65%);
+}
+
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.glass-strong {
+  background: color-mix(in srgb, var(--color-raised) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+
+/* Glow ring on hover for interactive cards */
+.glow-hover {
+  transition:
+    box-shadow 200ms var(--ease-out-soft),
+    border-color 200ms var(--ease-out-soft),
+    transform 200ms var(--ease-out-soft);
+}
+
+.glow-hover:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent),
+    0 4px 24px -6px var(--color-accent-glow),
+    0 12px 40px -16px rgba(0, 0, 0, 0.7);
+}
+
+/* Accent glow for primary buttons */
+.glow-accent {
+  box-shadow: 0 2px 16px -4px var(--color-accent-glow);
+}
+
+.glow-accent:hover {
+  box-shadow: 0 4px 24px -4px var(--color-accent-glow-strong);
+}
+
+/* Animated brand mark: slow breathing glow */
+@keyframes brand-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 12px -2px var(--color-accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 22px 0px var(--color-accent-glow-strong);
+  }
+}
+
+.brand-glow {
+  animation: brand-breathe 5s ease-in-out infinite;
 }
 
 /* Reduced motion: keep state changes, drop the movement. */

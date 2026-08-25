@@ -9,6 +9,7 @@ import {
   SectionHeading
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
+import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Input, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -163,17 +164,15 @@ export default function ImageCompressTool() {
       <Panel className="p-3.5">
         <SectionHeading>Options</SectionHeading>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <FieldRow label="Quality" htmlFor="compress-quality">
-            <input
-              id="compress-quality"
-              type="range"
+          <FieldRow label="Quality">
+            <Slider
               min={1}
               max={100}
               step={1}
               value={quality}
               aria-label={`Quality, ${quality} percent`}
-              onChange={(e) => setQuality(Number(e.target.value))}
-              className="w-40 cursor-pointer accent-accent"
+              onValueChange={setQuality}
+              className="w-40"
             />
             <span className="tnum w-8 text-[12px] text-dim">{quality}</span>
           </FieldRow>

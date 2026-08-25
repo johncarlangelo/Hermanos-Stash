@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FieldRow, Select } from '../../components/ui/Inputs'
+import { Slider } from '../../components/ui/Slider'
 import type { VideoOutputFormat } from '../../../shared/ipc'
 import { SingleFileMediaTool } from '../shared/media-tool'
 
@@ -50,19 +51,16 @@ export default function VideoConvertTool() {
           </FieldRow>
           <FieldRow
             label="Quality"
-            htmlFor="vconv-crf"
             hint="Lower values keep more detail but produce larger files. 18-23 looks near-original; above 30 gets visibly soft."
           >
-            <input
-              id="vconv-crf"
-              type="range"
+            <Slider
               min={18}
               max={40}
               step={1}
               value={crf}
               aria-label={`Quality, CRF ${crf}. Lower CRF means better quality.`}
-              onChange={(e) => setCrf(Number(e.target.value))}
-              className="w-40 cursor-pointer accent-accent"
+              onValueChange={setCrf}
+              className="w-40"
             />
             <span className="tnum w-12 text-[12px] text-dim" title="Constant Rate Factor">
               CRF {crf}

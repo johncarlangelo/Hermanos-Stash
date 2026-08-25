@@ -15,7 +15,7 @@ import {
   bestTextOn
 } from '../../tools/color-converter/logic'
 
-export const BASE_HEX = '#16181d'
+export const BASE_HEX = '#08090d'
 
 /** Curated presets shown as swatches in Settings → Appearance. */
 export const ACCENT_PRESETS: Array<{ id: string; name: string; hex: string }> = [

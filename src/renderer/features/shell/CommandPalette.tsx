@@ -64,10 +64,10 @@ export function CommandPalette() {
       onOpenChange={setOpen}
       label="Search tools"
       overlayClassName="anim-fade-in fixed inset-0 z-40 bg-base/75"
-      contentClassName="fixed top-[14vh] left-1/2 z-41 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2"
+      contentClassName="anim-modal-in fixed top-[14vh] left-1/2 z-41 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2"
       shouldFilter={false}
       loop
-      className="overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40"
+      className="overflow-hidden rounded-md border border-line-strong bg-overlay shadow-2xl shadow-black/40"
     >
       <div className="relative flex items-center border-b border-line">
         <Command.Input

@@ -9,7 +9,11 @@ export function Panel({
   children: React.ReactNode
   className?: string
 }) {
-  return <div className={`rounded-lg border border-line bg-surface ${className}`}>{children}</div>
+  return (
+    <div className={`rounded-md border border-line bg-surface/70 backdrop-blur-sm ${className}`}>
+      {children}
+    </div>
+  )
 }
 
 export function SectionHeading({ children }: { children: React.ReactNode }) {

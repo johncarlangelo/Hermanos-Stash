@@ -12,6 +12,7 @@ import {
   SuccessNote
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
+import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, stashError, type StashError } from '../../../shared/errors'
@@ -282,16 +283,14 @@ export default function PdfToImagesTool() {
               </Select>
             </FieldRow>
             {format === 'jpeg' && (
-              <FieldRow label="Quality" htmlFor="pti-quality">
-                <input
-                  id="pti-quality"
-                  type="range"
+              <FieldRow label="Quality">
+                <Slider
                   min={QUALITY_MIN}
                   max={QUALITY_MAX}
                   value={quality}
-                  onChange={(e) => setQuality(clampQuality(Number(e.target.value)))}
-                  className="h-8.5 w-full accent-accent"
-                  aria-valuetext={`${quality} percent`}
+                  onValueChange={(v) => setQuality(clampQuality(v))}
+                  aria-label={`JPEG quality, ${quality} percent`}
+                  className="w-full"
                 />
                 <span className="tnum w-10 shrink-0 text-right text-[12px] text-dim">
                   {quality}%
