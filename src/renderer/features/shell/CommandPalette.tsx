@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Command } from 'cmdk'
 import { Search, Star } from 'lucide-react'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
+import type { ToolSearchMatch } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
 import { TagChip } from '../../components/ui/Inputs'
@@ -12,9 +13,11 @@ import { useNav } from '../../stores/nav'
 /**
  * Command palette on cmdk (Milestone 7).
  *
- * The registry's fuzzy search still decides ranking (same scoring as the
- * home screen and tag seeding); cmdk provides the standard palette shell —
- * focus capture, arrow/enter handling, Esc, and typeahead for free.
+ * The registry's fuzzy search decides ranking: the typed query drives
+ * `toolRegistry.search()` and its top matches are the only rendered items
+ * (`shouldFilter={false}` — cmdk provides focus capture, arrows, Enter, Esc;
+ * we own the list). With an empty query the palette shows favorites first,
+ * then every tool.
  */
 export function CommandPalette() {
   const open = useNav((s) => s.paletteOpen)
@@ -22,16 +25,31 @@ export function CommandPalette() {
   const openTool = useNav((s) => s.openTool)
 
   const favorites = useLibrary((s) => s.favorites)
+  const [query, setQuery] = useState('')
 
-  // Consume a seeded query (e.g. clicking a tag chip on a tool page).
+  // Controlled input state keyed on `open`: reset when closed, seed when a
+  // tag chip or shortcut opened the palette with a query.
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setQuery('')
+      return
+    }
     const seed = useNav.getState().paletteSeedQuery
     if (seed) {
+      setQuery(seed)
       useNav.setState({ paletteSeedQuery: null })
-      // cmdk owns its input state; seeding happens via defaultValue below.
     }
   }, [open])
+
+  const results: ToolSearchMatch[] = useMemo(
+    () => (query.trim() ? toolRegistry.search(query).slice(0, 9) : []),
+    [query]
+  )
+  const allTools = useMemo(() => toolRegistry.all(), [])
+  const favoriteTools = useMemo(
+    () => allTools.filter((t) => favorites.includes(t.id)),
+    [allTools, favorites]
+  )
 
   if (!open) return null
 
@@ -40,58 +58,91 @@ export function CommandPalette() {
     openTool(tool.id)
   }
 
-  const seed = useNav.getState().paletteSeedQuery
-  const allTools = toolRegistry.all()
-  const favoriteTools = allTools.filter((t) => favorites.includes(t.id))
-
   return (
     <Command.Dialog
       open={open}
       onOpenChange={setOpen}
       label="Search tools"
-      className="fixed inset-0 z-40 flex items-start justify-center bg-base/75 pt-[14vh]"
+      overlayClassName="anim-fade-in fixed inset-0 z-40 bg-base/75"
+      contentClassName="fixed top-[14vh] left-1/2 z-41 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2"
       shouldFilter={false}
       loop
+      className="overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40"
     >
-      {/* Backdrop click-to-close: cmdk renders the overlay as our root. */}
-      <div
-        className="anim-fade-in absolute inset-0"
-        onClick={() => setOpen(false)}
-        aria-hidden
-      />
-      <Command.Input
-        autoFocus
-        defaultValue={seed ?? undefined}
-        placeholder="Type a tool name, tag, or category…"
-        className="relative h-12 w-full border-b border-line bg-transparent pl-11 pr-4 text-[14px] text-ink placeholder:text-faint focus:outline-none"
-      />
-      <Search
-        size={15}
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-faint"
-      />
+      <div className="relative flex items-center border-b border-line">
+        <Command.Input
+          value={query}
+          onValueChange={setQuery}
+          autoFocus
+          placeholder="Type a tool name, tag, or category…"
+          className="h-12 w-full bg-transparent pl-11 pr-4 text-[14px] text-ink placeholder:text-faint focus:outline-none"
+        />
+        <Search
+          size={15}
+          aria-hidden
+          className="pointer-events-none absolute left-4 text-faint"
+        />
+      </div>
 
       <Command.List className="max-h-[52vh] overflow-y-auto">
         <Command.Empty className="px-4 py-5 text-center">
-          <p className="text-[12.5px] text-dim">No tool matches that yet.</p>
+          <p className="text-[12.5px] text-dim">No tool matches “{query.trim()}” yet.</p>
           <p className="mt-1 text-[11.5px] text-faint">
             Try a tag like “pdf”, “json”, or “image”.
           </p>
         </Command.Empty>
 
-        {favoriteTools.length > 0 && (
-          <Command.Group heading="Favorites" className="[&>[cmdk-group-heading]]:px-4 [&>[cmdk-group-heading]]:py-2 [&>[cmdk-group-heading]]:text-[10.5px] [&>[cmdk-group-heading]]:tracking-wide [&>[cmdk-group-heading]]:text-faint [&>[cmdk-group-heading]]:uppercase">
-            {favoriteTools.map((tool) => (
-              <PaletteRow key={`fav-${tool.id}`} tool={tool} onChoose={choose} isFavorite />
+        {/* Ranked search results replace the catalog while a query is active. */}
+        {query.trim() && (
+          <Command.Group
+            heading="Results"
+            className="[&>[cmdk-group-heading]]:px-4 [&>[cmdk-group-heading]]:py-2 [&>[cmdk-group-heading]]:text-[10.5px] [&>[cmdk-group-heading]]:tracking-wide [&>[cmdk-group-heading]]:text-faint [&>[cmdk-group-heading]]:uppercase"
+          >
+            {results.map((match) => (
+              <PaletteRow
+                key={match.tool.id}
+                tool={match.tool}
+                itemValue={`${match.tool.id}::result`}
+                onChoose={choose}
+                isFavorite={favorites.includes(match.tool.id)}
+              />
             ))}
           </Command.Group>
         )}
 
-        <Command.Group heading="All tools" className="[&>[cmdk-group-heading]]:px-4 [&>[cmdk-group-heading]]:py-2 [&>[cmdk-group-heading]]:text-[10.5px] [&>[cmdk-group-heading]]:tracking-wide [&>[cmdk-group-heading]]:text-faint [&>[cmdk-group-heading]]:uppercase">
-          {allTools.map((tool) => (
-            <PaletteRow key={tool.id} tool={tool} onChoose={choose} isFavorite={favorites.includes(tool.id)} />
-          ))}
-        </Command.Group>
+        {!query.trim() && favoriteTools.length > 0 && (
+          <Command.Group
+            heading="Favorites"
+            className="[&>[cmdk-group-heading]]:px-4 [&>[cmdk-group-heading]]:py-2 [&>[cmdk-group-heading]]:text-[10.5px] [&>[cmdk-group-heading]]:tracking-wide [&>[cmdk-group-heading]]:text-faint [&>[cmdk-group-heading]]:uppercase"
+          >
+            {favoriteTools.map((tool) => (
+              <PaletteRow
+                key={`fav-${tool.id}`}
+                tool={tool}
+                itemValue={`${tool.id}::favorite`}
+                onChoose={choose}
+                isFavorite
+              />
+            ))}
+          </Command.Group>
+        )}
+
+        {!query.trim() && (
+          <Command.Group
+            heading="All tools"
+            className="[&>[cmdk-group-heading]]:px-4 [&>[cmdk-group-heading]]:py-2 [&>[cmdk-group-heading]]:text-[10.5px] [&>[cmdk-group-heading]]:tracking-wide [&>[cmdk-group-heading]]:text-faint [&>[cmdk-group-heading]]:uppercase"
+          >
+            {allTools.map((tool) => (
+              <PaletteRow
+                key={tool.id}
+                tool={tool}
+                itemValue={`${tool.id}::all`}
+                onChoose={choose}
+                isFavorite={favorites.includes(tool.id)}
+              />
+            ))}
+          </Command.Group>
+        )}
       </Command.List>
 
       <div className="border-t border-line px-4 py-2 text-[10.5px] text-faint">
@@ -103,10 +154,12 @@ export function CommandPalette() {
 
 function PaletteRow({
   tool,
+  itemValue,
   onChoose,
   isFavorite
 }: {
   tool: ToolDefinition
+  itemValue: string
   onChoose: (t: ToolDefinition) => void
   isFavorite: boolean
 }) {
@@ -114,9 +167,9 @@ function PaletteRow({
   const categoryLabel = getCategory(tool.category)?.label ?? tool.category
   return (
     <Command.Item
-      value={`${tool.name} ${tool.tags.join(' ')} ${categoryLabel} ${tool.description}`}
+      value={itemValue}
       onSelect={() => onChoose(tool)}
-      className="group flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100 data-[selected=true]:bg-surface"
+      className="group flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 ease-out select-none data-[selected=true]:bg-surface data-[selected=true]:shadow-[inset_2px_0_0_var(--color-accent)]"
     >
       <Icon size={16} strokeWidth={1.75} className="shrink-0 text-dim" aria-hidden />
       <span className="min-w-0 flex-1">
@@ -130,7 +183,8 @@ function PaletteRow({
           {tool.description}
         </span>
       </span>
-      <span className="hidden shrink-0 items-center gap-1 group-hover:flex">
+      {/* Tag chips reveal on hover OR keyboard selection (not hover-only). */}
+      <span className="hidden shrink-0 items-center gap-1 group-data-[selected=true]:flex group-hover:flex">
         {tool.tags.slice(0, 2).map((tag) => (
           <TagChip key={tag} tag={tag} />
         ))}
