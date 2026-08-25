@@ -117,7 +117,10 @@ export function DropRouter() {
         </div>
       )}
 
-      <DialogPrimitive.Root open={matches !== null} onOpenChange={(o: boolean) => !o && setMatches(null)}>
+      <DialogPrimitive.Root
+        open={matches !== null}
+        onOpenChange={(o: boolean) => !o && setMatches(null)}
+      >
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="anim-fade-in fixed inset-0 z-[38] bg-base/75" />
           <DialogPrimitive.Content

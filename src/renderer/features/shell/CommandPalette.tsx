@@ -77,19 +77,13 @@ export function CommandPalette() {
           placeholder="Type a tool name, tag, or category…"
           className="h-12 w-full bg-transparent pl-11 pr-4 text-[14px] text-ink placeholder:text-faint focus:outline-none"
         />
-        <Search
-          size={15}
-          aria-hidden
-          className="pointer-events-none absolute left-4 text-faint"
-        />
+        <Search size={15} aria-hidden className="pointer-events-none absolute left-4 text-faint" />
       </div>
 
       <Command.List className="max-h-[52vh] overflow-y-auto">
         <Command.Empty className="px-4 py-5 text-center">
           <p className="text-[12.5px] text-dim">No tool matches “{query.trim()}” yet.</p>
-          <p className="mt-1 text-[11.5px] text-faint">
-            Try a tag like “pdf”, “json”, or “image”.
-          </p>
+          <p className="mt-1 text-[11.5px] text-faint">Try a tag like “pdf”, “json”, or “image”.</p>
         </Command.Empty>
 
         {/* Ranked search results replace the catalog while a query is active. */}

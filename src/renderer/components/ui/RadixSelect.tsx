@@ -17,8 +17,10 @@ import { cn } from '@/lib/utils'
 
 type SelectTriggerElement = React.ComponentRef<typeof SelectPrimitive.Trigger>
 
-export interface SelectProps
-  extends Omit<React.ComponentPropsWithoutRef<'select'>, 'onChange' | 'children' | 'multiple' | 'required'> {
+export interface SelectProps extends Omit<
+  React.ComponentPropsWithoutRef<'select'>,
+  'onChange' | 'children' | 'multiple' | 'required'
+> {
   onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void
   children: React.ReactNode
 }
@@ -44,7 +46,14 @@ function collectOptions(children: React.ReactNode): OptionMeta[] {
   return options
 }
 
-export function Select({ className, value, defaultValue, onChange, children, ...rest }: SelectProps) {
+export function Select({
+  className,
+  value,
+  defaultValue,
+  onChange,
+  children,
+  ...rest
+}: SelectProps) {
   const options = collectOptions(children)
   const name = rest.name
   // Radix requires `value` to always be controlled or uncontrolled — mirror the
@@ -59,7 +68,7 @@ export function Select({ className, value, defaultValue, onChange, children, ...
     if (onChange) {
       // Synthesize the event shape every tool already consumes.
       onChange({
-        target: { name, value: next },
+        target: { name, value: next }
       } as React.ChangeEvent<HTMLSelectElement>)
     }
   }

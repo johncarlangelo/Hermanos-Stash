@@ -64,7 +64,11 @@ export function AccentPicker({ current }: { current: string | null }) {
 
   return (
     <div>
-      <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Accent color">
+      <div
+        className="mt-3 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label="Accent color"
+      >
         {ACCENT_PRESETS.map((preset) => {
           const active = accent === preset.hex
           return (

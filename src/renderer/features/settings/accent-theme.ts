@@ -6,7 +6,14 @@
  * guard against the charcoal base. Deterministic and side-effect free.
  */
 
-import { hexToRgb, rgbToHex, rgbToHsl, hslToRgb, contrastRatio, bestTextOn } from '../../tools/color-converter/logic'
+import {
+  hexToRgb,
+  rgbToHex,
+  rgbToHsl,
+  hslToRgb,
+  contrastRatio,
+  bestTextOn
+} from '../../tools/color-converter/logic'
 
 export const BASE_HEX = '#16181d'
 
@@ -83,6 +90,6 @@ export function deriveAccentTheme(hex: string): AccentTheme | null {
     accent: normalized,
     hover,
     soft: `rgba(${r}, ${g}, ${b}, 0.13)`,
-    contrast: deriveContrast(normalized),
+    contrast: deriveContrast(normalized)
   }
 }

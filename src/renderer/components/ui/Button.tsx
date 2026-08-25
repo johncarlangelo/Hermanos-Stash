@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
   // shadcn base: layout, focus ring, disabled handling
-  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium outline-none transition-colors duration-150 ease-out focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium outline-none transition-colors duration-150 ease-out focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -22,8 +22,7 @@ const buttonVariants = cva(
         primary:
           'border border-transparent bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-hover/90',
         /* shadcn default maps to the same accent fill. */
-        default:
-          'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
+        default: 'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
         destructive:
           'border border-transparent bg-[#b35a4c] text-white hover:bg-[#c4685a] focus-visible:ring-destructive/20',
         /* Legacy secondary → raised surface with line border. */
@@ -52,8 +51,7 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   loading?: boolean
 }
 
@@ -71,7 +69,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-size={size}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={cn(buttonVariants({ variant, size }), isDisabled && 'cursor-not-allowed opacity-45', className)}
+      className={cn(
+        buttonVariants({ variant, size }),
+        isDisabled && 'cursor-not-allowed opacity-45',
+        className
+      )}
       {...props}
     >
       {/* Announce the busy state without relying on the visual spinner. */}
