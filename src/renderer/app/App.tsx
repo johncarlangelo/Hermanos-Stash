@@ -131,7 +131,7 @@ export default function App() {
                 <Breadcrumb />
               </div>
             </header>
-            <div className="min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
+            <div key={JSON.stringify(view)} className="view-enter min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
               {view.type === 'home' && <HomeView />}
               {view.type === 'category' && <HomeView />}
               {view.type === 'tool' && <ToolPage toolId={view.toolId} />}

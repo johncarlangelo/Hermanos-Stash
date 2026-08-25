@@ -263,6 +263,82 @@
   animation: indeterminate 1.15s var(--ease-out-soft) infinite;
 }
 
+/*
+ * ui-overhaul microinteractions — motion that reports state.
+ */
+
+/* Border beam: a light tracing the card edge while processing runs.
+   Applied via a conic-gradient pseudo-element rotating around the card. */
+@keyframes border-beam {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.border-beam {
+  position: relative;
+}
+
+.border-beam::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 300deg,
+    var(--color-accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-beam 2.4s linear infinite;
+  pointer-events: none;
+}
+
+/* Number ticker: results counting up. */
+@keyframes ticker-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticker {
+  animation: ticker-rise 220ms var(--ease-out-soft) both;
+}
+
+/* View transition: tool/home surfaces entering. */
+.view-enter {
+  animation: view-enter 150ms var(--ease-out-soft) both;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Reduced motion: keep state changes, drop the movement. */
 @media (prefers-reduced-motion: reduce) {
   *,
