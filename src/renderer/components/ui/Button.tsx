@@ -1,15 +1,16 @@
 import { forwardRef } from 'react'
 import { Loader2 } from 'lucide-react'
+import { Slot } from 'radix-ui'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
 /**
- * Stash Button (Milestone 7 reconciliation).
+ * Stash Button (Milestone 7 reconciliation + ui-overhaul).
  *
  * shadcn cva architecture + CSS-variable tokens (bg-primary, ring, …) with
  * the legacy Stash call surface preserved: primary/danger variants, sm/md
- * sizes and the loading spinner. All 50 tools keep compiling unchanged.
+ * sizes, loading spinner, and shadcn-standard asChild via Radix Slot.
  */
 
 const buttonVariants = cva(
@@ -36,6 +37,7 @@ const buttonVariants = cva(
         link: 'text-accent underline-offset-4 hover:underline'
       },
       size: {
+        default: 'h-8.5 gap-2 px-3.5', /* shadcn alias for md */
         sm: 'h-7 gap-1.5 rounded-sm px-2.5 text-[12.5px]',
         md: 'h-8.5 gap-2 px-3.5',
         lg: 'h-9 rounded-md px-5',
@@ -51,15 +53,32 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   loading?: boolean
+  /** shadcn-standard: render the child element with button classes (Radix Slot). */
+  asChild?: boolean
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant, size, loading = false, disabled, children, ...props },
+  { className, variant, size, loading = false, disabled, asChild = false, children, ...props },
   ref
 ) {
   const isDisabled = disabled || loading
+  const classes = cn(
+    buttonVariants({ variant, size }),
+    isDisabled && 'cursor-not-allowed opacity-45',
+    className
+  )
+
+  if (asChild) {
+    return (
+      <Slot.Root ref={ref} className={classes} {...props}>
+        {children}
+      </Slot.Root>
+    )
+  }
+
   return (
     <button
       ref={ref}
@@ -69,11 +88,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-size={size}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={cn(
-        buttonVariants({ variant, size }),
-        isDisabled && 'cursor-not-allowed opacity-45',
-        className
-      )}
+      className={classes}
       {...props}
     >
       {/* Announce the busy state without relying on the visual spinner. */}
