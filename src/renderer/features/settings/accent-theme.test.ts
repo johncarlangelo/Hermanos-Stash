@@ -53,7 +53,7 @@ describe('deriveContrast', () => {
   })
 
   it('falls back safely on invalid input', () => {
-    expect(['#16181d', '#ffffff', '#241a0c']).toContain(deriveContrast('bad'))
+    expect(['#0d0f13', '#ffffff', '#241a0c']).toContain(deriveContrast('bad'))
   })
 })
 

@@ -8,48 +8,56 @@
  */
 
 @theme {
-  /* Surfaces: base < sidebar/shell < elevated */
-  --color-base: #16181d;
-  --color-shell: #121419;
-  --color-surface: #1d2027;
-  --color-raised: #232732;
-  --color-overlay: #262a35;
+  /*
+   * ui-overhaul design language — "Hermes-grade density."
+   *
+   * Near-black blue-tinted surfaces (deeper than the old charcoal), one
+   * restrained accent, compact radii, mono status styling. Surfaces step
+   * subtly; hierarchy comes from typography and density, not boxes.
+   */
 
-  /* Lines */
-  --color-line: #2b2f3a;
-  --color-line-strong: #3b4150;
+  /* Surfaces: window < sidebar < card < raised < overlay */
+  --color-base: #0d0f13;
+  --color-shell: #0a0b0f;
+  --color-surface: #12151b;
+  --color-raised: #171b22;
+  --color-overlay: #1a1f27;
 
-  /* Text hierarchy */
-  --color-ink: #e9ebef;
-  --color-dim: #9aa2b1;
+  /* Lines: quieter than before — borders suggest, they don't shout */
+  --color-line: #1f242e;
+  --color-line-strong: #2c3340;
+
+  /* Text hierarchy: slightly brighter ink for the darker base */
+  --color-ink: #e8ebf1;
+  --color-dim: #98a1b3;
   /* ≥4.5:1 on base/surface for WCAG AA at small sizes */
-  --color-faint: #7d8695;
+  --color-faint: #6b7486;
 
   /* The single accent (overridable at runtime by the theme picker) */
   --color-accent: #d9a35c;
   --color-accent-hover: #e5b678;
-  --color-accent-soft: rgba(217, 163, 92, 0.13);
+  --color-accent-soft: rgba(217, 163, 92, 0.12);
   /* Button-label color on accent fills — engine output for the amber default
      (deriveContrast('#d9a35c')); kept in sync by accent-theme tests. */
   --color-accent-contrast: #16181d;
 
   /* Status (used sparingly, never as category colors) */
-  --color-ok: #85bb90;
+  --color-ok: #7fc08d;
   --color-warn: #d9bd72;
-  --color-danger: #d97f6f;
+  --color-danger: #e08373;
 
   /* Typography */
   --font-sans:
     'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
   --font-mono: 'Cascadia Code', 'Cascadia Mono', ui-monospace, Consolas, monospace;
 
-  /* Radii: modest by design */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 9px;
-  --radius-lg: 13px;
+  /* Radii: tighter than before — crisp, not rounded */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
-  /* Motion scale (DESIGN.md: 120–220ms) */
+  /* Motion scale: snappy, state-reporting */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
