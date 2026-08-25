@@ -25,10 +25,12 @@
   /* ≥4.5:1 on base/surface for WCAG AA at small sizes */
   --color-faint: #7d8695;
 
-  /* The single accent */
+  /* The single accent (overridable at runtime by the theme picker) */
   --color-accent: #d9a35c;
   --color-accent-hover: #e5b678;
   --color-accent-soft: rgba(217, 163, 92, 0.13);
+  /* Button-label color on accent fills — chosen by luminance in the theme picker */
+  --color-accent-contrast: #241a0c;
 
   /* Status (used sparingly, never as category colors) */
   --color-ok: #85bb90;
@@ -48,6 +50,57 @@
 
   /* Motion scale (DESIGN.md: 120–220ms) */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * shadcn/ui variable bridge (Tailwind v4 mode).
+ *
+ * shadcn components consume these semantic variables; we point them at the
+ * Stash token system above so components inherit the charcoal identity
+ * instead of shadcn's default zinc. Dark-only — no light block.
+ *
+ * NOTE: `--color-*` entries live inside @theme so Tailwind generates
+ * utilities (bg-primary etc.) from them; they reference the runtime-
+ * overridable Stash tokens, which is what makes the accent picker work.
+ */
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: var(--color-base);
+    --foreground: var(--color-ink);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-ink);
+    --popover: var(--color-raised);
+    --popover-foreground: var(--color-ink);
+
+    /* Accent mapping (primary = the single brand accent) */
+    --primary: var(--color-accent);
+    --primary-foreground: var(--color-accent-contrast);
+    --secondary: var(--color-raised);
+    --secondary-foreground: var(--color-ink);
+    --muted: var(--color-raised);
+    --muted-foreground: var(--color-dim);
+    --accent: var(--color-accent-soft);
+    --accent-foreground: var(--color-accent);
+
+    /* Destructive maps to Stash danger */
+    --destructive: var(--color-danger);
+
+    /* Lines + inputs */
+    --border: var(--color-line);
+    --input: var(--color-line-strong);
+    --ring: var(--color-accent);
+
+    /* Charts: neutral ramp from the surface ladder, accent reserved */
+    --chart-1: var(--color-accent);
+    --chart-2: #85bb90;
+    --chart-3: #7d8695;
+    --chart-4: #d9bd72;
+    --chart-5: #d97f6f;
+
+    /* Radius: @theme already provides the modest Stash scale (xs–lg);
+       shadcn's rounded-* utilities consume it directly. */
+  }
 }
 
 @layer base {

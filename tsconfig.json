@@ -28,8 +28,7 @@
       "@/*": [
         "./src/renderer/*"
       ]
-    },
-    "baseUrl": "."
+    }
   },
   "include": [
     "src/**/*.ts",
