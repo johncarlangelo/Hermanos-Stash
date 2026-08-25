@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ChevronRight, House } from 'lucide-react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
+import { StatusBar } from '../features/shell/StatusBar'
 import { CommandPalette } from '../features/shell/CommandPalette'
 import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
@@ -144,6 +145,7 @@ export default function App() {
           <DropRouter />
           <ToastViewport />
         </div>
+        <StatusBar />
       </RootErrorBoundary>
     </TooltipPrimitive.Provider>
   )
