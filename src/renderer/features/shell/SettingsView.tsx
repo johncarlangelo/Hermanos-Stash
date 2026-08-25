@@ -19,6 +19,8 @@ const ZOOM_OPTIONS = [
 ]
 
 const ZOOM_PREF_KEY = 'ui.zoom'
+// Same key the accent-runtime module persists under; declared here only for
+// the initial load in this view.
 const ACCENT_PREF_KEY = 'ui.accent'
 
 /**

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ChevronRight, House } from 'lucide-react'
+import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
 import { CommandPalette } from '../features/shell/CommandPalette'
 import { HomeView } from '../features/shell/HomeView'
@@ -109,39 +110,41 @@ export default function App() {
   }, [])
 
   return (
-    <RootErrorBoundary>
-      <div className="flex h-full w-full overflow-hidden">
-        <Sidebar />
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Draggable titlebar row. Sizing follows the native Windows
+    <TooltipPrimitive.Provider delayDuration={120} skipDelayDuration={300}>
+      <RootErrorBoundary>
+        <div className="flex h-full w-full overflow-hidden">
+          <Sidebar />
+          <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {/* Draggable titlebar row. Sizing follows the native Windows
             controls overlay via env(titlebar-area-*) so it adapts when zoom
             resizes the overlay; fallbacks match the 110% default. */}
-          <header
-            className="app-drag flex shrink-0 items-center border-b border-line bg-shell"
-            style={{
-              height: 'env(titlebar-area-height, 44px)',
-              paddingRight: 'calc(100% - env(titlebar-area-width, calc(100% - 154px)))',
-              paddingLeft: 'env(titlebar-area-x, 16px)'
-            }}
-          >
-            <div className="app-no-drag min-w-0">
-              <Breadcrumb />
+            <header
+              className="app-drag flex shrink-0 items-center border-b border-line bg-shell"
+              style={{
+                height: 'env(titlebar-area-height, 44px)',
+                paddingRight: 'calc(100% - env(titlebar-area-width, calc(100% - 154px)))',
+                paddingLeft: 'env(titlebar-area-x, 16px)'
+              }}
+            >
+              <div className="app-no-drag min-w-0">
+                <Breadcrumb />
+              </div>
+            </header>
+            <div className="min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
+              {view.type === 'home' && <HomeView />}
+              {view.type === 'category' && <HomeView />}
+              {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
+              {view.type === 'history' && (
+                <HistoryView key={view.toolId ?? 'all'} seedToolId={view.toolId} />
+              )}
+              {view.type === 'settings' && <SettingsView />}
             </div>
-          </header>
-          <div className="min-w-0 flex-1 overflow-y-auto" data-view={view.type}>
-            {view.type === 'home' && <HomeView />}
-            {view.type === 'category' && <HomeView />}
-            {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
-            {view.type === 'history' && (
-              <HistoryView key={view.toolId ?? 'all'} seedToolId={view.toolId} />
-            )}
-            {view.type === 'settings' && <SettingsView />}
-          </div>
-        </main>
-        <CommandPalette />
-        <DropRouter />
-        <ToastViewport />
-      </div>
-    </RootErrorBoundary>
+          </main>
+          <CommandPalette />
+          <DropRouter />
+          <ToastViewport />
+        </div>
+      </RootErrorBoundary>
+    </TooltipPrimitive.Provider>
   )
 }

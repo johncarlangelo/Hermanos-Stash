@@ -24,7 +24,6 @@ export interface AccentTheme {
   accent: string
   hover: string
   soft: string
-  softRgba: string
   contrast: string
 }
 
@@ -84,7 +83,6 @@ export function deriveAccentTheme(hex: string): AccentTheme | null {
     accent: normalized,
     hover,
     soft: `rgba(${r}, ${g}, ${b}, 0.13)`,
-    softRgba: `rgba(${r}, ${g}, ${b},`,
     contrast: deriveContrast(normalized),
   }
 }

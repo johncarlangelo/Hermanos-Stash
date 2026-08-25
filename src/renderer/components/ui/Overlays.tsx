@@ -20,8 +20,13 @@ function DialogContent({
   className,
   children,
   title,
+  description,
   ...props
-}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { title: string }) {
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  title: string
+  /** Optional sr-only description (Radix wires aria-describedby). */
+  description?: string
+}) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="anim-fade-in fixed inset-0 z-[45] bg-base/75" />
@@ -43,6 +48,11 @@ function DialogContent({
             <X size={14} />
           </DialogPrimitive.Close>
         </div>
+        {description ? (
+          <DialogPrimitive.Description className="sr-only">
+            {description}
+          </DialogPrimitive.Description>
+        ) : null}
         {children}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
@@ -64,30 +74,29 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
  */
 function Hint({ text }: { text: string }) {
   return (
-    <TooltipPrimitive.Provider delayDuration={120} skipDelayDuration={300}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
-          <button
-            type="button"
-            aria-label={`About ${text}`}
-            className="flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-line text-faint transition-colors duration-150 hover:border-line-strong hover:text-dim focus-visible:border-accent/60 focus-visible:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <span aria-hidden className="font-mono text-[9px] leading-none">
-              ?
-            </span>
-          </button>
-        </TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Content
-            sideOffset={6}
-            collisionPadding={12}
-            className="anim-fade-in z-50 max-w-56 rounded-md border border-line-strong bg-overlay px-2.5 py-2 text-[11.5px] leading-snug font-normal text-dim shadow-lg shadow-black/25"
-          >
-            {text}
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipPrimitive.Provider>
+    // Provider is hoisted to the app root (App.tsx); Root works standalone.
+    <TooltipPrimitive.Root>
+      <TooltipPrimitive.Trigger asChild>
+        <button
+          type="button"
+          aria-label={`About ${text}`}
+          className="flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-line text-faint transition-colors duration-150 hover:border-line-strong hover:text-dim focus-visible:border-accent/60 focus-visible:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span aria-hidden className="font-mono text-[9px] leading-none">
+            ?
+          </span>
+        </button>
+      </TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content
+          sideOffset={6}
+          collisionPadding={12}
+          className="anim-fade-in z-50 max-w-56 rounded-md border border-line-strong bg-overlay px-2.5 py-2 text-[11.5px] leading-snug font-normal text-dim shadow-lg shadow-black/25"
+        >
+          {text}
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
   )
 }
 

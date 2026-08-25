@@ -29,8 +29,9 @@
   --color-accent: #d9a35c;
   --color-accent-hover: #e5b678;
   --color-accent-soft: rgba(217, 163, 92, 0.13);
-  /* Button-label color on accent fills — chosen by luminance in the theme picker */
-  --color-accent-contrast: #241a0c;
+  /* Button-label color on accent fills — engine output for the amber default
+     (deriveContrast('#d9a35c')); kept in sync by accent-theme tests. */
+  --color-accent-contrast: #16181d;
 
   /* Status (used sparingly, never as category colors) */
   --color-ok: #85bb90;
@@ -93,10 +94,10 @@
 
     /* Charts: neutral ramp from the surface ladder, accent reserved */
     --chart-1: var(--color-accent);
-    --chart-2: #85bb90;
-    --chart-3: #7d8695;
-    --chart-4: #d9bd72;
-    --chart-5: #d97f6f;
+    --chart-2: var(--color-ok);
+    --chart-3: var(--color-faint);
+    --chart-4: var(--color-warn);
+    --chart-5: var(--color-danger);
 
     /* Radius: @theme already provides the modest Stash scale (xs–lg);
        shadcn's rounded-* utilities consume it directly. */

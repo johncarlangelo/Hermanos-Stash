@@ -25,7 +25,7 @@ const buttonVariants = cva(
         default:
           'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
         destructive:
-          'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20',
+          'border border-transparent bg-[#b35a4c] text-white hover:bg-[#c4685a] focus-visible:ring-destructive/20',
         /* Legacy secondary → raised surface with line border. */
         secondary:
           'border border-line bg-raised text-ink hover:border-line-strong hover:bg-overlay active:bg-line/60',
