@@ -70,7 +70,7 @@ function Hint({ text }: { text: string }) {
           <button
             type="button"
             aria-label={`About ${text}`}
-            className="flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-line text-faint transition-colors duration-150 hover:border-line-strong hover:text-dim focus-visible:border-accent/60 focus-visible:text-accent focus-visible:outline-none"
+            className="flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-line text-faint transition-colors duration-150 hover:border-line-strong hover:text-dim focus-visible:border-accent/60 focus-visible:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <span aria-hidden className="font-mono text-[9px] leading-none">
               ?

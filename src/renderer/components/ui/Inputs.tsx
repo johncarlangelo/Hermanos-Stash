@@ -16,8 +16,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <input
       ref={ref}
       spellCheck={false}
-      className={`h-8.5 w-full rounded-md border bg-base px-2.5 text-[13px] text-ink placeholder:text-faint transition-colors duration-150 ease-out focus:outline-none ${
-        invalid ? 'border-danger/70' : 'border-line hover:border-line-strong focus:border-accent/70'
+      className={`h-8.5 w-full rounded-md border bg-base px-2.5 text-[13px] text-ink placeholder:text-faint transition-colors duration-150 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:border-accent/70 ${
+        invalid ? 'border-danger/70' : 'border-line hover:border-line-strong'
       } ${mono ? 'font-mono tnum' : ''} ${className}`}
       {...rest}
     />
@@ -36,7 +36,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
     <textarea
       ref={ref}
       spellCheck={false}
-      className={`w-full resize-none rounded-md border border-line bg-base p-3 text-[12.5px] leading-relaxed text-ink placeholder:text-faint transition-colors duration-150 ease-out focus:border-accent/70 focus:outline-none ${
+      className={`w-full resize-none rounded-md border border-line bg-base p-3 text-[12.5px] leading-relaxed text-ink placeholder:text-faint transition-colors duration-150 ease-out focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         mono ? 'font-mono tnum' : ''
       } ${className}`}
       {...rest}

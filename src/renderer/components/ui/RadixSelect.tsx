@@ -71,8 +71,8 @@ export function Select({ className, value, defaultValue, onChange, children, ...
         {...(rest as Record<string, unknown>)}
         className={cn(
           'flex h-8.5 w-full cursor-pointer items-center justify-between gap-1.5 rounded-md border border-line bg-base px-2.5 text-[13px] whitespace-nowrap text-ink transition-colors duration-150 ease-out select-none',
-          'hover:border-line-strong focus:border-accent/70 focus:outline-none',
-          'data-[state=open]:border-accent/70 data-[state=open]:bg-surface',
+          'hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-[state=open]:border-accent/70',
+          'data-[state=open]:bg-surface',
           'disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-danger/70',
           className
         )}

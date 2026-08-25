@@ -70,9 +70,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-variant={variant}
       data-size={size}
       disabled={isDisabled}
+      aria-busy={loading || undefined}
       className={cn(buttonVariants({ variant, size }), isDisabled && 'cursor-not-allowed opacity-45', className)}
       {...props}
     >
+      {/* Announce the busy state without relying on the visual spinner. */}
+      {loading && (
+        <span className="sr-only" role="status">
+          Working…
+        </span>
+      )}
       {loading && <Loader2 size={14} className="animate-spin" aria-hidden />}
       {children}
     </button>
