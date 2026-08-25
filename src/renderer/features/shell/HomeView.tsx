@@ -133,6 +133,43 @@ function CategoryFilterChips({
   )
 }
 
+/**
+ * Empty-state storytelling (Milestone 8): when a category has no tools,
+ * suggest three tools from the nearest populated categories instead of a
+ * dead end.
+ */
+function SuggestedTools({ exclude }: { exclude: CategoryId }) {
+  const openTool = useNav((s) => s.openTool)
+  const suggestions = useMemo(() => {
+    const pool = CATEGORIES.filter((c) => c.id !== exclude)
+      .flatMap((c) => toolRegistry.byCategory(c.id))
+      .slice(0, 3)
+    return pool
+  }, [exclude])
+
+  if (suggestions.length === 0) return null
+
+  return (
+    <ul className="flex flex-wrap justify-center gap-1.5">
+      {suggestions.map((tool) => {
+        const Icon = getIcon(tool.icon)
+        return (
+          <li key={tool.id}>
+            <button
+              type="button"
+              onClick={() => openTool(tool.id)}
+              className="flex cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-surface/70 px-2 py-1 text-[12px] text-dim transition-colors duration-150 hover:border-accent/40 hover:text-ink"
+            >
+              <Icon size={12} aria-hidden />
+              {tool.name}
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 function RecentStrip({ tools }: { tools: ToolDefinition[] }) {
   const openTool = useNav((s) => s.openTool)
   return (
@@ -227,6 +264,18 @@ export function HomeView() {
         </p>
       </div>
 
+      {!routeCategory && favoriteTools.length === 0 && (
+        <section aria-label="Favorite tools" className="mb-7">
+          <SectionHeading>Favorites</SectionHeading>
+          <p className="mt-2 text-[12px] text-faint">
+            Star a tool and it lands here for one-click access. Try the palette first:{' '}
+            <kbd className="tnum rounded-xs border border-line bg-surface px-1 font-mono text-[10px] text-dim">
+              Ctrl K
+            </kbd>
+          </p>
+        </section>
+      )}
+
       {!routeCategory && favoriteTools.length > 0 && (
         <section aria-label="Favorite tools" className="mb-7">
           <SectionHeading>Favorites</SectionHeading>
@@ -266,8 +315,13 @@ export function HomeView() {
             }
             hint={
               routeCategory
-                ? 'This area fills up as new tools land. Check another category or search the full catalog.'
+                ? 'This area fills up as new tools land. Meanwhile, these tools handle similar work.'
                 : 'The tool catalog is empty in this build. Tools appear here automatically once registered.'
+            }
+            action={
+              routeCategory ? (
+                <SuggestedTools exclude={routeCategory} />
+              ) : undefined
             }
           />
         ) : grouped.length > 0 ? (
