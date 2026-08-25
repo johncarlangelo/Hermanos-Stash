@@ -62,13 +62,7 @@ function SidebarRow({
       {count !== undefined && (
         <span className="tnum shrink-0 font-mono text-[10px] text-faint">{count}</span>
       )}
-      {active && (
-        <ChevronRight
-          size={11}
-          className="shrink-0 text-faint"
-          aria-hidden
-        />
-      )}
+      {active && <ChevronRight size={11} className="shrink-0 text-faint" aria-hidden />}
     </button>
   )
 }

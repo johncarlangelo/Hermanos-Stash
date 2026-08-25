@@ -17,7 +17,8 @@ export function StatusBar() {
 
   // Minute-ticking clock — quiet "the app is alive" signal, Hermes-style.
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+    const tick = () =>
+      setClock(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     tick()
     const id = setInterval(tick, 15_000)
     return () => clearInterval(id)

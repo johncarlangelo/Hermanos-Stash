@@ -42,10 +42,7 @@ export function Collapsible({
         {badge && <span className="tnum ml-auto font-mono text-[10px] normal-case">{badge}</span>}
       </CollapsiblePrimitive.Trigger>
       <CollapsiblePrimitive.Content
-        className={cn(
-          'overflow-hidden data-[state=open]:anim-fade-in',
-          open ? 'pt-2' : ''
-        )}
+        className={cn('overflow-hidden data-[state=open]:anim-fade-in', open ? 'pt-2' : '')}
       >
         {children}
       </CollapsiblePrimitive.Content>

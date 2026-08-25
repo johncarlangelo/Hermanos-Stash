@@ -45,7 +45,10 @@ export function Slider({
       {/* Track */}
       <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-line">
         {/* Range fill */}
-        <SliderPrimitive.Range className="absolute h-full bg-accent" style={{ width: `${fillPct}%` }} />
+        <SliderPrimitive.Range
+          className="absolute h-full bg-accent"
+          style={{ width: `${fillPct}%` }}
+        />
       </SliderPrimitive.Track>
       {/* Thumb */}
       <SliderPrimitive.Thumb

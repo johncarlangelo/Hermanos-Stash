@@ -185,38 +185,39 @@ export function HomeView() {
       : []
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-8 py-8">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="mx-auto w-full max-w-4xl px-8 py-7">
+      {/* Header — compact, Hermes-style with inline kbd affordance */}
+      <div className="mb-5 flex items-end justify-between gap-4">
         {routeCategory ? (
-          <>
+          <div className="min-w-0">
             <button
               type="button"
               onClick={goHome}
-              className="mb-1 flex cursor-pointer items-center gap-1 text-[11.5px] text-faint transition-colors duration-150 hover:text-dim"
+              className="mb-0.5 flex cursor-pointer items-center gap-1 text-[10.5px] tracking-wide text-faint uppercase transition-colors duration-150 hover:text-dim"
             >
-              <House size={11} />
+              <House size={10} />
               All categories
             </button>
-            <h1 className="text-[19px] font-semibold tracking-tight text-ink">
+            <h1 className="text-[17px] font-semibold tracking-tight text-ink">
               {getCategory(routeCategory)?.label}
             </h1>
-            <p className="mt-0.5 text-[12.5px] text-dim">
-              {getCategory(routeCategory)?.description}
-            </p>
-          </>
+            <p className="mt-0.5 text-[12px] text-dim">{getCategory(routeCategory)?.description}</p>
+          </div>
         ) : (
-          <>
-            <h1 className="text-[19px] font-semibold tracking-tight text-ink">Workspace</h1>
-            <p className="mt-0.5 max-w-md text-[12.5px] leading-relaxed text-dim">
-              Pick a tool below, or press{' '}
-              <kbd className="rounded-xs border border-line bg-surface px-1 font-mono text-[10.5px] text-dim">
+          <div>
+            <h1 className="text-[17px] font-semibold tracking-tight text-ink">Workspace</h1>
+            <p className="mt-0.5 text-[12px] text-dim">
+              Pick a tool, or{' '}
+              <kbd className="tnum rounded-xs border border-line bg-surface px-1 font-mono text-[10px] text-dim">
                 Ctrl K
               </kbd>{' '}
               to search everything.
             </p>
-          </>
+          </div>
         )}
+        <p className="tnum shrink-0 font-mono text-[10px] tracking-wide text-faint">
+          {visibleTools.length} / {toolRegistry.count()} tools
+        </p>
       </div>
 
       {!routeCategory && favoriteTools.length > 0 && (
