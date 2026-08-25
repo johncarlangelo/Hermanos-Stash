@@ -37,7 +37,7 @@ const buttonVariants = cva(
         link: 'text-accent underline-offset-4 hover:underline'
       },
       size: {
-        default: 'h-8.5 gap-2 px-3.5', /* shadcn alias for md */
+        default: 'h-8.5 gap-2 px-3.5' /* shadcn alias for md */,
         sm: 'h-7 gap-1.5 rounded-sm px-2.5 text-[12.5px]',
         md: 'h-8.5 gap-2 px-3.5',
         lg: 'h-9 rounded-md px-5',
@@ -53,8 +53,7 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   loading?: boolean
   /** shadcn-standard: render the child element with button classes (Radix Slot). */
   asChild?: boolean

@@ -5,6 +5,7 @@ import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId, ToolDefinition } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
 import { EmptyState, SectionHeading } from '../../components/ui/Feedback'
+import { CoachMarks } from './CoachMarks'
 import { useLibrary } from '../../stores/library'
 import { useNav } from '../../stores/nav'
 
@@ -225,7 +226,8 @@ export function HomeView() {
       : []
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-8 py-7">
+    <div className="relative mx-auto w-full max-w-4xl px-8 py-7">
+      <CoachMarks />
       <div className="mb-5 flex items-end justify-between gap-4">
         {/* Header — compact, Hermes-style with inline kbd affordance */}
         {routeCategory ? (
@@ -318,11 +320,7 @@ export function HomeView() {
                 ? 'This area fills up as new tools land. Meanwhile, these tools handle similar work.'
                 : 'The tool catalog is empty in this build. Tools appear here automatically once registered.'
             }
-            action={
-              routeCategory ? (
-                <SuggestedTools exclude={routeCategory} />
-              ) : undefined
-            }
+            action={routeCategory ? <SuggestedTools exclude={routeCategory} /> : undefined}
           />
         ) : grouped.length > 0 ? (
           <div className="space-y-6">

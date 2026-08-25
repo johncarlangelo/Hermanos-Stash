@@ -38,7 +38,10 @@ export const useNav = create<NavState>((set) => ({
     // the current view. The palette closes; the workspace stays put.
     const componentEntry = TOOL_COMPONENTS[toolId]
     if (componentEntry) void (componentEntry as { preload?: () => Promise<unknown> }).preload?.()
-    useLibrary.getState().recordRecent(toolId).catch(() => {})
+    useLibrary
+      .getState()
+      .recordRecent(toolId)
+      .catch(() => {})
     set({ paletteOpen: false })
   },
   openHistory: (toolId?: string) => set({ view: { type: 'history', toolId }, paletteOpen: false }),

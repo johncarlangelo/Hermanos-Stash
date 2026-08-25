@@ -1,5 +1,15 @@
 import { useEffect } from 'react'
-import { ChevronDown, ChevronUp, ChevronRight, Clock, House, Pin, Search, Settings, Star } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  Clock,
+  House,
+  Pin,
+  Search,
+  Settings,
+  Star
+} from 'lucide-react'
 import { CATEGORIES } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId } from '../../../shared/types/tool'

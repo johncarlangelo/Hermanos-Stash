@@ -105,113 +105,113 @@ export function SettingsView() {
   return (
     <div className="relative">
       <div className="relative mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
-      <div>
-        <h1 className="text-[19px] font-semibold tracking-tight text-ink">Settings</h1>
-        <p className="mt-0.5 text-[12.5px] text-dim">
-          Everything is stored locally on this machine. No account, no cloud.
-        </p>
-      </div>
+        <div>
+          <h1 className="text-[19px] font-semibold tracking-tight text-ink">Settings</h1>
+          <p className="mt-0.5 text-[12.5px] text-dim">
+            Everything is stored locally on this machine. No account, no cloud.
+          </p>
+        </div>
 
-      <Panel className="px-4 py-4">
-        <SectionHeading>About</SectionHeading>
-        <dl className="mt-3 space-y-2 text-[12.5px]">
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-faint">Version</dt>
-            <dd className="tnum font-mono text-dim">{info?.version ?? '…'}</dd>
+        <Panel className="px-4 py-4">
+          <SectionHeading>About</SectionHeading>
+          <dl className="mt-3 space-y-2 text-[12.5px]">
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-faint">Version</dt>
+              <dd className="tnum font-mono text-dim">{info?.version ?? '…'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="shrink-0 text-faint">Data folder</dt>
+              <dd
+                className="min-w-0 truncate font-mono text-[11.5px] text-dim"
+                title={info?.dataFolder}
+              >
+                {info?.dataFolder ?? '…'}
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-3">
+            <Button variant="secondary" size="sm" onClick={() => void revealData()}>
+              <FolderOpen size={13} aria-hidden />
+              Open data folder
+            </Button>
           </div>
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="shrink-0 text-faint">Data folder</dt>
-            <dd
-              className="min-w-0 truncate font-mono text-[11.5px] text-dim"
-              title={info?.dataFolder}
-            >
-              {info?.dataFolder ?? '…'}
-            </dd>
-          </div>
-        </dl>
-        <div className="mt-3">
-          <Button variant="secondary" size="sm" onClick={() => void revealData()}>
-            <FolderOpen size={13} aria-hidden />
-            Open data folder
-          </Button>
-        </div>
-      </Panel>
+        </Panel>
 
-      <Panel className="px-4 py-4">
-        <SectionHeading>Appearance</SectionHeading>
-        <p className="mt-2 text-[12px] text-dim">Accent color</p>
-        <AccentPicker current={accent} />
-        <p className="mt-2 text-[12px] text-dim">Density</p>
-        <div
-          role="radiogroup"
-          aria-label="Interface density"
-          className="mt-2 inline-flex rounded-md border border-line p-0.5"
-        >
-          {(['comfortable', 'compact'] as Density[]).map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={density === option}
-              onClick={() => {
-                setDensity(option)
-                void setDensityPreference(option)
-              }}
-              className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] capitalize transition-colors duration-150 ${
-                density === option
-                  ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
-                  : 'text-faint hover:text-dim'
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1.5 text-[11px] text-faint">
-          Compact fits more on screen. Applied immediately and remembered.
-        </p>
-        <div className="mt-3 flex items-center gap-3">
-          <FieldRow label="Zoom" htmlFor="settings-zoom">
-            <Select
-              id="settings-zoom"
-              value={zoom}
-              onChange={(e) => void changeZoom(Number(e.target.value))}
-              className="w-24"
-            >
-              {ZOOM_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          </FieldRow>
-          <p className="text-[11.5px] text-faint">Applied immediately and remembered.</p>
-        </div>
-      </Panel>
-
-      <Panel className="px-4 py-4">
-        <SectionHeading>Privacy</SectionHeading>
-        <p className="mt-2 text-[12.5px] leading-relaxed text-dim">
-          Stash keeps a lightweight activity history (tool used, file names, outcome) so you can
-          retrace recent work. File contents are never recorded, and clearing it below removes every
-          entry immediately and permanently.
-        </p>
-        <div className="mt-3 flex items-center gap-3">
-          <Button
-            variant={confirmingClear ? 'primary' : 'danger'}
-            size="sm"
-            onClick={() => void clearHistory()}
+        <Panel className="px-4 py-4">
+          <SectionHeading>Appearance</SectionHeading>
+          <p className="mt-2 text-[12px] text-dim">Accent color</p>
+          <AccentPicker current={accent} />
+          <p className="mt-2 text-[12px] text-dim">Density</p>
+          <div
+            role="radiogroup"
+            aria-label="Interface density"
+            className="mt-2 inline-flex rounded-md border border-line p-0.5"
           >
-            <Trash2 size={13} aria-hidden />
-            {confirmingClear ? 'Confirm clear?' : 'Clear activity history'}
-          </Button>
-          {clearedAt && <SuccessNote message={`Cleared at ${clearedAt}`} />}
-        </div>
-      </Panel>
+            {(['comfortable', 'compact'] as Density[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={density === option}
+                onClick={() => {
+                  setDensity(option)
+                  void setDensityPreference(option)
+                }}
+                className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] capitalize transition-colors duration-150 ${
+                  density === option
+                    ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
+                    : 'text-faint hover:text-dim'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-faint">
+            Compact fits more on screen. Applied immediately and remembered.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <FieldRow label="Zoom" htmlFor="settings-zoom">
+              <Select
+                id="settings-zoom"
+                value={zoom}
+                onChange={(e) => void changeZoom(Number(e.target.value))}
+                className="w-24"
+              >
+                {ZOOM_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </FieldRow>
+            <p className="text-[11.5px] text-faint">Applied immediately and remembered.</p>
+          </div>
+        </Panel>
 
-      <p className="text-center text-[11px] text-faint">
-        Hermanos Stash runs entirely offline. Files you process never leave this machine.
-      </p>
+        <Panel className="px-4 py-4">
+          <SectionHeading>Privacy</SectionHeading>
+          <p className="mt-2 text-[12.5px] leading-relaxed text-dim">
+            Stash keeps a lightweight activity history (tool used, file names, outcome) so you can
+            retrace recent work. File contents are never recorded, and clearing it below removes
+            every entry immediately and permanently.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <Button
+              variant={confirmingClear ? 'primary' : 'danger'}
+              size="sm"
+              onClick={() => void clearHistory()}
+            >
+              <Trash2 size={13} aria-hidden />
+              {confirmingClear ? 'Confirm clear?' : 'Clear activity history'}
+            </Button>
+            {clearedAt && <SuccessNote message={`Cleared at ${clearedAt}`} />}
+          </div>
+        </Panel>
+
+        <p className="text-center text-[11px] text-faint">
+          Hermanos Stash runs entirely offline. Files you process never leave this machine.
+        </p>
       </div>
     </div>
   )
