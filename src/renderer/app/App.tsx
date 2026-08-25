@@ -10,6 +10,7 @@ import { ToolPage } from '../features/shell/ToolPage'
 import { SettingsView } from '../features/shell/SettingsView'
 import { HistoryView } from '../features/shell/HistoryView'
 import { DropRouter } from '../features/shell/DropRouter'
+import { QuickSwitch } from '../features/shell/QuickSwitch'
 import { Toaster } from '../components/ui/Toaster'
 import { RootErrorBoundary } from '../components/RootErrorBoundary'
 import { getIcon } from '../components/icons'
@@ -150,6 +151,7 @@ export default function App() {
           </main>
           <CommandPalette />
           <DropRouter />
+          <QuickSwitch />
           <Toaster />
         </div>
         <StatusBar />
