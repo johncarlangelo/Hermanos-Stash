@@ -37,6 +37,30 @@ persistence, FFmpeg native integration (user-supplied binaries in
 `resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
 per-tool checklist evidence lives in `VERIFICATION_LOG.md`.
 
+### Milestone 7 — shadcn/ui platform (this phase)
+
+shadcn/ui adopted as the component backbone in Tailwind v4 mode: its semantic
+CSS variables are bridged onto the Stash charcoal/amber tokens so every
+Radix-backed component inherits the Stash identity instead of default zinc.
+Shipped on top:
+
+- **Select** → Radix Select behind the exact legacy call surface (23 call sites,
+  zero call-site edits) — real dropdown with keyboard nav and typeahead.
+- **Command palette** rebuilt on `cmdk` — registry fuzzy ranking retained,
+  standard palette shell gained.
+- **Accent theme picker** in Settings → Appearance: six curated presets + free
+  color picker; pure derivation engine computes hover/soft-tint/label-contrast
+  from WCAG luminance; runtime CSS-variable override persisted via prefs
+  `ui.accent`, applied pre-paint at startup; 3:1 visibility guard warns on too-dim
+  custom colors (15 engine tests).
+- **Dialog + Tooltip primitives** (`Overlays.tsx`): DropRouter modal and FieldRow
+  help hints ported to Radix primitives.
+- **Button** reconciled onto the cva architecture while preserving the legacy
+  primary/danger/sm/md/loading API — all 50 tools compile unchanged.
+
+Verification: typecheck clean, build green, **568 tests passing across 51 files**
+at every step. Human visual QA of the running app remains open per the release gate.
+
 Shell UX round completed after user feedback: draggable frameless titlebar,
 explicit Home navigation (sidebar item + clickable brand + breadcrumb), a
 tools-as-cards home screen with category filter chips, and tag-click search

@@ -210,3 +210,44 @@ Wave additions (M6): registry rows 35-43.
 | 43 | brand-bible | future | 12 | Markdown/JSON export, prefs autosave |
 
 Also fixed: preload `fs.writeTextFile` payload mismatch (latent bug — channel always rejected; prompt-library export restored).
+
+## Milestone 7 — shadcn/ui adoption + accent theme picker
+
+Verification evidence for the UI platform refactor:
+
+- **Typecheck:** `tsc --noEmit` → 0 errors after every step.
+- **Tests:** 568 passing across 51 files (was 553/50; +15 accent-theme engine tests).
+  The accent engine suite covers hover derivation direction, soft-tint string
+  shape, luminance-based label contrast, the 3:1 visibility guard against every
+  curated preset, and amber-default consistency with the CSS token values.
+- **Build:** `electron-vite build` green at each commit; all 50 tool chunks emit.
+- **Token bridge (`global.css`):** shadcn semantic variables
+  (`--background/--primary/--popover/--ring/…`) mapped onto Stash tokens inside
+  `@layer base`; `--color-*` entries stay in `@theme` so Tailwind generates
+  utilities. Dark-only; no light block. Radius scale reuses the modest Stash
+  xs–lg tokens directly.
+- **Select migration:** Radix Select behind the exact legacy call surface
+  (`value` / `onChange(e.target.value)` / `<option>` children) — 23 tool/shell
+  call sites migrated with zero call-site edits. Keyboard nav, typeahead and
+  portal rendering verified by component contract; native-select appearance
+  removed.
+- **Command palette on cmdk:** registry fuzzy scoring retained as the ranking
+  source (`shouldFilter={false}`), cmdk provides focus capture/arrows/Esc;
+  favorites group + tag chips preserved; seeded-query flow intact.
+- **Accent picker:** Settings → Appearance gains preset swatches (amber default,
+  sage, steel, rose, violet, teal), a free color input, live application via
+  CSS-variable override on `--color-accent*`, persistence in prefs `ui.accent`,
+  pre-paint startup apply in `main.tsx`, and an inline warning when a custom
+  color falls below 3:1 contrast against `--color-base`.
+- **Dialog/Tooltip primitives:** new `Overlays.tsx` (Radix Dialog + Tooltip)
+  styled to DESIGN.md (overlay surface, line-strong border, pop entry);
+  DropRouter's hand-rolled modal ported to Radix Dialog (focus trap, Esc,
+  aria wiring from the primitive); FieldRow help hint now portal-rendered with
+  collision-aware placement while keeping hover AND keyboard-focus triggers.
+- **Button reconciliation:** legacy Stash API (primary/danger variants, sm/md
+  sizes, loading prop) merged into shadcn cva architecture consuming tokens
+  (`bg-accent text-accent-contrast`); hardcoded accent literals removed from
+  components — everything flows through runtime-overridable variables.
+- **Deliberately not adopted:** DropdownMenu and ScrollArea (no current call
+  sites — will be added when first needed per scope discipline).
+- **Human visual QA of the running app: PENDING USER QA** (per release gate).

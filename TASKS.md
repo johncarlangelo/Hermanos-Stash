@@ -154,17 +154,36 @@ Legend:
 components while keeping DESIGN.md's charcoal identity and a user-chosen
 accent color.
 
-- [ ] Init: run shadcn CLI (Tailwind v4 mode); map shadcn CSS variables onto our existing tokens (`--color-base` → background, surface/radius scale) so components inherit the Stash look — NOT default zinc.
-- [ ] **Accent theme picker (user request — dark-only stays):** Settings → Appearance gains an accent selector: curated presets (current amber default, plus e.g. sage / steel blue / rose / violet / teal) AND a free color picker. Implementation notes:
-  - runtime CSS-variable override on `--color-accent` + computed derivatives (`accent-hover`, `accent-soft` alpha blend, `accent-contrast` label text = black/white by luminance — pure helpers already exist in `color-converter/logic`);
-  - persist via prefs `ui.accent`, applied pre-paint on startup (same slot as `ui.zoom`, which main already reads);
-  - contrast guard: inline warning if the picked accent falls below ~3:1 against `--color-base`;
-  - update hardcoded accent literals in code (Button primary text `#241a0c`, `accent-soft` rgba) to consume the derived variables;
-  - ordering: if shadcn init lands first, map this onto its `--primary`/`--ring` tokens to avoid double work.
-- [ ] Migrate behavior-critical controls first: `Select` → Radix Select (biggest native-clunk offender), then Dialog / AlertDialog (two-step confirms), Tooltip (replaces custom Hint popover), DropdownMenu, ScrollArea, Popover.
-- [ ] Rebuild command palette on `cmdk` (keeps fuzzy search, gains standard palette UX).
-- [ ] Reconcile existing primitives: keep DropZone (bespoke), port Button/Input/Toggle visuals onto shadcn variants; delete duplicated styling once parity confirmed.
-- [ ] Sweep all tools for replaced components; visual pass against DESIGN.md; update VERIFICATION_LOG UX entries.
+- [x] Init: shadcn in Tailwind v4 mode (`components.json`, `cn()` helper,
+      radix-ui + cva + clsx + tailwind-merge); semantic variables
+      (`--background/--primary/--popover/--ring/…`) mapped onto Stash tokens
+      in `global.css` so components inherit the charcoal look — NOT default zinc.
+      `@` renderer alias added to tsconfig + electron-vite for the CLI.
+- [x] **Accent theme picker (user request — dark-only stays):** Settings →
+  Appearance accent selector shipped:
+  - curated presets (amber default, sage, steel blue, rose, violet, teal) AND a free color picker;
+  - pure derivation engine `features/settings/accent-theme.ts` computes hover shade, soft tint
+    (`accent-soft` alpha blend) and label contrast (black/white by WCAG luminance via the
+    color-converter engine) — 15 logic tests;
+  - runtime CSS-variable override on `--color-accent*`; persisted via prefs `ui.accent`;
+    applied pre-paint on startup from `main.tsx` (same slot as `ui.zoom`);
+  - contrast guard: inline warning when a picked accent falls below ~3:1 against `--color-base`
+    (every preset verified above threshold by test);
+  - hardcoded accent literals removed from Button etc. — all consume derived variables.
+- [x] Migrate behavior-critical controls: Select → Radix Select as a drop-in
+  keeping the legacy `value/onChange/<option>` API (23 call sites, zero call-site edits);
+  Dialog primitives in `Overlays.tsx` + DropRouter modal ported; FieldRow hint tooltip →
+  Radix Tooltip (portal + collision-aware, hover AND keyboard focus). DropdownMenu/ScrollArea
+  deferred until a call site exists (scope discipline).
+- [x] Rebuild command palette on `cmdk` (registry fuzzy scoring retained as ranker;
+  focus capture/arrows/Esc from cmdk; favorites group preserved).
+- [x] Reconcile existing primitives: DropZone kept (bespoke); Button rebuilt on shadcn cva
+  architecture while preserving the legacy primary/danger/sm/md/loading API so all 50 tools
+  compile unchanged; Select/Input/Toggle visuals unchanged.
+- [x] Sweep: typecheck 0 errors · build green · 568 tests passing (51 files) at every commit.
+  VERIFICATION_LOG updated with per-item evidence. Human visual QA of the running app remains
+  open for the user (release gate).
+
 ## Future
 
 - [x] Prompt template organizer. *(delivered as the Prompt Library tool, Milestone 5)*
