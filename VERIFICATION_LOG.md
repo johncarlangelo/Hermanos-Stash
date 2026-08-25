@@ -290,3 +290,7 @@ finding was fixed and re-verified (typecheck 0 · build green · 568 tests):
 - **Deferred by decision:** second-tier 4.5:1 accent-text warning tier,
   editable hex text input, RadixSelect scroll buttons — recorded as future
   candidates, none block M7.
+- **Lint + formatting gate (added post-review):** `eslint` clean;
+  `prettier --check` initially flagged 7 M7 files — reformatted and committed
+  (`style: apply prettier to milestone 7 ui files`); full gate now
+  typecheck 0 · lint clean · prettier clean · build green · 568 tests.
