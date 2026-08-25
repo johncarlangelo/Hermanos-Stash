@@ -382,24 +382,28 @@
 }
 
 @keyframes modal-in {
+  /* Positional centering belongs to the Tailwind translate utilities
+     (CSS `translate` property) — these keyframes must never set
+     `transform: translate(...)`, or the two compose and the modal
+     lands in the corner. Animate only entrance motion. */
   from {
     opacity: 0;
-    transform: translate(-50%, -48%) scale(0.96);
+    transform: translateY(-8px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes modal-out {
   from {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -52%) scale(0.97);
+    transform: translateY(-6px) scale(0.98);
   }
 }
 
