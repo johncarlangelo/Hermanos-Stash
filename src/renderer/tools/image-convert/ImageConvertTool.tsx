@@ -9,6 +9,7 @@ import {
   SectionHeading
 } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
+import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Input, Select } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -166,17 +167,15 @@ export default function ImageConvertTool() {
             </Select>
           </FieldRow>
           {lossy && (
-            <FieldRow label="Quality" htmlFor="convert-quality">
-              <input
-                id="convert-quality"
-                type="range"
+            <FieldRow label="Quality">
+              <Slider
                 min={1}
                 max={100}
                 step={1}
                 value={quality}
                 aria-label={`Quality, ${quality} percent`}
-                onChange={(e) => setQuality(Number(e.target.value))}
-                className="w-40 cursor-pointer accent-accent"
+                onValueChange={setQuality}
+                className="w-40"
               />
               <span className="tnum w-8 text-[12px] text-dim">{quality}</span>
             </FieldRow>

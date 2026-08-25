@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Copy, RefreshCw } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { ErrorNote, Panel, SectionHeading } from '../../components/ui/Feedback'
+import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Input, Select, Toggle } from '../../components/ui/Inputs'
 import { normalizeError, type StashError } from '../../../shared/errors'
 import { toastError, toastSuccess } from '../../stores/toasts'
@@ -155,15 +156,14 @@ export default function PassphraseGeneratorTool() {
           </>
         ) : (
           <>
-            <FieldRow label="Length" htmlFor="pw-length">
-              <input
-                id="pw-length"
-                type="range"
+            <FieldRow label="Length">
+              <Slider
                 min={8}
                 max={64}
                 value={length}
-                onChange={(e) => setPasswordLength(Number(e.target.value))}
-                className="h-8.5 w-full accent-accent cursor-pointer"
+                aria-label={`Password length, ${length} characters`}
+                onValueChange={setPasswordLength}
+                className="w-full"
               />
               <span
                 aria-live="polite"
