@@ -515,3 +515,19 @@ body::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Density preference (Milestone 8): Compact tightens type and spacing
+ * globally via a data attribute on <html>. Never touches titlebar chrome.
+ */
+html[data-density='compact'] {
+  font-size: 93.75%; /* 14px base → ~13.1px effective */
+}
+
+html[data-density='compact'] body {
+  line-height: 1.45;
+}
+
+html[data-density='compact'] button {
+  letter-spacing: -0.01em;
+}

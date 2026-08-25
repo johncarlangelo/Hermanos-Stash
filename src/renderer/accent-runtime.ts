@@ -9,6 +9,9 @@
 import { deriveAccentTheme } from './features/settings/accent-theme'
 
 export const ACCENT_PREF_KEY = 'ui.accent'
+export const DENSITY_PREF_KEY = 'ui.density'
+
+export type Density = 'comfortable' | 'compact'
 
 /** Apply an accent color to the document. Returns false for invalid colors. */
 export function applyAccent(hex: string | null | undefined): boolean {
@@ -24,11 +27,22 @@ export function applyAccent(hex: string | null | undefined): boolean {
   return true
 }
 
+/** Apply a density preference to the document. Unknown values are ignored. */
+export function applyDensity(value: string | null | undefined): void {
+  if (value === 'compact') {
+    document.documentElement.setAttribute('data-density', 'compact')
+  } else if (value === 'comfortable') {
+    document.documentElement.removeAttribute('data-density')
+  }
+}
+
 /** Startup hook: read prefs and apply before the app paints content. */
 export async function initAccentFromPrefs(): Promise<void> {
   try {
     const saved = await window.stash.prefs.get<string>(ACCENT_PREF_KEY)
     if (typeof saved === 'string') applyAccent(saved)
+    const density = await window.stash.prefs.get<string>(DENSITY_PREF_KEY)
+    applyDensity(density)
   } catch {
     // Prefs unavailable (e.g. smoke mode) — keep CSS defaults.
   }
@@ -44,5 +58,15 @@ export async function setAccentPreference(hex: string): Promise<boolean> {
   } catch {
     // Applied visually even if persistence failed; caller can toast.
     return false
+  }
+}
+
+/** Persist and live-apply a density preference. */
+export async function setDensityPreference(value: Density): Promise<void> {
+  applyDensity(value)
+  try {
+    await window.stash.prefs.set(DENSITY_PREF_KEY, value)
+  } catch {
+    // Applied visually even if persistence failed.
   }
 }

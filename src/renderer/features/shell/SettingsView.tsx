@@ -4,6 +4,8 @@ import { Button } from '../../components/ui/Button'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
 import { AccentPicker } from './AccentPicker'
+import { setDensityPreference, type Density } from '../../accent-runtime'
+import { DENSITY_PREF_KEY } from '../../accent-runtime'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
 
@@ -32,6 +34,7 @@ export function SettingsView() {
   const [confirmingClear, setConfirmingClear] = useState(false)
   const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
   const [accent, setAccent] = useState<string | null>(null)
+  const [density, setDensity] = useState<Density>('comfortable')
 
   useEffect(() => {
     window.stash.app
@@ -53,6 +56,14 @@ export function SettingsView() {
       })
       .catch(() => {
         // No saved accent — keep the amber default.
+      })
+    window.stash.prefs
+      .get<string>(DENSITY_PREF_KEY)
+      .then((value) => {
+        if (value === 'compact' || value === 'comfortable') setDensity(value)
+      })
+      .catch(() => {
+        // No saved density — keep comfortable.
       })
   }, [])
 
@@ -130,6 +141,35 @@ export function SettingsView() {
         <SectionHeading>Appearance</SectionHeading>
         <p className="mt-2 text-[12px] text-dim">Accent color</p>
         <AccentPicker current={accent} />
+        <p className="mt-2 text-[12px] text-dim">Density</p>
+        <div
+          role="radiogroup"
+          aria-label="Interface density"
+          className="mt-2 inline-flex rounded-md border border-line p-0.5"
+        >
+          {(['comfortable', 'compact'] as Density[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={density === option}
+              onClick={() => {
+                setDensity(option)
+                void setDensityPreference(option)
+              }}
+              className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] capitalize transition-colors duration-150 ${
+                density === option
+                  ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
+                  : 'text-faint hover:text-dim'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-faint">
+          Compact fits more on screen. Applied immediately and remembered.
+        </p>
         <div className="mt-3 flex items-center gap-3">
           <FieldRow label="Zoom" htmlFor="settings-zoom">
             <Select
