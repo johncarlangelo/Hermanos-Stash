@@ -215,23 +215,29 @@ Build on a fresh `ux-polish` branch; commit per feature; merge after review.
 app. Full spec: `.hermes/plans/2026-08-25_170000-ux-polish-round.md`. Build order =
 dependency order below; each feature = own commit series on `ux-polish` branch.
 
-- [ ] **Toasts → sonner** (shadcn-standard): glass cards, swipe-dismiss, pause-on-hover.
-      Keep `toastSuccess/toastError` API identical so tool call sites don't change.
-- [ ] **Quick-Switch `Ctrl+Tab`**: overlay cycling last ~8 recents (Alt-Tab for tools);
+- [x] **Toasts → sonner** (shadcn-standard): glass cards, swipe-dismiss, pause-on-hover.
+      Keep `toastSuccess/toastError` API identical so tool call sites don't change. *(custom
+      ToastViewport removed; Toaster themed to tokens, mounted in App)*
+- [x] **Quick-Switch `Ctrl+Tab`**: overlay cycling last ~8 recents (Alt-Tab for tools);
       `Shift+Tab` reverses; keyboard-only. Fallback `Ctrl+Q` if Windows blocks the chord.
-- [ ] **Pinned tools dock**: ordered `pinnedTools` pref, PINNED sidebar section above
-      Favorites, up/down reorder buttons (drag-reorder deferred).
-- [ ] **Command palette upgrades**: right-side glass preview card on arrow-key selection
-      (description/tags/last-used); `Ctrl+Enter` open-in-background (records recent, stays).
-- [ ] **Density preference**: Comfortable/Compact segmented control in Settings →
+      *(`QuickSwitch.tsx`; capture-phase listeners, release-Ctrl-to-jump, starts on 2nd-most-recent)*
+- [x] **Pinned tools dock**: ordered `pinnedTools` pref, PINNED sidebar section above
+      Favorites, up/down reorder buttons (drag-reorder deferred). *(stores/pins.ts + 8 vitest
+      tests incl. cap enforcement and optimistic-write-on-failure; pin/unpin button on tool pages)*
+- [x] **Command palette upgrades**: right-side glass preview card on arrow-key selection
+      (description/tags/last-used); `Ctrl+Enter` open-in-background (pre-warms lazy chunk via
+      preload(), records recent, stays put). *(two-pane palette, capabilities chips)*
+- [x] **Density preference**: Comfortable/Compact segmented control in Settings →
       Appearance; `ui.density` pref applied pre-paint; scales renderer content only,
-      never titlebar chrome. Component: shadcn ToggleGroup (new adoption).
-- [ ] **Empty-state storytelling**: contextual guidance per state (no favorites / no
-      recents / empty category with nearest-category suggestions).
-- [ ] **Micro-interaction pass**: advanced media options into Collapsibles; stagger-in
-      batch result rows; DropZone accepted-file pulse; sidebar count badge tick animation.
-- [ ] **First-run coach marks**: max 3 one-time hints (Ctrl+K, drop-anywhere, pinning);
-      prefs `onboarding.done`; never re-shown.
+      never titlebar chrome. *(radio-group control; `html[data-density=compact]` CSS block;
+      skipped ToggleGroup — plain buttons match the shell better and avoid an extra adoption)*
+- [x] **Empty-state storytelling**: contextual guidance per state (no favorites → star hint
+      with Ctrl K kbd; empty category → three suggested tools from other categories as chips).
+- [x] **Micro-interaction pass**: stagger-in batch result rows (30ms/row, capped 300ms);
+      DropZone accepted-file pulse (ok-color border flash, 550ms). Advanced-options folding
+      already covered by Collapsible adoption in the overhaul.
+- [x] **First-run coach marks**: single dismissible strip with 3 hints (Ctrl+K, drop-anywhere,
+      pinning); prefs `onboarding.done`; never re-shown after dismissal.
 
 **Component adoptions riding along:** sonner, ToggleGroup, shadcn Breadcrumb
 (replace hand-rolled breadcrumb in App.tsx). Everything else in the current
