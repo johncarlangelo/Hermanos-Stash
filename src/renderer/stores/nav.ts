@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { TOOL_COMPONENTS } from '../tools'
+import { useLibrary } from './library'
 import type { CategoryId } from '../../shared/types/tool'
 
 export type View =
@@ -16,6 +18,8 @@ interface NavState {
   goHome: () => void
   openCategory: (category: CategoryId) => void
   openTool: (toolId: string) => void
+  /** Open a tool without leaving the current view (pre-warms chunk, records recent). */
+  openToolInBackground: (toolId: string) => void
   openHistory: (toolId?: string) => void
   openSettings: () => void
   setPaletteOpen: (open: boolean, seedQuery?: string) => void
@@ -29,6 +33,14 @@ export const useNav = create<NavState>((set) => ({
   goHome: () => set({ view: { type: 'home' } }),
   openCategory: (category) => set({ view: { type: 'category', category }, paletteOpen: false }),
   openTool: (toolId) => set({ view: { type: 'tool', toolId }, paletteOpen: false }),
+  openToolInBackground: (toolId) => {
+    // Pre-warm the tool's lazy chunk and record the recent without leaving
+    // the current view. The palette closes; the workspace stays put.
+    const componentEntry = TOOL_COMPONENTS[toolId]
+    if (componentEntry) void (componentEntry as { preload?: () => Promise<unknown> }).preload?.()
+    useLibrary.getState().recordRecent(toolId).catch(() => {})
+    set({ paletteOpen: false })
+  },
   openHistory: (toolId?: string) => set({ view: { type: 'history', toolId }, paletteOpen: false }),
   openSettings: () => set({ view: { type: 'settings' }, paletteOpen: false }),
   setPaletteOpen: (paletteOpen, seedQuery) =>
