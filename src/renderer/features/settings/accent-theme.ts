@@ -77,7 +77,6 @@ export function deriveAccentTheme(hex: string): AccentTheme | null {
   if (!rgb) return null
   const normalized = rgbToHex(rgb)
   const hover = deriveHover(normalized)
-  const hoverRgb = hexToRgb(hover)!
   const r = rgb.r
   const g = rgb.g
   const b = rgb.b

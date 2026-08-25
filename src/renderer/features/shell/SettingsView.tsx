@@ -3,6 +3,7 @@ import { FolderOpen, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
+import { AccentPicker } from './AccentPicker'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
 
@@ -18,6 +19,7 @@ const ZOOM_OPTIONS = [
 ]
 
 const ZOOM_PREF_KEY = 'ui.zoom'
+const ACCENT_PREF_KEY = 'ui.accent'
 
 /**
  * Settings shell. Only real functions live here — no decorative placeholders.
@@ -27,6 +29,7 @@ export function SettingsView() {
   const [clearedAt, setClearedAt] = useState<string | null>(null)
   const [confirmingClear, setConfirmingClear] = useState(false)
   const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
+  const [accent, setAccent] = useState<string | null>(null)
 
   useEffect(() => {
     window.stash.app
@@ -40,6 +43,14 @@ export function SettingsView() {
       })
       .catch(() => {
         // No saved preference — keep the default zoom.
+      })
+    window.stash.prefs
+      .get<string>(ACCENT_PREF_KEY)
+      .then((value) => {
+        if (typeof value === 'string') setAccent(value)
+      })
+      .catch(() => {
+        // No saved accent — keep the amber default.
       })
   }, [])
 
@@ -114,6 +125,8 @@ export function SettingsView() {
 
       <Panel className="px-4 py-4">
         <SectionHeading>Appearance</SectionHeading>
+        <p className="mt-2 text-[12px] text-dim">Accent color</p>
+        <AccentPicker current={accent} />
         <div className="mt-3 flex items-center gap-3">
           <FieldRow label="Zoom" htmlFor="settings-zoom">
             <Select
