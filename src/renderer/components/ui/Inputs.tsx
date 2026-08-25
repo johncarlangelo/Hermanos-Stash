@@ -42,23 +42,9 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
   )
 })
 
-export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>
-
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { className = '', children, ...rest },
-  ref
-) {
-  return (
-    <select
-      ref={ref}
-      className={`h-8.5 rounded-md border border-line bg-base px-2.5 pr-7 text-[13px] text-ink transition-colors duration-150 ease-out hover:border-line-strong focus:border-accent/70 focus:outline-none cursor-pointer ${className}`}
-      style={{ appearance: 'none' }}
-      {...rest}
-    >
-      {children}
-    </select>
-  )
-})
+// Select is now Radix-backed (Milestone 7) but keeps the native-like
+// value/onChange + <option> API, so no call sites changed.
+export { Select, type SelectProps } from './RadixSelect'
 
 export interface FieldRowProps {
   label: string
