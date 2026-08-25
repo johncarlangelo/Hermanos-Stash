@@ -19,9 +19,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /* Legacy primary → accent fill via tokens. */
+        /* Legacy primary → accent fill via tokens + glow. */
         primary:
-          'border border-transparent bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-hover/90',
+          'glow-accent border border-transparent bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-hover/90',
         /* shadcn default maps to the same accent fill. */
         default: 'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90',
         destructive:

@@ -66,25 +66,36 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-8 py-8">
-      {/* Header */}
-      <header className="mb-6">
+      {/* Header — hero style with glowing icon badge */}
+      <header className="mb-7">
         <button
           type="button"
           onClick={goHome}
-          className="mb-2 flex cursor-pointer items-center gap-1 text-[11.5px] text-faint transition-colors duration-150 hover:text-dim"
+          className="mb-3 flex cursor-pointer items-center gap-1 text-[10.5px] tracking-wide text-faint uppercase transition-colors duration-150 hover:text-dim"
         >
-          <ArrowLeft size={12} />
+          <ArrowLeft size={11} />
           Workspace
         </button>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="flex items-center gap-2.5 text-[19px] font-semibold tracking-tight text-ink">
-              <Icon size={19} strokeWidth={1.6} className="shrink-0 text-accent" aria-hidden />
-              <span className="truncate">{tool.name}</span>
-            </h1>
-            <p className="mt-1 max-w-lg text-[12.5px] leading-relaxed text-dim">
+            <div className="flex items-center gap-3">
+              <span
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-accent/40 bg-raised shadow-[0_0_20px_-6px_var(--color-accent-glow)]"
+                aria-hidden
+              >
+                <Icon size={21} strokeWidth={1.6} className="text-accent" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="truncate text-[20px] font-semibold tracking-tight text-ink">
+                  {tool.name}
+                </h1>
+                <p className="font-mono text-[10.5px] tracking-wide text-faint uppercase">
+                  {category?.label ?? tool.category}
+                </p>
+              </div>
+            </div>
+            <p className="mt-2.5 max-w-lg text-[12.5px] leading-relaxed text-dim">
               {tool.description}
-              {category && <span className="text-faint"> · {category.label}</span>}
             </p>
             {tool.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
@@ -119,10 +130,10 @@ export function ToolPage({ toolId }: { toolId: string }) {
             }
             aria-pressed={isFavorite}
             onClick={() => void toggleFavorite(tool.id)}
-            className={`shrink-0 cursor-pointer rounded-md border p-2 transition-colors duration-150 ease-out ${
+            className={`shrink-0 cursor-pointer rounded-md border p-2 transition-all duration-150 ease-out ${
               isFavorite
-                ? 'border-accent/50 bg-accent-soft text-accent hover:bg-accent-soft/70'
-                : 'border-line bg-surface text-faint hover:border-line-strong hover:text-ink'
+                ? 'border-accent/50 bg-accent-soft text-accent shadow-[0_0_16px_-4px_var(--color-accent-glow)] hover:bg-accent-soft/70'
+                : 'border-line bg-surface/70 text-faint hover:border-line-strong hover:text-ink'
             }`}
           >
             <Star size={15} fill={isFavorite ? 'currentColor' : 'none'} />
