@@ -323,6 +323,38 @@
   animation: ticker-rise 220ms var(--ease-out-soft) both;
 }
 
+/* Staggered row entrance for batch results (delay set inline per row). */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.row-stagger {
+  animation: row-in 200ms var(--ease-out-soft) both;
+}
+
+/* DropZone accepted-file pulse: brief ok-colored border flash. */
+@keyframes accept-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 55%, transparent);
+    border-color: var(--color-ok);
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+    border-color: var(--color-line-strong);
+  }
+}
+
+.accept-pulse {
+  animation: accept-pulse 500ms var(--ease-out-soft) 1;
+}
+
 /* View transition: tool/home surfaces entering. */
 .view-enter {
   animation: view-enter 150ms var(--ease-out-soft) both;
