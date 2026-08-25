@@ -1,5 +1,5 @@
 import { Component, Suspense, useEffect, useMemo } from 'react'
-import { ArrowLeft, Star } from 'lucide-react'
+import { ArrowLeft, Pin, Star } from 'lucide-react'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
@@ -7,6 +7,7 @@ import { EmptyState, Spinner } from '../../components/ui/Feedback'
 import { TagChip } from '../../components/ui/Inputs'
 import { Button } from '../../components/ui/Button'
 import { useLibrary } from '../../stores/library'
+import { usePins } from '../../stores/pins'
 import { useNav } from '../../stores/nav'
 
 /**
@@ -30,6 +31,9 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const toggleFavorite = useLibrary((s) => s.toggleFavorite)
   const favorites = useLibrary((s) => s.favorites)
   const recordRecent = useLibrary((s) => s.recordRecent)
+  const pins = usePins((s) => s.pins)
+  const togglePin = usePins((s) => s.togglePin)
+  const pinsLoaded = usePins((s) => s.loaded)
 
   const tool = useMemo(() => toolRegistry.get(toolId), [toolId])
 
@@ -126,21 +130,41 @@ export function ToolPage({ toolId }: { toolId: string }) {
               </button>
             )}
           </div>
-          <button
-            type="button"
-            aria-label={
-              isFavorite ? `Remove ${tool.name} from favorites` : `Add ${tool.name} to favorites`
-            }
-            aria-pressed={isFavorite}
-            onClick={() => void toggleFavorite(tool.id)}
-            className={`shrink-0 cursor-pointer rounded-md border p-2 transition-all duration-150 ease-out ${
-              isFavorite
-                ? 'border-accent/50 bg-accent-soft text-accent shadow-[0_0_16px_-4px_var(--color-accent-glow)] hover:bg-accent-soft/70'
-                : 'border-line bg-surface/70 text-faint hover:border-line-strong hover:text-ink'
-            }`}
-          >
-            <Star size={15} fill={isFavorite ? 'currentColor' : 'none'} />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {pinsLoaded && (
+              <button
+                type="button"
+                aria-label={
+                  pins.includes(tool.id) ? `Unpin ${tool.name}` : `Pin ${tool.name} to the dock`
+                }
+                aria-pressed={pins.includes(tool.id)}
+                onClick={() => void togglePin(tool.id)}
+                title={pins.includes(tool.id) ? 'Unpin from dock' : 'Pin to dock'}
+                className={`cursor-pointer rounded-md border p-2 transition-all duration-150 ease-out ${
+                  pins.includes(tool.id)
+                    ? 'border-accent/50 bg-accent-soft text-accent hover:bg-accent-soft/70'
+                    : 'border-line bg-surface/70 text-faint hover:border-line-strong hover:text-ink'
+                }`}
+              >
+                <Pin size={15} fill={pins.includes(tool.id) ? 'currentColor' : 'none'} />
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label={
+                isFavorite ? `Remove ${tool.name} from favorites` : `Add ${tool.name} to favorites`
+              }
+              aria-pressed={isFavorite}
+              onClick={() => void toggleFavorite(tool.id)}
+              className={`cursor-pointer rounded-md border p-2 transition-all duration-150 ease-out ${
+                isFavorite
+                  ? 'border-accent/50 bg-accent-soft text-accent shadow-[0_0_16px_-4px_var(--color-accent-glow)] hover:bg-accent-soft/70'
+                  : 'border-line bg-surface/70 text-faint hover:border-line-strong hover:text-ink'
+              }`}
+            >
+              <Star size={15} fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+          </div>
         </div>
       </header>
 
