@@ -383,7 +383,11 @@
 
 /* Giant workspace wordmark — the "HERMANOS" backdrop.
    Playfair Display 800 (bundled, OFL): the high-contrast display serif
-   matching the Hermes wordmark's letterforms. */
+   matching the Hermes wordmark's letterforms.
+
+   FIXED to the window: `position: fixed` keeps it pinned behind content
+   while lists scroll — it never moves with the page. Sized to fit the
+   word within the viewport width (8 characters + tracking) at ~14vw. */
 @font-face {
   font-family: 'Wordmark Serif';
   font-style: normal;
@@ -393,8 +397,12 @@
 }
 
 .wordmark {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  /* Center within the content area (right of the 14rem sidebar) */
+  left: 14rem;
+  right: 0;
   z-index: 0;
   display: flex;
   align-items: center;
@@ -407,7 +415,7 @@
 .wordmark > span {
   font-family: 'Wordmark Serif', Georgia, 'Times New Roman', serif;
   font-weight: 800;
-  font-size: clamp(110px, 20vw, 280px);
+  font-size: clamp(64px, 10vw, 150px);
   letter-spacing: 0.02em;
   line-height: 1;
   background: linear-gradient(

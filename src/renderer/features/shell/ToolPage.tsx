@@ -39,17 +39,19 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
   if (!tool) {
     return (
-      <div className="mx-auto max-w-xl px-8 py-12">
-        <EmptyState
-          icon="alert"
-          title={`“${toolId}” isn't a registered tool.`}
-          hint="It may have been renamed or removed. Head back to the workspace to browse what's available."
-          action={
-            <Button variant="secondary" size="sm" onClick={goHome}>
-              Back to workspace
-            </Button>
-          }
-        />
+      <div className="relative">
+        <div className="relative mx-auto w-full max-w-3xl px-8 py-8">
+          <EmptyState
+            icon="alert"
+            title={`“${toolId}” isn't a registered tool.`}
+            hint="It may have been renamed or removed. Head back to the workspace to browse what's available."
+            action={
+              <Button variant="secondary" size="sm" onClick={goHome}>
+                Back to workspace
+              </Button>
+            }
+          />
+        </div>
       </div>
     )
   }
@@ -65,7 +67,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-8 py-8">
+    <div className="relative">
+      <div className="relative mx-auto w-full max-w-3xl px-8 py-8">
       {/* Header — hero style with glowing icon badge */}
       <header className="mb-7">
         <button
@@ -155,6 +158,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
           hint="The catalog entry exists so search and categories stay accurate while implementation lands."
         />
       )}
+      </div>
     </div>
   )
 }

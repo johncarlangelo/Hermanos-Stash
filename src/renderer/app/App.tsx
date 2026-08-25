@@ -3,6 +3,7 @@ import { ChevronRight, House } from 'lucide-react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
 import { StatusBar } from '../features/shell/StatusBar'
+import { Wordmark } from '../components/Wordmark'
 import { CommandPalette } from '../features/shell/CommandPalette'
 import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
@@ -112,6 +113,8 @@ export default function App() {
 
   return (
     <TooltipPrimitive.Provider delayDuration={120} skipDelayDuration={300}>
+      {/* Giant HERMANOS — fixed to the window, behind every view, never scrolls. */}
+      <Wordmark />
       <RootErrorBoundary>
         <div className="flex h-full w-full overflow-hidden">
           <Sidebar />
@@ -133,7 +136,7 @@ export default function App() {
             </header>
             <div
               key={JSON.stringify(view)}
-              className="view-enter min-w-0 flex-1 overflow-y-auto"
+              className="view-enter relative min-w-0 flex-1 overflow-y-auto"
               data-view={view.type}
             >
               {view.type === 'home' && <HomeView />}
