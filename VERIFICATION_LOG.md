@@ -251,3 +251,42 @@ Verification evidence for the UI platform refactor:
 - **Deliberately not adopted:** DropdownMenu and ScrollArea (no current call
   sites — will be added when first needed per scope discipline).
 - **Human visual QA of the running app: PENDING USER QA** (per release gate).
+
+### Review round (@architecture-reviewer / @design-reviewer / @ui-reviewer / @verifier)
+
+All four reviewer agents audited the M7 commits; every blocking/important
+finding was fixed and re-verified (typecheck 0 · build green · 568 tests):
+
+- **Palette search regression (B1)** — the initial cmdk rewrite rendered all
+  tools unconditionally behind `shouldFilter={false}`. Fixed: typed query now
+  drives `toolRegistry.search()` top-9 as a "Results" group; empty query shows
+  Favorites + full catalog; `Command.Empty` reachable again.
+- **Palette layering** — backdrop div painted above rows swallowed mouse
+  clicks, and cmdk's `className` never produced a card surface. Fixed via
+  `overlayClassName`/`contentClassName` with a proper centered card.
+- **Duplicate cmdk item identity** — favorites appeared in two groups with
+  identical values; values now suffixed per group.
+- **Seeded-query race** — palette input is controlled state keyed on `open`;
+  seed consumption no longer depends on render-time store reads.
+- **Accent picker persistence policy (I2/I3)** — free-picker drags apply live
+  but persist debounced (300ms); dim accents (<3:1) are preview-only and
+  auto-revert with an `role="alert"` warning instead of being saved; warning
+  state also evaluates on load of a previously-saved color.
+- **A11y (ui-review HIGH items)** — loading buttons announce via `aria-busy` +
+  sr-only status; `focus:outline-none` tokens replaced with explicit visible
+  focus-visible outlines on Select/Input/TextArea/Hint (WCAG 2.4.7); palette
+  selected row gained a non-color cue (inset accent bar); tag chips show on
+  keyboard selection, not hover only; AccentPicker uses `aria-pressed` group +
+  check icon (not radio semantics without arrow keys).
+- **Contrast (design #4)** — destructive fill darkened to `#b35a4c`
+  (4.7:1 vs white label text, verified computationally).
+- **Verifier's hex-literal catch** — AccentPicker default derives from
+  `ACCENT_PRESETS[0].hex`, no hardcoded fallback.
+- **Optional cleanups applied:** `--chart-*` vars reference status tokens;
+  dead `softRgba` removed; single TooltipProvider hoisted to app root;
+  DialogContent gained optional sr-only description; CSS default
+  `--color-accent-contrast` aligned with engine output (`#16181d`);
+  ACCENT_PREF_KEY duplication annotated.
+- **Deferred by decision:** second-tier 4.5:1 accent-text warning tier,
+  editable hex text input, RadixSelect scroll buttons — recorded as future
+  candidates, none block M7.
