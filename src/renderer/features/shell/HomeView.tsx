@@ -21,19 +21,22 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
         type="button"
         onClick={() => openTool(tool.id)}
         aria-label={`Open ${tool.name}`}
-        className="flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-md border border-line bg-surface px-3.5 py-3 text-left transition-all duration-150 ease-out hover:-translate-y-px hover:border-line-strong hover:bg-raised"
+        className="glow-hover flex h-full w-full cursor-pointer flex-col items-start gap-2.5 rounded-md border border-line bg-surface/70 px-4 py-3.5 text-left backdrop-blur-sm hover:-translate-y-0.5"
       >
-        <span className="flex w-full items-center gap-2.5 pr-6">
+        {/* Icon with accent halo */}
+        <span className="relative flex h-9 w-9 items-center justify-center rounded-sm border border-line bg-raised/80 transition-colors duration-200 group-hover:border-accent/50">
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-sm bg-accent/0 transition-colors duration-200 group-hover:bg-accent/10"
+          />
           <Icon
-            size={16}
+            size={17}
             strokeWidth={1.6}
-            className="shrink-0 text-faint transition-colors duration-150 group-hover:text-accent"
+            className="relative text-dim transition-colors duration-200 group-hover:text-accent"
             aria-hidden
           />
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
-            {tool.name}
-          </span>
         </span>
+        <span className="text-[13px] font-medium text-ink">{tool.name}</span>
         <span className="line-clamp-2 min-h-[2.2em] text-[11.5px] leading-relaxed text-dim">
           {tool.description}
         </span>
@@ -63,9 +66,9 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
           e.stopPropagation()
           void toggleFavorite(tool.id)
         }}
-        className={`absolute top-2 right-2 cursor-pointer rounded-sm p-1 transition-all duration-150 ${
+        className={`absolute top-2.5 right-2.5 cursor-pointer rounded-sm p-1 transition-all duration-150 ${
           isFavorite
-            ? 'text-accent opacity-100'
+            ? 'text-accent opacity-100 drop-shadow-[0_0_6px_var(--color-accent-glow)]'
             : 'text-faint opacity-60 group-hover:opacity-100 hover:text-ink focus-visible:opacity-100'
         }`}
       >
@@ -205,8 +208,12 @@ export function HomeView() {
           </div>
         ) : (
           <div>
-            <h1 className="text-[17px] font-semibold tracking-tight text-ink">Workspace</h1>
-            <p className="mt-0.5 text-[12px] text-dim">
+            <h1 className="text-[22px] font-semibold tracking-tight">
+              <span className="bg-gradient-to-r from-ink via-ink to-accent bg-clip-text text-transparent">
+                Workspace
+              </span>
+            </h1>
+            <p className="mt-1 text-[12.5px] text-dim">
               Pick a tool, or{' '}
               <kbd className="tnum rounded-xs border border-line bg-surface px-1 font-mono text-[10px] text-dim">
                 Ctrl K
