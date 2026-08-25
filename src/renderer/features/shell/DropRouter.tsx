@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { Dialog as DialogPrimitive } from 'radix-ui'
 import { toolsForExtension, extensionOfPath } from '../../../shared/utils/routing'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
@@ -11,6 +11,10 @@ import { toastError } from '../../stores/toasts'
 /**
  * Window-level drop routing: dropping a file on the app background (outside
  * any tool's own drop zone) suggests registered tools that handle it.
+ *
+ * The suggestion list is a Radix Dialog now (Milestone 7): focus capture,
+ * Esc handling and aria wiring come from the primitive instead of
+ * hand-rolled listeners.
  */
 export function DropRouter() {
   const [dragging, setDragging] = useState(false)
@@ -76,18 +80,10 @@ export function DropRouter() {
     return () => {
       window.removeEventListener('dragenter', onDragEnter)
       window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
     }
   }, [])
-
-  useEffect(() => {
-    if (!matches) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMatches(null)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [matches])
 
   const choose = (tool: ToolDefinition) => {
     setMatches(null)
@@ -121,32 +117,30 @@ export function DropRouter() {
         </div>
       )}
 
-      {matches && (
-        <div
-          className="fixed inset-0 z-[38] flex items-center justify-center bg-base/75"
-          onClick={() => setMatches(null)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
+      <DialogPrimitive.Root open={matches !== null} onOpenChange={(o: boolean) => !o && setMatches(null)}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="anim-fade-in fixed inset-0 z-[38] bg-base/75" />
+          <DialogPrimitive.Content
             aria-label="Open dropped file with"
             onKeyDown={onKeyDown}
-            className="anim-pop w-[420px] overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40"
-            onClick={(e) => e.stopPropagation()}
+            className="anim-pop fixed top-1/2 left-1/2 z-[39] w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40 focus:outline-none"
           >
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <p className="text-[13px] font-medium text-ink">Open with…</p>
-              <button
-                type="button"
+              <DialogPrimitive.Title className="text-[13px] font-medium text-ink">
+                Open with…
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Close
                 aria-label="Close"
-                onClick={() => setMatches(null)}
                 className="cursor-pointer rounded-sm p-1 text-faint transition-colors duration-150 hover:bg-surface hover:text-ink"
               >
-                <X size={14} />
-              </button>
+                ✕
+              </DialogPrimitive.Close>
             </div>
+            <DialogPrimitive.Description className="sr-only">
+              Choose a tool to open the dropped file with.
+            </DialogPrimitive.Description>
             <ul role="listbox" aria-label="Matching tools">
-              {matches.map((tool, index) => {
+              {matches?.map((tool, index) => {
                 const Icon = getIcon(tool.icon)
                 return (
                   <li key={tool.id} role="option" aria-selected={index === activeIndex}>
@@ -154,6 +148,7 @@ export function DropRouter() {
                       type="button"
                       onClick={() => choose(tool)}
                       onMouseEnter={() => setActiveIndex(index)}
+                      data-active={index === activeIndex}
                       className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100 ${
                         index === activeIndex ? 'bg-surface' : ''
                       }`}
@@ -178,9 +173,9 @@ export function DropRouter() {
             <p className="border-t border-line px-4 py-2 text-[10.5px] text-faint">
               ↑↓ navigate · Enter open · Esc close
             </p>
-          </div>
-        </div>
-      )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </>
   )
 }
