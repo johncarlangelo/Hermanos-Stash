@@ -44,7 +44,13 @@ export const useNav = create<NavState>((set) => ({
       .catch(() => {})
     set({ paletteOpen: false })
   },
-  openHistory: (toolId?: string) => set({ view: { type: 'history', toolId }, paletteOpen: false }),
+  openHistory: (toolId?: string) =>
+    set({
+      // Guard: a click handler passed straight through would smuggle in the
+      // DOM event as toolId, and a non-serializable view breaks JSON.stringify.
+      view: { type: 'history', toolId: typeof toolId === 'string' ? toolId : undefined },
+      paletteOpen: false
+    }),
   openSettings: () => set({ view: { type: 'settings' }, paletteOpen: false }),
   setPaletteOpen: (paletteOpen, seedQuery) =>
     set((state) => ({

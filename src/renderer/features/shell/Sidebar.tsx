@@ -171,7 +171,7 @@ export function Sidebar() {
           active={view.type === 'history'}
           icon={<Clock size={13} />}
           label="History"
-          onClick={openHistory}
+          onClick={() => openHistory()}
         />
       </nav>
 
