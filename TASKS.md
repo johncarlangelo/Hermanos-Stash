@@ -184,6 +184,31 @@ accent color.
   VERIFICATION_LOG updated with per-item evidence. Human visual QA of the running app remains
   open for the user (release gate).
 
+## Milestone 8 — UX polish round *(planned post-overhaul, from launcher-pattern research)*
+
+**Goal:** launcher-grade multi-tool navigation and interaction polish (Raycast /
+PowerToys Command Palette patterns). Plan: `.hermes/plans/2026-08-25_170000-ux-polish-round.md`.
+Build on a fresh `ux-polish` branch; commit per feature; merge after review.
+
+- [ ] Quick-Switch (`Ctrl+Tab`): overlay cycling the last 8 used tools, `Shift+Tab` reverses; keyboard-only. *(quickswitch store slice + overlay component; falls back to `Ctrl+Q` if the WebView eats the chord)*
+- [ ] Toast polish: adopt `sonner` behind the existing `toastSuccess/toastError` API (14 tool files untouched) — glass cards, stacking depth, swipe-dismiss, pause-on-hover.
+- [ ] Tool pinning: ordered `pinnedTools` pref, `PINNED` sidebar dock section with up/down reordering (drag-reorder deferred).
+- [ ] Command palette preview pane: arrow-key selection shows a glass preview (description, tags, last-used); `Ctrl+Enter` opens in background (records recent, pre-warms the lazy chunk).
+- [ ] Density preference: Settings → Appearance segmented control (`comfortable | compact`), `ui.density` pref applied pre-paint; scales renderer content only, never the titlebar chrome.
+- [ ] Empty-state storytelling: contextual guidance per empty state (no favorites → "Star a tool…", no recents, zero-tool categories with nearest-category suggestions).
+- [ ] Micro-interaction pass: advanced media options folded into Collapsibles, stagger-in batch result rows, DropZone success pulse, animated sidebar count badges.
+- [ ] First-run coach marks: max 3 one-time hints (Ctrl+K, drop-anywhere, pinning); `onboarding.done` pref; never re-shown.
+
+### Decisions pending user
+- Quick-Switch source: last 8 recents (recommended) vs favorites.
+- Palette preview: on-selection only (recommended) vs always-visible split.
+- Pin limit: 6 (recommended) vs unlimited scroll.
+
+### Out of scope (recorded)
+- Global summon hotkey (main-process + OS registration — own milestone).
+- Drag-to-reorder pins (dnd-kit; up/down buttons suffice for v1).
+- Light theme (dark-only stays per product constraint).
+
 ## Future
 
 - [x] Prompt template organizer. *(delivered as the Prompt Library tool, Milestone 5)*
