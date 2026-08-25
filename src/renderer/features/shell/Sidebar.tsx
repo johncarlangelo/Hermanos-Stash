@@ -1,10 +1,21 @@
 import { useEffect } from 'react'
-import { ChevronRight, Clock, House, Search, Settings, Star } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  Clock,
+  House,
+  Pin,
+  Search,
+  Settings,
+  Star
+} from 'lucide-react'
 import { CATEGORIES } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
 import { useLibrary } from '../../stores/library'
+import { usePins, PIN_LIMIT } from '../../stores/pins'
 import { useNav } from '../../stores/nav'
 
 /**
@@ -79,6 +90,15 @@ export function Sidebar() {
   const favorites = useLibrary((s) => s.favorites)
   const recents = useLibrary((s) => s.recents)
   const toggleFavorite = useLibrary((s) => s.toggleFavorite)
+  const pins = usePins((s) => s.pins)
+  const loadPins = usePins((s) => s.load)
+  const togglePin = usePins((s) => s.togglePin)
+  const movePin = usePins((s) => s.movePin)
+
+  // Load the pinned dock once.
+  useEffect(() => {
+    void loadPins()
+  }, [loadPins])
 
   // Global shortcut: Ctrl/Cmd+K opens the command palette.
   useEffect(() => {
@@ -154,6 +174,59 @@ export function Sidebar() {
           onClick={openHistory}
         />
       </nav>
+
+      {/* Pinned dock */}
+      {pins.length > 0 && (
+        <nav aria-label="Pinned tools" className="mb-3">
+          <SectionLabel icon={<Pin size={9} />}>Pinned</SectionLabel>
+          <ul className="space-y-px">
+            {pins.map((id, i) => {
+              const tool = toolRegistry.get(id)
+              if (!tool) return null
+              const Icon = getIcon(tool.icon)
+              return (
+                <li key={id} className="group relative">
+                  <SidebarRow
+                    active={view.type === 'tool' && view.toolId === id}
+                    icon={<Icon size={13} />}
+                    label={tool.name}
+                    onClick={() => openTool(id)}
+                  />
+                  {/* Reorder + unpin on hover/keyboard focus */}
+                  <span className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-px opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      aria-label={`Move ${tool.name} up`}
+                      disabled={i === 0}
+                      onClick={() => void movePin(id, -1)}
+                      className="cursor-pointer rounded-xs p-0.5 text-faint hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                    >
+                      <ChevronUp size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move ${tool.name} down`}
+                      disabled={i === pins.length - 1 || pins.length >= PIN_LIMIT}
+                      onClick={() => void movePin(id, 1)}
+                      className="cursor-pointer rounded-xs p-0.5 text-faint hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                    >
+                      <ChevronDown size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Unpin ${tool.name}`}
+                      onClick={() => void togglePin(id)}
+                      className="cursor-pointer rounded-xs p-0.5 text-faint hover:text-danger"
+                    >
+                      <Pin size={10} />
+                    </button>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+      )}
 
       {/* Favorites */}
       {favoriteTools.length > 0 && (

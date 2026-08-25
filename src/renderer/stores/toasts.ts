@@ -1,38 +1,29 @@
-import { create } from 'zustand'
+import { toast } from 'sonner'
 import { normalizeError } from '../../shared/errors'
 
-export type ToastKind = 'info' | 'success' | 'error'
+/**
+ * Toast API (Milestone 8 — sonner backend).
+ *
+ * The public surface is unchanged: `toastSuccess(title, detail?)` and
+ * `toastError(err)` — 14 tool call sites keep working. Rendering moved to
+ * sonner (glass-styled `<Toaster />` mounted in App.tsx): stacked depth,
+ * swipe-to-dismiss, pause-on-hover.
+ */
 
-export interface Toast {
-  id: number
-  kind: ToastKind
-  title: string
-  detail?: string
+/** Bridge detail lines into sonner's description slot. */
+function emit(kind: 'success' | 'error' | 'info', title: string, detail?: string): void {
+  toast[kind](title, { description: detail })
 }
 
-interface ToastState {
-  toasts: Toast[]
-  push: (kind: ToastKind, title: string, detail?: string) => void
-  dismiss: (id: number) => void
-}
-
-let nextId = 1
-
-export const useToasts = create<ToastState>((set) => ({
-  toasts: [],
-  push: (kind, title, detail) => {
-    const id = nextId++
-    set((state) => ({ toasts: [...state.toasts.slice(-4), { id, kind, title, detail }] }))
-  },
-  dismiss: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }))
-}))
-
-/** Convenience helpers for common call sites. */
 export function toastSuccess(title: string, detail?: string): void {
-  useToasts.getState().push('success', title, detail)
+  emit('success', title, detail)
 }
 
 export function toastError(err: unknown): void {
   const normalized = normalizeError(err)
-  useToasts.getState().push('error', normalized.userMessage, normalized.technicalMessage)
+  emit('error', normalized.userMessage, normalized.technicalMessage)
+}
+
+export function toastInfo(title: string, detail?: string): void {
+  emit('info', title, detail)
 }

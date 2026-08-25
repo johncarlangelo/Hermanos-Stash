@@ -37,6 +37,7 @@ export function DropZone({
 }: DropZoneProps) {
   const [drag, setDrag] = useState<DragState>({ active: false, valid: true })
   const [error, setError] = useState<string | null>(null)
+  const [accepted, setAccepted] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const depthCounter = useRef(0)
 
@@ -71,6 +72,8 @@ export function DropZone({
       return
     }
     setError(null)
+    setAccepted(true)
+    setTimeout(() => setAccepted(false), 550)
     onFiles(multiple ? paths : paths.slice(0, 1))
   }
 
@@ -135,7 +138,7 @@ export function DropZone({
         onDrop={handleDrop}
         className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 transition-all duration-150 ease-out ${
           disabled ? 'cursor-not-allowed opacity-45' : ''
-        } ${borderTone}`}
+        } ${accepted ? 'accept-pulse' : ''} ${borderTone}`}
       >
         <UploadCloud
           size={18}

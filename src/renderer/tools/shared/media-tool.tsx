@@ -331,14 +331,18 @@ export function SingleFileMediaTool(props: SingleFileMediaToolProps): React.JSX.
         <>
           <SectionHeading>Results</SectionHeading>
           <ul className="flex flex-col gap-1.5">
-            {result.succeeded.map((entry) => {
+            {result.succeeded.map((entry, row) => {
               const original = probed?.sizeBytes
               const saved =
                 original !== undefined && original > 0 && entry.bytesWritten < original
                   ? Math.max(1, Math.round((1 - entry.bytesWritten / original) * 100))
                   : null
               return (
-                <li key={entry.source} className="flex flex-col gap-1">
+                <li
+                  key={entry.source}
+                  className="row-stagger flex flex-col gap-1"
+                  style={{ animationDelay: `${Math.min(row * 30, 300)}ms` }}
+                >
                   <div className="flex items-center gap-2">
                     <p
                       className="min-w-0 flex-1 truncate text-[12.5px] text-ok"
