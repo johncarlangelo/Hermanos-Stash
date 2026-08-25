@@ -339,6 +339,88 @@
   }
 }
 
+/* Modal choreography: scrim fades, card springs up with a settle. */
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -52%) scale(0.97);
+  }
+}
+
+.anim-modal-in {
+  animation:
+    scrim-in 140ms var(--ease-out-soft) both,
+    modal-in 200ms var(--ease-out-soft) both;
+}
+
+.anim-modal-out {
+  animation: modal-out 120ms ease-in both;
+}
+
+/* Giant workspace wordmark — the "HERMANOS" backdrop.
+   Playfair Display 800 (bundled, OFL): the high-contrast display serif
+   matching the Hermes wordmark's letterforms. */
+@font-face {
+  font-family: 'Wordmark Serif';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/playfair-display-800.woff2') format('woff2');
+}
+
+.wordmark {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wordmark > span {
+  font-family: 'Wordmark Serif', Georgia, 'Times New Roman', serif;
+  font-weight: 800;
+  font-size: clamp(110px, 20vw, 280px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-ink) 8%, transparent),
+    color-mix(in srgb, var(--color-ink) 2%, transparent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+}
+
 /*
  * ui-overhaul v3 — atmosphere & glow.
  *

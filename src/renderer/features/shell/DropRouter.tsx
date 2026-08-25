@@ -126,7 +126,7 @@ export function DropRouter() {
           <DialogPrimitive.Content
             aria-label="Open dropped file with"
             onKeyDown={onKeyDown}
-            className="anim-pop fixed top-1/2 left-1/2 z-[39] w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-line-strong bg-overlay shadow-2xl shadow-black/40 focus:outline-none"
+            className="anim-modal-in fixed top-1/2 left-1/2 z-[39] w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md border border-line-strong bg-overlay shadow-2xl shadow-black/40 focus:outline-none"
           >
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <DialogPrimitive.Title className="text-[13px] font-medium text-ink">

@@ -5,6 +5,7 @@ import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId, ToolDefinition } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
 import { EmptyState, SectionHeading } from '../../components/ui/Feedback'
+import { Wordmark } from '../../components/Wordmark'
 import { useLibrary } from '../../stores/library'
 import { useNav } from '../../stores/nav'
 
@@ -188,125 +189,131 @@ export function HomeView() {
       : []
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-8 py-7">
-      {/* Header — compact, Hermes-style with inline kbd affordance */}
-      <div className="mb-5 flex items-end justify-between gap-4">
-        {routeCategory ? (
-          <div className="min-w-0">
+    <div className="relative">
+      {/* Giant HERMANOS backdrop — behind everything, ghosts through cards */}
+      <Wordmark />
+      <div className="relative mx-auto w-full max-w-4xl px-8 py-7">
+        {/* Header — compact, Hermes-style with inline kbd affordance */}
+        <div className="mb-5 flex items-end justify-between gap-4">
+          {routeCategory ? (
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={goHome}
+                className="mb-0.5 flex cursor-pointer items-center gap-1 text-[10.5px] tracking-wide text-faint uppercase transition-colors duration-150 hover:text-dim"
+              >
+                <House size={10} />
+                All categories
+              </button>
+              <h1 className="text-[17px] font-semibold tracking-tight text-ink">
+                {getCategory(routeCategory)?.label}
+              </h1>
+              <p className="mt-0.5 text-[12px] text-dim">
+                {getCategory(routeCategory)?.description}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-[22px] font-semibold tracking-tight">
+                <span className="bg-gradient-to-r from-ink via-ink to-accent bg-clip-text text-transparent">
+                  Workspace
+                </span>
+              </h1>
+              <p className="mt-1 text-[12.5px] text-dim">
+                Pick a tool, or{' '}
+                <kbd className="tnum rounded-xs border border-line bg-surface px-1 font-mono text-[10px] text-dim">
+                  Ctrl K
+                </kbd>{' '}
+                to search everything.
+              </p>
+            </div>
+          )}
+          <p className="tnum shrink-0 font-mono text-[10px] tracking-wide text-faint">
+            {visibleTools.length} / {toolRegistry.count()} tools
+          </p>
+        </div>
+
+        {!routeCategory && favoriteTools.length > 0 && (
+          <section aria-label="Favorite tools" className="mb-7">
+            <SectionHeading>Favorites</SectionHeading>
+            <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {favoriteTools.slice(0, 6).map((tool) => (
+                <ToolCard key={`fav-${tool.id}`} tool={tool} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!routeCategory && recentTools.length > 0 && (
+          <section aria-label="Recently used tools" className="mb-7">
+            <SectionHeading>Recent</SectionHeading>
+            <div className="mt-2">
+              <RecentStrip tools={recentTools} />
+            </div>
+          </section>
+        )}
+
+        {/* Tools as cards */}
+        <section aria-label="Tool catalog">
+          {!routeCategory && <SectionHeading>Browse</SectionHeading>}
+          {!routeCategory && (
+            <div className="mt-2.5 mb-4">
+              <CategoryFilterChips active={effectiveFilter} onSelect={setChipFilter} />
+            </div>
+          )}
+
+          {visibleTools.length === 0 ? (
+            <EmptyState
+              icon={effectiveFilter !== 'all' ? getCategory(effectiveFilter)?.icon : undefined}
+              title={
+                routeCategory
+                  ? `Nothing in ${getCategory(routeCategory)?.label} yet.`
+                  : 'No tools are registered yet.'
+              }
+              hint={
+                routeCategory
+                  ? 'This area fills up as new tools land. Check another category or search the full catalog.'
+                  : 'The tool catalog is empty in this build. Tools appear here automatically once registered.'
+              }
+            />
+          ) : grouped.length > 0 ? (
+            <div className="space-y-6">
+              {grouped.map(({ meta, tools }) => (
+                <div key={meta.id}>
+                  <h3 className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-faint uppercase">
+                    {meta.label}
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {tools.map((tool) => (
+                      <ToolCard key={tool.id} tool={tool} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleTools.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Route-category escape hatch back to chip browsing */}
+        {routeCategory && (
+          <p className="mt-8 text-center text-[11.5px] text-faint">
+            Looking for something else?{' '}
             <button
               type="button"
               onClick={goHome}
-              className="mb-0.5 flex cursor-pointer items-center gap-1 text-[10.5px] tracking-wide text-faint uppercase transition-colors duration-150 hover:text-dim"
+              className="cursor-pointer text-dim underline underline-offset-2 transition-colors duration-150 hover:text-ink"
             >
-              <House size={10} />
-              All categories
+              Back to all tools
             </button>
-            <h1 className="text-[17px] font-semibold tracking-tight text-ink">
-              {getCategory(routeCategory)?.label}
-            </h1>
-            <p className="mt-0.5 text-[12px] text-dim">{getCategory(routeCategory)?.description}</p>
-          </div>
-        ) : (
-          <div>
-            <h1 className="text-[22px] font-semibold tracking-tight">
-              <span className="bg-gradient-to-r from-ink via-ink to-accent bg-clip-text text-transparent">
-                Workspace
-              </span>
-            </h1>
-            <p className="mt-1 text-[12.5px] text-dim">
-              Pick a tool, or{' '}
-              <kbd className="tnum rounded-xs border border-line bg-surface px-1 font-mono text-[10px] text-dim">
-                Ctrl K
-              </kbd>{' '}
-              to search everything.
-            </p>
-          </div>
+          </p>
         )}
-        <p className="tnum shrink-0 font-mono text-[10px] tracking-wide text-faint">
-          {visibleTools.length} / {toolRegistry.count()} tools
-        </p>
       </div>
-
-      {!routeCategory && favoriteTools.length > 0 && (
-        <section aria-label="Favorite tools" className="mb-7">
-          <SectionHeading>Favorites</SectionHeading>
-          <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {favoriteTools.slice(0, 6).map((tool) => (
-              <ToolCard key={`fav-${tool.id}`} tool={tool} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!routeCategory && recentTools.length > 0 && (
-        <section aria-label="Recently used tools" className="mb-7">
-          <SectionHeading>Recent</SectionHeading>
-          <div className="mt-2">
-            <RecentStrip tools={recentTools} />
-          </div>
-        </section>
-      )}
-
-      {/* Tools as cards */}
-      <section aria-label="Tool catalog">
-        {!routeCategory && <SectionHeading>Browse</SectionHeading>}
-        {!routeCategory && (
-          <div className="mt-2.5 mb-4">
-            <CategoryFilterChips active={effectiveFilter} onSelect={setChipFilter} />
-          </div>
-        )}
-
-        {visibleTools.length === 0 ? (
-          <EmptyState
-            icon={effectiveFilter !== 'all' ? getCategory(effectiveFilter)?.icon : undefined}
-            title={
-              routeCategory
-                ? `Nothing in ${getCategory(routeCategory)?.label} yet.`
-                : 'No tools are registered yet.'
-            }
-            hint={
-              routeCategory
-                ? 'This area fills up as new tools land. Check another category or search the full catalog.'
-                : 'The tool catalog is empty in this build. Tools appear here automatically once registered.'
-            }
-          />
-        ) : grouped.length > 0 ? (
-          <div className="space-y-6">
-            {grouped.map(({ meta, tools }) => (
-              <div key={meta.id}>
-                <h3 className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-faint uppercase">
-                  {meta.label}
-                </h3>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {tools.map((tool) => (
-                    <ToolCard key={tool.id} tool={tool} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleTools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Route-category escape hatch back to chip browsing */}
-      {routeCategory && (
-        <p className="mt-8 text-center text-[11.5px] text-faint">
-          Looking for something else?{' '}
-          <button
-            type="button"
-            onClick={goHome}
-            className="cursor-pointer text-dim underline underline-offset-2 transition-colors duration-150 hover:text-ink"
-          >
-            Back to all tools
-          </button>
-        </p>
-      )}
     </div>
   )
 }
