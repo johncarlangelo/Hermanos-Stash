@@ -44,10 +44,10 @@ function SidebarRow({
       type="button"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-[5px] pr-2 pl-2.5 text-left text-[12.5px] transition-colors duration-150 ease-out ${
+      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-[5px] pr-2 pl-2.5 text-left text-[12.5px] transition-all duration-150 ease-out ${
         active
-          ? 'bg-raised text-ink shadow-[inset_2px_0_0_var(--color-accent)]'
-          : 'text-dim hover:bg-surface/70 hover:text-ink'
+          ? 'bg-raised/90 text-ink shadow-[inset_2px_0_0_var(--color-accent),0_0_20px_-8px_var(--color-accent-glow)]'
+          : 'text-dim hover:bg-surface/60 hover:text-ink'
       }`}
     >
       <span
@@ -102,7 +102,7 @@ export function Sidebar() {
   const toolCount = toolRegistry.count()
 
   return (
-    <aside className="flex h-full w-56 shrink-0 flex-col overflow-y-auto bg-shell px-2 pb-2">
+    <aside className="glass flex h-full w-56 shrink-0 flex-col overflow-y-auto border-r border-line/60 px-2 pb-2">
       {/* Draggable spacer above the brand (frameless window title area). */}
       <div className="app-drag h-5 shrink-1" aria-hidden />
 
@@ -111,9 +111,9 @@ export function Sidebar() {
         type="button"
         onClick={goHome}
         aria-label="Go to workspace home"
-        className="mb-3 flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1 text-left transition-colors duration-150 hover:bg-surface"
+        className="mb-3 flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1 text-left transition-colors duration-150 hover:bg-surface/60"
       >
-        <div className="flex h-6 w-6 items-center justify-center rounded-xs border border-line-strong bg-raised">
+        <div className="brand-glow flex h-6 w-6 items-center justify-center rounded-sm border border-accent/40 bg-raised">
           <span className="font-mono text-[12px] font-semibold text-accent">S</span>
         </div>
         <div className="min-w-0">
@@ -130,7 +130,7 @@ export function Sidebar() {
       <button
         type="button"
         onClick={() => setPaletteOpen(true)}
-        className="mb-3 flex cursor-pointer items-center gap-2 rounded-sm border border-line bg-base px-2 py-1.5 text-left transition-colors duration-150 ease-out hover:border-line-strong hover:bg-surface"
+        className="mb-3 flex cursor-pointer items-center gap-2 rounded-sm border border-line bg-base/60 px-2 py-1.5 text-left transition-all duration-150 ease-out hover:border-accent/40 hover:bg-surface/70 hover:shadow-[0_0_16px_-6px_var(--color-accent-glow)]"
       >
         <Search size={12} className="text-faint" aria-hidden />
         <span className="flex-1 text-[12px] text-faint">Search…</span>
