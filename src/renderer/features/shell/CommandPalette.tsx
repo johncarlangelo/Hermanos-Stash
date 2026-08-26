@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Command, useCommandState } from 'cmdk'
-import { Clock, Search, Star } from 'lucide-react'
+import { Search, Star } from 'lucide-react'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolSearchMatch } from '../../../shared/tool-registry/registry'
@@ -266,49 +266,87 @@ function PreviewContent({
   ].filter(Boolean) as string[]
 
   return (
-    <div className="glass hidden w-[280px] shrink-0 flex-col gap-3 p-4 md:flex" aria-live="polite">
+    /* flex-1: the pane owns ALL remaining width right of the list — no
+       dead gutter. min-w-0 keeps long names/tags wrapping instead of
+       overflowing. */
+    <div className="glass hidden min-w-0 flex-1 flex-col gap-3 p-4 md:flex" aria-live="polite">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-sm border border-accent/30 bg-raised/80">
-          <Icon size={17} strokeWidth={1.6} className="text-accent" aria-hidden />
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-accent/30 bg-raised/80">
+          <Icon size={18} strokeWidth={1.6} className="text-accent" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[13.5px] font-medium text-ink">{tool.name}</p>
+          <p className="truncate text-[14px] font-medium text-ink">{tool.name}</p>
           <p className="font-mono text-[9.5px] tracking-wide text-faint uppercase">
             {categoryLabel}
           </p>
         </div>
       </div>
 
-      <p className="text-[11.5px] leading-relaxed text-dim">{tool.description}</p>
+      <p className="text-[12px] leading-relaxed text-dim">{tool.description}</p>
 
       {capLines.length > 0 && (
-        <ul className="flex flex-wrap gap-1">
-          {capLines.map((cap) => (
-            <li
-              key={cap}
-              className="rounded-xs border border-line px-1 py-px font-mono text-[9px] tracking-wide text-faint uppercase"
-            >
-              {cap}
-            </li>
-          ))}
-        </ul>
+        <>
+          <PreviewSectionLabel>Capabilities</PreviewSectionLabel>
+          <ul className="-mt-2 flex flex-wrap gap-1.5">
+            {capLines.map((cap) => (
+              <li
+                key={cap}
+                className="rounded-xs border border-line px-1.5 py-0.5 font-mono text-[9px] tracking-wide text-faint uppercase"
+              >
+                {cap}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {tool.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {tool.tags.slice(0, 4).map((tag) => (
-            <TagChip key={tag} tag={tag} />
-          ))}
-        </div>
+        <>
+          <PreviewSectionLabel>Tags</PreviewSectionLabel>
+          <div className="-mt-2 flex flex-wrap gap-1.5">
+            {tool.tags.map((tag) => (
+              <TagChip key={tag} tag={tag} />
+            ))}
+          </div>
+        </>
       )}
 
-      <p className="tnum mt-auto flex items-center gap-1.5 font-mono text-[10px] text-faint">
-        {usedLabel && (
-          <>
-            <Clock size={10} aria-hidden /> used {usedLabel}
-          </>
-        )}
-      </p>
+      <PreviewSectionLabel>Actions</PreviewSectionLabel>
+      <div className="-mt-2 flex flex-col gap-1">
+        <PreviewActionRow label="Open tool" hint="Enter" accent />
+        <PreviewActionRow
+          label={`Open in background${usedLabel ? ` · used ${usedLabel}` : ''}`}
+          hint="Ctrl+Enter"
+        />
+      </div>
+    </div>
+  )
+}
+
+function PreviewSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold tracking-[0.1em] text-faint uppercase select-none">
+      {children}
+    </p>
+  )
+}
+
+/** Static action hint row — mirrors what the keyboard already does. */
+function PreviewActionRow({
+  label,
+  hint,
+  accent = false
+}: {
+  label: string
+  hint: string
+  accent?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-sm border border-line bg-base/40 px-2 py-1.5">
+      <span className={`truncate text-[12px] ${accent ? 'text-accent' : 'text-dim'}`}>{label}</span>
+      <kbd className="tnum shrink-0 rounded-xs border border-line bg-surface px-1 font-mono text-[9.5px] text-faint">
+        {hint}
+      </kbd>
     </div>
   )
 }
