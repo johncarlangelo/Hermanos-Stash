@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Command } from 'cmdk'
+import { Command, useCommandState } from 'cmdk'
 import { Clock, Search, Star } from 'lucide-react'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
@@ -11,13 +11,12 @@ import { useLibrary } from '../../stores/library'
 import { useNav } from '../../stores/nav'
 
 /**
- * Command palette on cmdk (Milestone 7).
+ * Command palette on cmdk (Milestones 7–8).
  *
- * The registry's fuzzy search decides ranking: the typed query drives
- * `toolRegistry.search()` and its top matches are the only rendered items
- * (`shouldFilter={false}` — cmdk provides focus capture, arrows, Enter, Esc;
- * we own the list). With an empty query the palette shows favorites first,
- * then every tool.
+ * Registry fuzzy search ranks; cmdk owns focus/arrows/Esc. Two panes:
+ * the tool list (left) and a preview card (right) driven by
+ * `useCommandState` — the single source of truth for which row is
+ * highlighted, so keyboard, hover and initial state all agree.
  */
 export function CommandPalette() {
   const open = useNav((s) => s.paletteOpen)
@@ -28,32 +27,6 @@ export function CommandPalette() {
   const favorites = useLibrary((s) => s.favorites)
   const recents = useLibrary((s) => s.recents)
   const [query, setQuery] = useState('')
-  const [previewTool, setPreviewTool] = useState<ToolDefinition | null>(null)
-
-  // Ctrl+Enter on a highlighted row opens it in the background. cmdk doesn't
-  // expose the highlighted item, so track it via row focus callbacks below.
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && previewTool) {
-        e.preventDefault()
-        openToolInBackground(previewTool.id)
-      }
-    }
-    window.addEventListener('keydown', handler, true)
-    return () => window.removeEventListener('keydown', handler, true)
-  }, [open, previewTool, openToolInBackground])
-
-  const lastUsedLabel = (toolId: string): string | null => {
-    const entry = recents.find((r) => r.toolId === toolId)
-    if (!entry) return null
-    const mins = Math.round((Date.now() - entry.lastUsedMs) / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.round(mins / 60)
-    if (hours < 24) return `${hours}h ago`
-    return `${Math.round(hours / 24)}d ago`
-  }
 
   // Controlled input state keyed on `open`: reset when closed, seed when a
   // tag chip or shortcut opened the palette with a query.
@@ -92,7 +65,7 @@ export function CommandPalette() {
       onOpenChange={setOpen}
       label="Search tools"
       overlayClassName="anim-fade-in fixed inset-0 z-40 bg-base/75"
-      contentClassName="anim-modal-in fixed top-[12vh] left-1/2 z-41 w-[min(760px,calc(100vw-2rem))] -translate-x-1/2"
+      contentClassName="anim-modal-in fixed top-[12vh] left-1/2 z-41 w-[min(820px,calc(100vw-2rem))] -translate-x-1/2"
       shouldFilter={false}
       loop
       className="overflow-hidden rounded-md border border-line-strong bg-overlay shadow-2xl shadow-black/40"
@@ -110,7 +83,7 @@ export function CommandPalette() {
 
       {/* Two-pane layout: list + preview card (Milestone 8) */}
       <div className="flex">
-        <Command.List className="max-h-[52vh] w-[300px] shrink-0 overflow-y-auto border-r border-line">
+        <Command.List className="max-h-[52vh] w-[360px] shrink-0 overflow-y-auto border-r border-line">
           <Command.Empty className="px-4 py-5 text-center">
             <p className="text-[12.5px] text-dim">No tool matches “{query.trim()}” yet.</p>
             <p className="mt-1 text-[11.5px] text-faint">
@@ -130,7 +103,6 @@ export function CommandPalette() {
                   tool={match.tool}
                   itemValue={`${match.tool.id}::result`}
                   onChoose={choose}
-                  onHighlight={setPreviewTool}
                   isFavorite={favorites.includes(match.tool.id)}
                 />
               ))}
@@ -148,7 +120,6 @@ export function CommandPalette() {
                   tool={tool}
                   itemValue={`${tool.id}::favorite`}
                   onChoose={choose}
-                  onHighlight={setPreviewTool}
                   isFavorite
                 />
               ))}
@@ -166,7 +137,6 @@ export function CommandPalette() {
                   tool={tool}
                   itemValue={`${tool.id}::all`}
                   onChoose={choose}
-                  onHighlight={setPreviewTool}
                   isFavorite={favorites.includes(tool.id)}
                 />
               ))}
@@ -174,12 +144,12 @@ export function CommandPalette() {
           )}
         </Command.List>
 
-        {/* Preview pane — mirrors the arrow-key-highlighted tool */}
-        <PalettePreview tool={previewTool} lastUsedLabel={lastUsedLabel} />
+        {/* Preview pane — mirrors the highlighted row via cmdk state */}
+        <PreviewPane recents={recents} onOpenInBackground={openToolInBackground} />
       </div>
 
-      <div className="border-t border-line px-4 py-2 text-[10.5px] text-faint">
-        ↑↓ navigate · Enter open · Esc close
+      <div className="border-t border-line px-4 py-2 text-center text-[10.5px] text-faint">
+        ↑↓ navigate · Enter open · Ctrl+Enter background · Esc close
       </div>
     </Command.Dialog>
   )
@@ -189,76 +159,105 @@ function PaletteRow({
   tool,
   itemValue,
   onChoose,
-  onHighlight,
   isFavorite
 }: {
   tool: ToolDefinition
   itemValue: string
   onChoose: (t: ToolDefinition) => void
-  onHighlight?: (t: ToolDefinition) => void
   isFavorite: boolean
 }) {
   const Icon = getIcon(tool.icon)
-  const categoryLabel = getCategory(tool.category)?.label ?? tool.category
   return (
     <Command.Item
       value={itemValue}
       onSelect={() => onChoose(tool)}
-      onPointerMove={() => onHighlight?.(tool)}
-      onFocus={() => onHighlight?.(tool)}
-      className="group flex cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 ease-out select-none data-[selected=true]:bg-surface data-[selected=true]:shadow-[inset_2px_0_0_var(--color-accent)]"
+      className="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left transition-colors duration-150 ease-out select-none data-[selected=true]:bg-surface data-[selected=true]:shadow-[inset_2px_0_0_var(--color-accent)]"
     >
       <Icon size={16} strokeWidth={1.75} className="shrink-0 text-dim" aria-hidden />
+      {/* Two stacked lines: name (with star) over description. The wider
+          list pane keeps names readable; tags/capabilities live in the
+          preview pane instead of squeezing this column. */}
       <span className="min-w-0 flex-1">
-        <span className="flex items-baseline gap-2">
+        <span className="flex items-center gap-1.5">
           <span className="truncate text-[13px] font-medium text-ink">{tool.name}</span>
-          <span className="shrink-0 text-[10.5px] tracking-wide text-faint uppercase">
-            {categoryLabel}
-          </span>
+          {isFavorite && (
+            <Star size={11} className="shrink-0 text-accent" fill="currentColor" aria-hidden />
+          )}
         </span>
-        <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-dim">
+        <span className="mt-0.5 block truncate text-[11px] leading-snug text-faint">
           {tool.description}
         </span>
       </span>
-      {/* Tag chips reveal on hover OR keyboard selection (not hover-only). */}
-      <span className="hidden shrink-0 items-center gap-1 group-data-[selected=true]:flex group-hover:flex">
-        {tool.tags.slice(0, 2).map((tag) => (
-          <TagChip key={tag} tag={tag} />
-        ))}
-      </span>
-      {isFavorite && (
-        <Star size={12} className="shrink-0 text-accent" fill="currentColor" aria-hidden />
-      )}
     </Command.Item>
   )
 }
 
-/** Glass preview card mirroring the highlighted tool (Milestone 8). */
-function PalettePreview({
-  tool,
-  lastUsedLabel
+/**
+ * Preview pane + background-open hotkey. Lives INSIDE the Command tree so
+ * `useCommandState` can read the live highlighted value — one source of
+ * truth for keyboard, pointer and initial state. Item values are
+ * "<toolId>::<group>", so strip the suffix to resolve the tool.
+ */
+function PreviewPane({
+  recents,
+  onOpenInBackground
 }: {
-  tool: ToolDefinition | null
-  lastUsedLabel: (id: string) => string | null
+  recents: Array<{ toolId: string; lastUsedMs: number }>
+  onOpenInBackground: (toolId: string) => void
 }) {
-  if (!tool) {
-    return (
-      <div className="hidden w-[260px] shrink-0 flex-col items-center justify-center gap-2 p-4 text-center md:flex">
-        <Search size={18} className="text-faint/60" aria-hidden />
-        <p className="text-[11.5px] leading-relaxed text-faint">
-          Highlight a tool to preview it here.
-        </p>
-      </div>
-    )
-  }
+  const selectedValue = useCommandState((state) => state.value)
+  const allTools = useMemo(() => toolRegistry.all(), [])
+  const toolId = selectedValue?.split('::')[0] ?? ''
+  const tool = allTools.find((t) => t.id === toolId) ?? null
+
+  // Ctrl+Enter opens the highlighted tool without leaving the current view.
+  useEffect(() => {
+    if (!tool) return
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault()
+        onOpenInBackground(tool.id)
+      }
+    }
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [tool, onOpenInBackground])
+
+  return (
+    <>
+      {tool ? <PreviewContent tool={tool} recents={recents} /> : <PreviewPlaceholder />}
+      {/* Invisible but focusable mirror of the highlighted row so Ctrl+Enter
+          works while cmdk's hidden input holds focus inside the dialog. */}
+      {tool && <span className="sr-only" aria-hidden>{`Background open ready: ${tool.name}`}</span>}
+    </>
+  )
+}
+
+function PreviewPlaceholder() {
+  return (
+    <div className="glass hidden w-[280px] shrink-0 flex-col items-center justify-center gap-2 p-4 text-center md:flex">
+      <Search size={18} className="text-faint/60" aria-hidden />
+      <p className="max-w-[180px] text-[11.5px] leading-relaxed text-faint">
+        Highlight a tool to preview it here.
+      </p>
+    </div>
+  )
+}
+
+function PreviewContent({
+  tool,
+  recents
+}: {
+  tool: ToolDefinition
+  recents: Array<{ toolId: string; lastUsedMs: number }>
+}) {
   const Icon = getIcon(tool.icon)
   const categoryLabel = getCategory(tool.category)?.label ?? tool.category
-  const lastUsed = lastUsedLabel(tool.id)
+  const usedLabel = formatLastUsed(recents, tool.id)
   const caps = tool.capabilities
   const capLines = [
     caps.acceptsFiles ? 'accepts files' : null,
-    caps.acceptsMultipleFiles ? 'batch' : null,
-    caps.supportsBatch ? 'batch ops' : null,
+    caps.acceptsMultipleFiles || caps.supportsBatch ? 'batch' : null,
     caps.acceptsText ? 'text in/out' : null,
     caps.producesFiles ? 'produces files' : null,
     caps.producesText ? 'produces text' : null,
@@ -267,7 +266,7 @@ function PalettePreview({
   ].filter(Boolean) as string[]
 
   return (
-    <div className="glass hidden w-[260px] shrink-0 flex-col gap-3 p-4 md:flex" aria-live="polite">
+    <div className="glass hidden w-[280px] shrink-0 flex-col gap-3 p-4 md:flex" aria-live="polite">
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-sm border border-accent/30 bg-raised/80">
           <Icon size={17} strokeWidth={1.6} className="text-accent" aria-hidden />
@@ -304,12 +303,26 @@ function PalettePreview({
       )}
 
       <p className="tnum mt-auto flex items-center gap-1.5 font-mono text-[10px] text-faint">
-        {lastUsed && (
+        {usedLabel && (
           <>
-            <Clock size={10} aria-hidden /> used {lastUsed}
+            <Clock size={10} aria-hidden /> used {usedLabel}
           </>
         )}
       </p>
     </div>
   )
+}
+
+function formatLastUsed(
+  recents: Array<{ toolId: string; lastUsedMs: number }>,
+  id: string
+): string | null {
+  const entry = recents.find((r) => r.toolId === id)
+  if (!entry) return null
+  const mins = Math.round((Date.now() - entry.lastUsedMs) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.round(hours / 24)}d ago`
 }
