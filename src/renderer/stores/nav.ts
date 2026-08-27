@@ -10,6 +10,7 @@ export type View =
   | { type: 'history'; toolId?: string }
   | { type: 'settings' }
   | { type: 'queue'; presetId?: string }
+  | { type: 'insights' }
 
 interface NavState {
   view: View
@@ -24,6 +25,7 @@ interface NavState {
   openHistory: (toolId?: string) => void
   openSettings: () => void
   openQueue: (presetId?: string) => void
+  openInsights: () => void
   setPaletteOpen: (open: boolean, seedQuery?: string) => void
 }
 
@@ -55,6 +57,7 @@ export const useNav = create<NavState>((set) => ({
     }),
   openSettings: () => set({ view: { type: 'settings' }, paletteOpen: false }),
   openQueue: (presetId?: string) => set({ view: { type: 'queue', presetId }, paletteOpen: false }),
+  openInsights: () => set({ view: { type: 'insights' }, paletteOpen: false }),
   setPaletteOpen: (paletteOpen, seedQuery) =>
     set((state) => ({
       paletteOpen,

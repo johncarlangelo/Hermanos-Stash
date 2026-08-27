@@ -8,7 +8,6 @@ import { existsSync } from 'node:fs'
 import WebSocket from 'ws'
 
 const PORT = 9433
-let electron = null
 
 const appPath = existsSync('out/main/index.js') ? 'out/main/index.js' : null
 if (!appPath) {
@@ -17,7 +16,7 @@ if (!appPath) {
 }
 const electronExe =
   process.platform === 'win32' ? 'node_modules/electron/dist/electron.exe' : 'node_modules/electron/dist/electron'
-electron = spawn(electronExe, [appPath, `--remote-debugging-port=${PORT}`], { stdio: 'ignore' })
+const electron = spawn(electronExe, [appPath, `--remote-debugging-port=${PORT}`], { stdio: 'ignore' })
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -28,7 +27,9 @@ async function getPageTarget() {
       const targets = await res.json()
       const page = targets.find((t) => t.type === 'page' && t.webSocketDebuggerUrl)
       if (page) return page.webSocketDebuggerUrl
-    } catch {}
+    } catch {
+      // Retry until ready
+    }
     await sleep(500)
   }
   throw new Error('no page target')

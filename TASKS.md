@@ -1,4 +1,4 @@
-﻿# Hermanos Stash â€” Task Board
+# Hermanos Stash â€” Task Board
 
 Legend:
 
@@ -254,18 +254,18 @@ milestone), drag-to-reorder pins (dnd-kit, v2), themes beyond accent (dark-only 
 - [x] Local prompt history. *(prompts persisted in SQLite via the Prompt Library)*
 - [ ] Additional tool categories discovered through real usage.
 
-## Milestone 9 — Batch Queue Runner + Usage Dashboard *(planned)*
+## Milestone 9 — Batch Queue Runner + Usage Dashboard
 
 **Goal:** automation depth (queue chaining) + self-awareness (usage insights) for the
 launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-queue-dashboard.md`.
 
-- [ ] **Queue capability validation** (shared, tested): capability graph check before run
-- [ ] **Queue Runner core** (renderer + main IPC): sequential execution, output→input piping
-- [ ] **Queue Builder UI**: sidebar section, ordered step list, per-step params, preset CRUD
-- [ ] **Queue presets persistence**: `queue.presets[]` in prefs, export/import with settings
-- [ ] **Usage Dashboard UI**: reads activity/recents, renders charts, time-range filters
-- [ ] **Sidebar integration**: "Queue" + "Insights" sections below Pinned/Favorites
-- [ ] **Settings/Profile export** (enables queue preset portability)
+- [x] **Queue capability validation** (shared, tested): capability graph check before run (`src/shared/utils/queue-validation.ts`, 13/13 vitest tests pass).
+- [x] **Queue Runner core** (renderer + main IPC): sequential execution, output→input piping, per-step progress tracking and cancellation (`src/renderer/features/shell/QueueRunner.tsx`).
+- [x] **Queue Builder UI**: ordered step list, drag/reorder, per-step params, preset CRUD, live chain validation with tool compatibility filtering (`src/renderer/features/shell/QueueBuilder.tsx`).
+- [x] **Queue presets persistence**: `queue.presets[]` in prefs, load/save/delete/lastUsed via Zustand store (`src/renderer/stores/queue.ts`, 8/8 vitest tests pass).
+- [x] **Usage Dashboard UI**: reads SQLite activity/recents, Recharts metrics cards, top tools bar chart, category donut, status split, and drill-down tool explorer (`src/renderer/features/shell/UsageDashboard.tsx`).
+- [x] **Sidebar integration**: "Queue" + "Insights" sections in persistent sidebar navigation, routed in `App.tsx` and `nav.ts` with breadcrumb support.
+- [x] **Settings/Profile export**: export/import `.stash-profile` JSON bundles covering user preferences, queue presets, prompt library, favorites, and pinned tools (`src/renderer/features/shell/SettingsView.tsx`).
 
 ### Out of scope (recorded)
 - Scheduled/recurring queues (cron — own milestone)

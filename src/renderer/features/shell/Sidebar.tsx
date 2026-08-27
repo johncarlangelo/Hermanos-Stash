@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import {
+  BarChart3,
   ChevronDown,
   ChevronUp,
   ChevronRight,
   Clock,
   House,
+  Layers,
   Pin,
   Search,
   Settings,
@@ -84,6 +86,8 @@ export function Sidebar() {
   const openCategory = useNav((s) => s.openCategory)
   const openTool = useNav((s) => s.openTool)
   const openHistory = useNav((s) => s.openHistory)
+  const openQueue = useNav((s) => s.openQueue)
+  const openInsights = useNav((s) => s.openInsights)
   const openSettings = useNav((s) => s.openSettings)
   const setPaletteOpen = useNav((s) => s.setPaletteOpen)
 
@@ -168,10 +172,22 @@ export function Sidebar() {
           onClick={goHome}
         />
         <SidebarRow
+          active={view.type === 'queue'}
+          icon={<Layers size={13} />}
+          label="Queue"
+          onClick={() => openQueue()}
+        />
+        <SidebarRow
           active={view.type === 'history'}
           icon={<Clock size={13} />}
           label="History"
           onClick={() => openHistory()}
+        />
+        <SidebarRow
+          active={view.type === 'insights'}
+          icon={<BarChart3 size={13} />}
+          label="Insights"
+          onClick={() => openInsights()}
         />
       </nav>
 

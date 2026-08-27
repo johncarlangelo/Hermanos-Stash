@@ -1,75 +1,92 @@
-import { useEffect } from 'react'
-import { FilePlus2, Play } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Play, Wrench } from 'lucide-react'
 import { useQueueStore } from '../../stores/queue'
 import { useNav } from '../../stores/nav'
-import { Panel, EmptyState } from '../../components/ui/Feedback'
-import { Button } from '../../components/ui/Button'
+import { QueueRunner } from './QueueRunner'
+import { QueueBuilder } from './QueueBuilder'
+
+type QueueTab = 'runner' | 'builder'
 
 /**
- * Queue view — combines the builder (when editing) and the runner (when running).
- * For now, just the builder since runner needs IPC work.
+ * QueueView — unified workspace hosting both the Queue Runner and Queue Builder.
  */
 export function QueueView() {
-  const { presets, initialize } = useQueueStore()
-  const openQueue = useNav((s) => s.openQueue)
+  const view = useNav((s) => s.view)
+  const { initialize } = useQueueStore()
+
+  const presetIdFromNav = view.type === 'queue' ? view.presetId : undefined
+  const [activeTab, setActiveTab] = useState<QueueTab>(presetIdFromNav ? 'runner' : 'runner')
+  const [activePresetId, setActivePresetId] = useState<string | undefined>(presetIdFromNav)
 
   useEffect(() => {
     void initialize()
   }, [initialize])
 
-  if (presets.length === 0) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-8 py-8">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-[19px] font-semibold tracking-tight text-ink">Queue Runner</h1>
-            <p className="mt-0.5 text-[12.5px] text-dim">
-              Build ordered tool chains. Output of each step feeds the next.
-            </p>
-          </div>
-          <Button variant="primary" onClick={() => openQueue()}>
-            <FilePlus2 size={13} aria-hidden />
-            Create Queue
-          </Button>
-        </div>
-        <EmptyState
-          icon="git-merge"
-          title="No saved queues yet."
-          hint="Create your first queue from the builder."
-        />
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (presetIdFromNav) {
+      setActivePresetId(presetIdFromNav)
+      setActiveTab('runner')
+    }
+  }, [presetIdFromNav])
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-8 py-8">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">Queue Runner</h1>
-          <p className="mt-0.5 text-[12.5px] text-dim">
-            {presets.length} saved queue{presets.length !== 1 ? 's' : ''} · Output of each step feeds the next
-          </p>
+    <div className="flex h-full flex-col px-6 py-5">
+      {/* Tab Switcher */}
+      <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
+        <div className="flex items-center gap-1 rounded-md border border-line bg-surface/50 p-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('runner')}
+            className={`flex cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1 text-[12px] font-medium transition-colors ${
+              activeTab === 'runner'
+                ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
+                : 'text-faint hover:text-dim'
+            }`}
+          >
+            <Play size={12} className={activeTab === 'runner' ? 'text-accent' : ''} aria-hidden />
+            Runner
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('builder')}
+            className={`flex cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1 text-[12px] font-medium transition-colors ${
+              activeTab === 'builder'
+                ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
+                : 'text-faint hover:text-dim'
+            }`}
+          >
+            <Wrench
+              size={12}
+              className={activeTab === 'builder' ? 'text-accent' : ''}
+              aria-hidden
+            />
+            Builder
+          </button>
         </div>
-        <Button variant="primary" onClick={() => openQueue()}>
-          <FilePlus2 size={13} aria-hidden />
-          Create Queue
-        </Button>
       </div>
 
-      <ul className="space-y-2">
-        {presets.map((p) => (
-          <Panel key={p.id} className="flex items-center justify-between px-3 py-2">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-ink">{p.name}</p>
-              <p className="text-[11px] text-faint">{p.steps.length} step(s)</p>
-            </div>
-            <Button size="sm" variant="primary" onClick={() => openQueue(p.id)}>
-              <Play size={12} aria-hidden />
-              Run
-            </Button>
-          </Panel>
-        ))}
-      </ul>
+      {/* Main tab content */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {activeTab === 'runner' ? (
+          <QueueRunner
+            initialPresetId={activePresetId}
+            onEditPreset={(id) => {
+              setActivePresetId(id)
+              setActiveTab('builder')
+            }}
+          />
+        ) : (
+          <QueueBuilder
+            initialPresetId={activePresetId}
+            onRunPreset={(id) => {
+              setActivePresetId(id)
+              setActiveTab('runner')
+            }}
+          />
+        )}
+      </div>
     </div>
   )
 }
+
+export default QueueView

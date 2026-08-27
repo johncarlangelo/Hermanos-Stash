@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Plus, GripVertical, Trash2, Save, FileText, X, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Plus,
+  GripVertical,
+  Trash2,
+  Save,
+  FileText,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Play
+} from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
@@ -12,7 +22,12 @@ import { useQueueStore } from '../../stores/queue'
 import { validateQueueChain, getCompatibleNextTools } from '../../../shared/utils/queue-validation'
 import { getCategory } from '../../../shared/constants/categories'
 
-export function QueueBuilder() {
+interface QueueBuilderProps {
+  initialPresetId?: string
+  onRunPreset?: (presetId: string) => void
+}
+
+export function QueueBuilder({ initialPresetId, onRunPreset }: QueueBuilderProps = {}) {
   const presets = useQueueStore((s) => s.presets)
   const lastUsedId = useQueueStore((s) => s.lastUsedId)
   const savePreset = useQueueStore((s) => s.savePreset)
@@ -21,19 +36,36 @@ export function QueueBuilder() {
   const [steps, setSteps] = useState<{ toolId: string; params: Record<string, unknown> }[]>([])
   const [presetName, setPresetName] = useState('')
   const [editingId, setEditingId] = useState<string | undefined>(undefined)
-  const [validation, setValidation] = useState<{ valid: boolean; errors: string[]; warnings: string[] }>({ valid: true, errors: [], warnings: [] })
+  const [validation, setValidation] = useState<{
+    valid: boolean
+    errors: string[]
+    warnings: string[]
+  }>({ valid: true, errors: [], warnings: [] })
   const [showToolPicker, setShowToolPicker] = useState(false)
   const [pickerInsertIndex, setPickerInsertIndex] = useState<number | null>(null)
   const [toolSearch, setToolSearch] = useState('')
+
+  useEffect(() => {
+    if (initialPresetId) {
+      const preset = presets.find((p) => p.id === initialPresetId)
+      if (preset) {
+        setPresetName(preset.name)
+        setSteps(preset.steps)
+        setEditingId(preset.id)
+      }
+    }
+  }, [initialPresetId, presets])
 
   const allTools = toolRegistry.all()
 
   const filteredTools = allTools.filter((t) => {
     if (!toolSearch) return true
     const q = toolSearch.toLowerCase()
-    return t.name.toLowerCase().includes(q) ||
+    return (
+      t.name.toLowerCase().includes(q) ||
       t.description.toLowerCase().includes(q) ||
       t.tags.some((tag) => tag.toLowerCase().includes(q))
+    )
   })
 
   // Validate on changes
@@ -85,49 +117,53 @@ export function QueueBuilder() {
       toastError('Add at least one step')
       return
     }
-    const validation = validateQueueChain(steps.map((s) => toolRegistry.get(s.toolId)).filter(Boolean) as any)
-      if (!validation.valid) {
-        toastError(validation.errors.join('\n'))
-        return
-      }
-      try {
-        await savePreset({
-          id: editingId,
-          name: presetName.trim(),
-          steps
-        })
-        toastSuccess(`Saved "${presetName}"`)
+    const validationResult = validateQueueChain(
+      steps.map((s) => toolRegistry.get(s.toolId)).filter((t): t is ToolDefinition => Boolean(t))
+    )
+    if (!validationResult.valid) {
+      toastError(validationResult.errors.map((e) => e.message).join('\n'))
+      return
+    }
+    try {
+      await savePreset({
+        id: editingId,
+        name: presetName.trim(),
+        steps
+      })
+      toastSuccess(`Saved "${presetName}"`)
+      setPresetName('')
+      setSteps([])
+      setEditingId(undefined)
+    } catch (err) {
+      toastError(err)
+    }
+  }
+
+  const handleLoadPreset = (preset: {
+    id: string
+    name: string
+    steps: { toolId: string; params: Record<string, unknown> }[]
+  }) => {
+    setPresetName(preset.name)
+    setSteps(preset.steps)
+    setEditingId(preset.id)
+  }
+
+  const handleDeletePreset = async (id: string) => {
+    if (confirm('Delete this preset?')) {
+      await deletePreset(id)
+      if (editingId === id) {
         setPresetName('')
         setSteps([])
         setEditingId(undefined)
-      } catch (err) {
-        toastError(err)
       }
     }
+  }
 
-    const handleLoadPreset = async (preset: any) => {
-      setPresetName(preset.name)
-      setSteps(preset.steps)
-      setEditingId(preset.id)
-    }
-
-    const handleDeletePreset = async (id: string) => {
-      if (confirm('Delete this preset?')) {
-        await deletePreset(id)
-        if (editingId === id) {
-          setPresetName('')
-          setSteps([])
-          setEditingId(undefined)
-        }
-      }
-    }
-
-  const compatibleNextTools = steps.length > 0
-    ? getCompatibleNextTools(
-        toolRegistry.get(steps[steps.length - 1].toolId)!,
-        allTools
-      )
-    : allTools
+  const compatibleNextTools =
+    steps.length > 0
+      ? getCompatibleNextTools(toolRegistry.get(steps[steps.length - 1].toolId)!, allTools)
+      : allTools
 
   // Used in tool picker modal for compatibility filtering
   void compatibleNextTools
@@ -143,7 +179,15 @@ export function QueueBuilder() {
             Add step
           </Button>
           {editingId && (
-            <Button variant="ghost" size="sm" onClick={() => { setPresetName(''); setSteps([]); setEditingId(undefined); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setPresetName('')
+                setSteps([])
+                setEditingId(undefined)
+              }}
+            >
               <X size={13} aria-hidden />
               New
             </Button>
@@ -169,7 +213,15 @@ export function QueueBuilder() {
               </option>
             ))}
           </Select>
-          <Button variant="ghost" size="sm" onClick={() => { setPresetName(''); setSteps([]); setEditingId(undefined); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setPresetName('')
+              setSteps([])
+              setEditingId(undefined)
+            }}
+          >
             <FileText size={13} aria-hidden />
             New
           </Button>
@@ -182,7 +234,9 @@ export function QueueBuilder() {
           <div className="flex flex-col items-center justify-center h-48 text-faint">
             <Plus size={24} className="mb-2 opacity-40" aria-hidden />
             <p className="text-[12.5px]">No steps yet. Click "Add step" or drag a tool here.</p>
-            <p className="text-[11px] mt-1">Steps run sequentially — output of each feeds the next.</p>
+            <p className="text-[11px] mt-1">
+              Steps run sequentially — output of each feeds the next.
+            </p>
           </div>
         ) : (
           <ul className="flex-1 space-y-2">
@@ -190,7 +244,7 @@ export function QueueBuilder() {
               const tool = toolRegistry.get(step.toolId)
               const isLast = i === steps.length - 1
               const Icon = tool ? getIcon(tool.icon) : null
-              const category = tool ? getCategory(tool.category)?.label ?? tool.category : ''
+              const category = tool ? (getCategory(tool.category)?.label ?? tool.category) : ''
               return (
                 <li
                   key={`step-${i}`}
@@ -203,7 +257,9 @@ export function QueueBuilder() {
                   >
                     <GripVertical size={14} aria-hidden />
                   </button>
-                  {Icon && <Icon size={15} strokeWidth={1.75} className="shrink-0 text-dim" aria-hidden />}
+                  {Icon && (
+                    <Icon size={15} strokeWidth={1.75} className="shrink-0 text-dim" aria-hidden />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-[12.5px] font-medium text-ink">
@@ -215,7 +271,9 @@ export function QueueBuilder() {
                     </div>
                     {step.params && Object.keys(step.params).length > 0 && (
                       <p className="mt-0.5 truncate text-[10.5px] text-faint">
-                        {Object.entries(step.params).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                        {Object.entries(step.params)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(', ')}
                       </p>
                     )}
                   </div>
@@ -258,7 +316,10 @@ export function QueueBuilder() {
         {/* Add step drop zone */}
         <button
           type="button"
-          onClick={() => { setPickerInsertIndex(steps.length); setShowToolPicker(true); }}
+          onClick={() => {
+            setPickerInsertIndex(steps.length)
+            setShowToolPicker(true)
+          }}
           className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed border-line py-3 text-faint transition-colors duration-150 hover:border-accent/50 hover:text-dim"
         >
           <Plus size={18} aria-hidden />
@@ -270,13 +331,19 @@ export function QueueBuilder() {
       {(validation.errors.length > 0 || validation.warnings.length > 0) && (
         <div className="mt-3 space-y-1">
           {validation.errors.map((err, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-sm bg-danger/10 px-2 py-1.5 text-[11px] text-danger">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 rounded-sm bg-danger/10 px-2 py-1.5 text-[11px] text-danger"
+            >
               <span className="shrink-0">✕</span>
               <span>{err}</span>
             </div>
           ))}
           {validation.warnings.map((warn, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-sm bg-warn/10 px-2 py-1.5 text-[11px] text-warn">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 rounded-sm bg-warn/10 px-2 py-1.5 text-[11px] text-warn"
+            >
               <span className="shrink-0">⚠</span>
               <span>{warn}</span>
             </div>
@@ -306,16 +373,41 @@ export function QueueBuilder() {
           <SectionHeading>Saved Presets</SectionHeading>
           <ul className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
             {presets.map((preset) => (
-              <li key={preset.id} className="flex items-center justify-between gap-2 rounded-sm border border-line bg-surface/70 px-2.5 py-1.5">
+              <li
+                key={preset.id}
+                className="flex items-center justify-between gap-2 rounded-sm border border-line bg-surface/70 px-2.5 py-1.5"
+              >
                 <div className="min-w-0 flex-1">
                   <span className="truncate text-[12.5px] font-medium text-ink">{preset.name}</span>
-                  <span className="mt-0.5 block text-[10.5px] text-faint">{preset.steps.length} step(s)</span>
+                  <span className="mt-0.5 block text-[10.5px] text-faint">
+                    {preset.steps.length} step(s)
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => handleLoadPreset(preset)}>
+                  {onRunPreset && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRunPreset(preset.id)}
+                      title="Run preset"
+                    >
+                      <Play size={12} aria-hidden />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleLoadPreset(preset)}
+                    title="Edit preset"
+                  >
                     <FileText size={12} aria-hidden />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDeletePreset(preset.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeletePreset(preset.id)}
+                    title="Delete preset"
+                  >
                     <Trash2 size={12} />
                   </Button>
                 </div>
@@ -335,7 +427,10 @@ export function QueueBuilder() {
               </h3>
               <button
                 type="button"
-                onClick={() => { setShowToolPicker(false); setPickerInsertIndex(null); }}
+                onClick={() => {
+                  setShowToolPicker(false)
+                  setPickerInsertIndex(null)
+                }}
                 className="cursor-pointer rounded-xs p-1 text-faint hover:text-dim"
               >
                 <X size={16} />
@@ -352,10 +447,12 @@ export function QueueBuilder() {
                 {filteredTools.map((tool) => {
                   const Icon = getIcon(tool.icon)
                   const category = getCategory(tool.category)?.label ?? tool.category
-                  const isCompatible = steps.length === 0 || getCompatibleNextTools(
-        toolRegistry.get(steps[steps.length - 1].toolId)!,
-        allTools
-      ).some((t) => t.id === tool.id)
+                  const isCompatible =
+                    steps.length === 0 ||
+                    getCompatibleNextTools(
+                      toolRegistry.get(steps[steps.length - 1].toolId)!,
+                      allTools
+                    ).some((t) => t.id === tool.id)
                   return (
                     <li key={tool.id}>
                       <button
@@ -368,12 +465,21 @@ export function QueueBuilder() {
                             : 'text-faint/50 cursor-not-allowed'
                         }`}
                       >
-                        <Icon size={15} strokeWidth={1.75} className={`shrink-0 ${isCompatible ? 'text-dim' : 'text-faint/30'}`} aria-hidden />
+                        <Icon
+                          size={15}
+                          strokeWidth={1.75}
+                          className={`shrink-0 ${isCompatible ? 'text-dim' : 'text-faint/30'}`}
+                          aria-hidden
+                        />
                         <div className="min-w-0 flex-1">
                           <span className="truncate text-[12.5px] font-medium">{tool.name}</span>
-                          <span className="font-mono text-[9.5px] tracking-wide text-faint uppercase">{category}</span>
+                          <span className="font-mono text-[9.5px] tracking-wide text-faint uppercase">
+                            {category}
+                          </span>
                         </div>
-                        {!isCompatible && <span className="text-[10px] text-faint">incompatible</span>}
+                        {!isCompatible && (
+                          <span className="text-[10px] text-faint">incompatible</span>
+                        )}
                       </button>
                     </li>
                   )

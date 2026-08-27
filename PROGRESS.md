@@ -2,40 +2,27 @@
 
 ## Current milestone
 
-**All planned milestones complete (M1–M5).** Milestone 5 added the Prompt
-Library — with its own SQLite table (schema v2), `{{variable}}` template
-fill-in, a starter pack and JSON import/export. Post-milestone QoL rounds
-shipped earlier: output naming inputs, remembered folders, reveal/copy-path,
-zoom preference, history page, drop-anywhere routing, keyboard shortcuts and
-option help hints. **Wave A** (six quick developer/text utilities) and **Wave
-B** (Batch Rename — write-scoped folder renames with a pure shared naming
-engine, live dry-run preview and two-step confirm) shipped on top. **Wave C** (Color Converter — HEX/RGB/HSL with WCAG contrast
-checking and shade/tint/harmony palettes; Brand Bible Creator — numbered-panel
-builder with auto shade palettes, system font pairings, computed type scale,
-voice/usage rules, deterministic Markdown composition, prefs-backed draft
-autosave and Markdown/JSON export) completes the expansion waves: the catalog
-now stands at **42 tools**. **Wave D** adds two gap fillers — JSON →
-TypeScript Types (`json-to-types`: pure inference engine with nested-interface
-naming, array shape merging and optional-field detection; 15 logic tests) and
-PDF → Text (`pdf-to-text`: renderer-side pdf.js extraction over the shared
-bootstrap, hasEOL-aware text assembly, page-range filtering via the shared
-parser, save-as-.txt and history integration; 16 logic tests) — bringing the
-catalog to **44 tools**. **Wave E** completes the stories with two more
-developer tools: QR Decoder (`qr-decoder`: renderer-side jsQR decoding over an
-OffscreenCanvas pipeline with injected, unit-testable canvas construction,
-guidance-styled no-QR state, honest copy-only URL handling) and Passphrase
-Generator (`passphrase-generator`: embedded 256-word diceware list,
-rejection-sampled CSPRNG for passphrases and Fisher–Yates passwords, live
-entropy meter with labeled strength bands; nothing recorded to history by
-design) — bringing the catalog to **47 tools**.
+**Milestone 9 (Batch Queue Runner + Usage Dashboard) complete.** 
+Milestone 9 adds automation depth and self-awareness to Hermanos Stash:
+- **Queue Capability Validation** (`shared/utils/queue-validation.ts`): checks tool compatibility graphs (file/text outputs → inputs) before running chains (13 unit tests).
+- **Queue Store & Presets** (`renderer/stores/queue.ts`): CRUD for named queue workflows persisted in local preferences (8 unit tests).
+- **Queue Builder & Runner** (`renderer/features/shell/QueueBuilder.tsx`, `QueueRunner.tsx`, `QueueView.tsx`): sequential execution engine with file piping, per-step status, and unified tabbed interface.
+- **Usage Dashboard** (`renderer/features/shell/UsageDashboard.tsx`): zero-latency insights powered by Recharts reading SQLite activity history (metrics cards, top tools bar chart, category donut, status split, and drill-down history inspection).
+- **Navigation & Shell Integration**: "Queue" and "Insights" sections in persistent sidebar navigation and breadcrumbs.
+- **Settings/Profile Portability**: standalone `.stash-profile` export and import for preferences, themes, queue presets, prompt library, and favorites.
 
 ## Status
 
-47 tools registered across every category, on a verified platform: secure Electron
+50 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
-persistence, FFmpeg native integration (user-supplied binaries in
-`resources/ffmpeg/`), and structured error/progress/cancellation plumbing. Full
-per-tool checklist evidence lives in `VERIFICATION_LOG.md`.
+persistence, FFmpeg native integration, batch queue chaining, and usage analytics.
+
+### Milestone 9 — Batch Queue Runner + Usage Dashboard (this phase)
+
+- **Queue Runner & Builder**: unified workspace tab (`QueueView.tsx`) combining preset management, drag/reorder steps, parameter customization, file drop zone, sequential execution, and progress tracking.
+- **Usage Dashboard**: Recharts-driven visual analytics over local SQLite history without cloud or third-party APIs.
+- **Profile Portability**: export and import `.stash-profile` JSON bundles via native dialogs and secure filesystem bridges.
+- Verification: clean typecheck (0 errors), all **54 test files / 597 tests passing**, production build green (`electron-vite build`), headless probe and CDP drag probe exit 0.
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

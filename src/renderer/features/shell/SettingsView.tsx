@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FolderOpen, Trash2 } from 'lucide-react'
+import { Download, FolderOpen, Trash2, Upload } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
@@ -102,6 +102,129 @@ export function SettingsView() {
     }
   }
 
+  const exportProfile = async () => {
+    try {
+      const dialogResult = await window.stash.dialogs.saveFile({
+        title: 'Export Stash Profile',
+        defaultName: `stash-profile-${new Date().toISOString().slice(0, 10)}.stash-profile`,
+        filters: [{ name: 'Stash Profile', extensions: ['stash-profile', 'json'] }]
+      })
+      if (dialogResult.cancelled || !dialogResult.path) return
+
+      const [
+        savedZoom,
+        savedAccent,
+        savedDensity,
+        savedQueuePresets,
+        savedLastUsedQueue,
+        savedPins,
+        favorites,
+        prompts
+      ] = await Promise.all([
+        window.stash.prefs.get<number>(ZOOM_PREF_KEY),
+        window.stash.prefs.get<string>(ACCENT_PREF_KEY),
+        window.stash.prefs.get<string>(DENSITY_PREF_KEY),
+        window.stash.prefs.get<unknown>('queue.presets'),
+        window.stash.prefs.get<unknown>('queue.lastUsed'),
+        window.stash.prefs.get<unknown>('pinnedTools'),
+        window.stash.favorites.list().catch(() => []),
+        window.stash.prompts.list().catch(() => [])
+      ])
+
+      const profile = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        prefs: {
+          zoom: savedZoom ?? zoom,
+          accent: savedAccent ?? accent,
+          density: savedDensity ?? density,
+          pinnedTools: savedPins ?? []
+        },
+        queue: {
+          presets: savedQueuePresets ?? [],
+          lastUsed: savedLastUsedQueue ?? null
+        },
+        favorites: favorites ?? [],
+        prompts: prompts ?? []
+      }
+
+      await window.stash.fs.writeTextFile({
+        path: dialogResult.path,
+        content: JSON.stringify(profile, null, 2)
+      })
+      toastSuccess('Profile exported successfully')
+    } catch (err) {
+      toastError(err)
+    }
+  }
+
+  const importProfile = async () => {
+    try {
+      const dialogResult = await window.stash.dialogs.openFile({
+        title: 'Import Stash Profile',
+        filters: [{ name: 'Stash Profile', extensions: ['stash-profile', 'json'] }]
+      })
+      if (dialogResult.cancelled || !dialogResult.paths || dialogResult.paths.length === 0) return
+
+      const fileResult = await window.stash.fs.readTextFile({ path: dialogResult.paths[0] })
+      const profile = JSON.parse(fileResult.content)
+
+      if (!profile || typeof profile !== 'object') {
+        throw new Error('Invalid profile file format')
+      }
+
+      // Restore preferences
+      if (profile.prefs) {
+        if (typeof profile.prefs.zoom === 'number') {
+          const clamped = clampZoomFactor(profile.prefs.zoom)
+          await window.stash.prefs.set(ZOOM_PREF_KEY, clamped)
+          await window.stash.app.setZoom(clamped)
+          setZoom(clamped)
+        }
+        if (typeof profile.prefs.accent === 'string') {
+          await window.stash.prefs.set(ACCENT_PREF_KEY, profile.prefs.accent)
+          setAccent(profile.prefs.accent)
+        }
+        if (profile.prefs.density === 'comfortable' || profile.prefs.density === 'compact') {
+          await setDensityPreference(profile.prefs.density)
+          setDensity(profile.prefs.density)
+        }
+        if (Array.isArray(profile.prefs.pinnedTools)) {
+          await window.stash.prefs.set('pinnedTools', profile.prefs.pinnedTools)
+        }
+      }
+
+      // Restore queue presets
+      if (profile.queue) {
+        if (Array.isArray(profile.queue.presets)) {
+          await window.stash.prefs.set('queue.presets', profile.queue.presets)
+        }
+        if (profile.queue.lastUsed) {
+          await window.stash.prefs.set('queue.lastUsed', profile.queue.lastUsed)
+        }
+      } else if (Array.isArray(profile.queuePresets)) {
+        await window.stash.prefs.set('queue.presets', profile.queuePresets)
+      }
+
+      // Restore prompt library
+      if (Array.isArray(profile.prompts)) {
+        for (const prompt of profile.prompts) {
+          if (prompt && typeof prompt.title === 'string' && typeof prompt.body === 'string') {
+            await window.stash.prompts.save({
+              title: prompt.title,
+              body: prompt.body,
+              tags: Array.isArray(prompt.tags) ? prompt.tags : []
+            })
+          }
+        }
+      }
+
+      toastSuccess('Profile imported successfully')
+    } catch (err) {
+      toastError(err)
+    }
+  }
+
   return (
     <div className="relative">
       <div className="relative mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
@@ -186,6 +309,28 @@ export function SettingsView() {
               </Select>
             </FieldRow>
             <p className="text-[11.5px] text-faint">Applied immediately and remembered.</p>
+          </div>
+        </Panel>
+
+        <Panel className="px-4 py-4">
+          <SectionHeading>Backup & Portability</SectionHeading>
+          <p className="mt-2 text-[12.5px] leading-relaxed text-dim">
+            Export your settings, theme choices, queue presets, prompt library, and pinned tools
+            into a standalone{' '}
+            <code className="rounded bg-surface px-1 py-0.5 font-mono text-[11px] text-ink">
+              .stash-profile
+            </code>{' '}
+            file to backup or migrate between machines.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <Button variant="secondary" size="sm" onClick={() => void exportProfile()}>
+              <Download size={13} aria-hidden />
+              Export Profile
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => void importProfile()}>
+              <Upload size={13} aria-hidden />
+              Import Profile
+            </Button>
           </div>
         </Panel>
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ChevronRight, House } from 'lucide-react'
+import { BarChart3, ChevronRight, House, Layers } from 'lucide-react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
 import { StatusBar } from '../features/shell/StatusBar'
@@ -10,6 +10,7 @@ import { ToolPage } from '../features/shell/ToolPage'
 import { SettingsView } from '../features/shell/SettingsView'
 import { HistoryView } from '../features/shell/HistoryView'
 import { QueueView } from '../features/shell/QueueView'
+import { UsageDashboard } from '../features/shell/UsageDashboard'
 import { DropRouter } from '../features/shell/DropRouter'
 import { QuickSwitch } from '../features/shell/QuickSwitch'
 import { Toaster } from '../components/ui/Toaster'
@@ -44,7 +45,9 @@ function Breadcrumb() {
   } else if (view.type === 'settings') {
     segments.push({ label: 'Settings' })
   } else if (view.type === 'queue') {
-    segments.push({ label: 'Queue Runner' })
+    segments.push({ label: 'Queue', icon: <Layers size={12} /> })
+  } else if (view.type === 'insights') {
+    segments.push({ label: 'Insights', icon: <BarChart3 size={12} /> })
   }
 
   return (
@@ -151,6 +154,7 @@ export default function App() {
               )}
               {view.type === 'settings' && <SettingsView />}
               {view.type === 'queue' && <QueueView />}
+              {view.type === 'insights' && <UsageDashboard />}
             </div>
           </main>
           <CommandPalette />

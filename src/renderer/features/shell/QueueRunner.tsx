@@ -1,9 +1,19 @@
-import { useEffect, useState } from 'react'
-import { Play, Pause, RotateCcw, AlertCircle, CheckCircle, Loader2, FileText } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  FileText,
+  Pencil
+} from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { Button } from '../../components/ui/Button'
 import { Panel, SectionHeading } from '../../components/ui/Feedback'
+import { Select } from '../../components/ui/Inputs'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { useQueueStore } from '../../stores/queue'
 import { validateQueueChain } from '../../../shared/utils/queue-validation'
@@ -23,12 +33,23 @@ interface StepResult {
   startTime?: number
 }
 
-export function QueueRunner() {
+interface QueueRunnerProps {
+  initialPresetId?: string
+  onEditPreset?: (presetId: string) => void
+}
+
+export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps = {}) {
   const presets = useQueueStore((s) => s.presets)
   const lastUsedId = useQueueStore((s) => s.lastUsedId)
   const setLastUsed = useQueueStore((s) => s.setLastUsed)
 
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null)
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(initialPresetId ?? null)
+
+  useEffect(() => {
+    if (initialPresetId) {
+      setSelectedPresetId(initialPresetId)
+    }
+  }, [initialPresetId])
   const [inputFiles, setInputFiles] = useState<string[]>([])
   const [stepResults, setStepResults] = useState<StepResult[]>([])
   const [running, setRunning] = useState(false)
@@ -37,10 +58,14 @@ export function QueueRunner() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
   const selectedPreset = presets.find((p) => p.id === selectedPresetId)
-  const steps = selectedPreset?.steps ?? []
+  const steps = useMemo(() => selectedPreset?.steps ?? [], [selectedPreset])
 
   // Validation
-  const [validation, setValidation] = useState<{ valid: boolean; errors: string[]; warnings: string[] }>({
+  const [validation, setValidation] = useState<{
+    valid: boolean
+    errors: string[]
+    warnings: string[]
+  }>({
     valid: true,
     errors: [],
     warnings: []
@@ -51,7 +76,9 @@ export function QueueRunner() {
       setValidation({ valid: true, errors: [], warnings: [] })
       return
     }
-    const tools = steps.map((s) => toolRegistry.get(s.toolId)).filter(Boolean) as ToolDefinition[]
+    const tools = steps
+      .map((s) => toolRegistry.get(s.toolId))
+      .filter((t): t is ToolDefinition => Boolean(t))
     const result = validateQueueChain(tools)
     setValidation({
       valid: result.valid,
@@ -98,26 +125,34 @@ export function QueueRunner() {
       const step = steps[i]
       const toolDef = toolRegistry.get(step.toolId)
       if (!toolDef) {
-        setStepResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r
-        ))
+        setStepResults((prev) =>
+          prev.map((r, idx) => (idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r))
+        )
         allSuccess = false
         break
       }
 
       // Check capability
       if (!toolDef.capabilities.acceptsMultipleFiles && !toolDef.capabilities.supportsBatch) {
-        setStepResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: 'error', error: 'Tool does not support batch processing' } : r
-        ))
+        setStepResults((prev) =>
+          prev.map((r, idx) =>
+            idx === i
+              ? { ...r, status: 'error', error: 'Tool does not support batch processing' }
+              : r
+          )
+        )
         allSuccess = false
         break
       }
 
       // Update step status to running
-      setStepResults((prev) => prev.map((r, idx) =>
-        idx === i ? { ...r, status: 'running', inputFiles: currentFiles, startTime: Date.now() } : r
-      ))
+      setStepResults((prev) =>
+        prev.map((r, idx) =>
+          idx === i
+            ? { ...r, status: 'running', inputFiles: currentFiles, startTime: Date.now() }
+            : r
+        )
+      )
       setCurrentStepIndex(i)
 
       try {
@@ -136,9 +171,19 @@ export function QueueRunner() {
           }
         }
 
-        setStepResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: 'success', outputFiles, inputFiles: currentFiles, durationMs: Date.now() - (r.startTime ?? Date.now()) } : r
-        ))
+        setStepResults((prev) =>
+          prev.map((r, idx) =>
+            idx === i
+              ? {
+                  ...r,
+                  status: 'success',
+                  outputFiles,
+                  inputFiles: currentFiles,
+                  durationMs: Date.now() - (r.startTime ?? Date.now())
+                }
+              : r
+          )
+        )
 
         currentFiles = outputFiles
 
@@ -146,11 +191,14 @@ export function QueueRunner() {
           // No outputs to pass to next step
           break
         }
-
       } catch (err) {
-        setStepResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: 'error', error: err instanceof Error ? err.message : String(err) } : r
-        ))
+        setStepResults((prev) =>
+          prev.map((r, idx) =>
+            idx === i
+              ? { ...r, status: 'error', error: err instanceof Error ? err.message : String(err) }
+              : r
+          )
+        )
         allSuccess = false
         break
       }
@@ -183,7 +231,10 @@ export function QueueRunner() {
   }
 
   const progress = running
-    ? Math.round(((currentStepIndex + (stepResults[currentStepIndex]?.progress ?? 0) / 100) / steps.length) * 100)
+    ? Math.round(
+        ((currentStepIndex + (stepResults[currentStepIndex]?.progress ?? 0) / 100) / steps.length) *
+          100
+      )
     : overallProgress
 
   return (
@@ -206,7 +257,10 @@ export function QueueRunner() {
         <Select
           aria-label="Select queue preset"
           value={selectedPresetId ?? ''}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPresetId(e.target.value || null)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            setSelectedPresetId(e.target.value || null)
+          }
+          className="flex-1"
         >
           <option value="">— Select a queue preset —</option>
           {presets.map((p) => (
@@ -216,9 +270,27 @@ export function QueueRunner() {
           ))}
         </Select>
         {selectedPreset && (
-          <Button variant="ghost" size="sm" onClick={() => setSelectedPresetId(null)}>
-            <RotateCcw size={13} aria-hidden />
-          </Button>
+          <>
+            {onEditPreset && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditPreset(selectedPreset.id)}
+                title="Edit preset in builder"
+              >
+                <Pencil size={13} aria-hidden />
+                Edit
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedPresetId(null)}
+              title="Clear selection"
+            >
+              <RotateCcw size={13} aria-hidden />
+            </Button>
+          </>
         )}
       </div>
 
@@ -226,13 +298,19 @@ export function QueueRunner() {
       {(validation.errors.length > 0 || validation.warnings.length > 0) && (
         <div className="mb-4 space-y-1">
           {validation.errors.map((err, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-sm bg-danger/10 px-2 py-1.5 text-[11px] text-danger">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 rounded-sm bg-danger/10 px-2 py-1.5 text-[11px] text-danger"
+            >
               <span className="shrink-0">✕</span>
               <span>{err}</span>
             </div>
           ))}
           {validation.warnings.map((warn, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-sm bg-warn/10 px-2 py-1.5 text-[11px] text-warn">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 rounded-sm bg-warn/10 px-2 py-1.5 text-[11px] text-warn"
+            >
               <span className="shrink-0">⚠</span>
               <span>{warn}</span>
             </div>
@@ -245,8 +323,14 @@ export function QueueRunner() {
         accept={[]}
         multiple
         onFiles={handleFilesChange}
-        label={inputFiles.length === 0 ? 'Drop files to process' : `${inputFiles.length} file(s) ready`}
-        hint={inputFiles.length > 0 ? inputFiles.map((f) => f.split(/[\\/]/).pop()).join(', ') : 'Drag and drop or click to browse'}
+        label={
+          inputFiles.length === 0 ? 'Drop files to process' : `${inputFiles.length} file(s) ready`
+        }
+        hint={
+          inputFiles.length > 0
+            ? inputFiles.map((f) => f.split(/[\\/]/).pop()).join(', ')
+            : 'Drag and drop or click to browse'
+        }
         disabled={running}
       />
 
@@ -254,7 +338,9 @@ export function QueueRunner() {
       {(running || overallProgress > 0) && (
         <div className="mt-4">
           <div className="flex items-center justify-between text-[11px] text-faint mb-1">
-            <span>{running ? `Running step ${currentStepIndex + 1} of ${steps.length}` : 'Completed'}</span>
+            <span>
+              {running ? `Running step ${currentStepIndex + 1} of ${steps.length}` : 'Completed'}
+            </span>
             <span>{progress}%</span>
           </div>
           <div className="h-2 bg-base rounded-full overflow-hidden">
@@ -275,22 +361,32 @@ export function QueueRunner() {
         ) : (
           <ul className="space-y-2">
             {stepResults.map((result, i) => (
-              <li key={i} className="flex flex-col gap-1.5 rounded-md border border-line bg-surface/70 p-3">
+              <li
+                key={i}
+                className="flex flex-col gap-1.5 rounded-md border border-line bg-surface/70 p-3"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-sm ${
-                      result.status === 'running' ? 'bg-accent/20 text-accent animate-spin' :
-                      result.status === 'success' ? 'bg-ok/20 text-ok' :
-                      result.status === 'error' ? 'bg-danger/20 text-danger' :
-                      'bg-line text-faint'
-                    }`}>
+                    <span
+                      className={`flex h-6 w-6 items-center justify-center rounded-sm ${
+                        result.status === 'running'
+                          ? 'bg-accent/20 text-accent animate-spin'
+                          : result.status === 'success'
+                            ? 'bg-ok/20 text-ok'
+                            : result.status === 'error'
+                              ? 'bg-danger/20 text-danger'
+                              : 'bg-line text-faint'
+                      }`}
+                    >
                       {result.status === 'running' && <Loader2 size={12} aria-hidden />}
                       {result.status === 'success' && <CheckCircle size={12} aria-hidden />}
                       {result.status === 'error' && <AlertCircle size={12} aria-hidden />}
                       {result.status === 'pending' && <FileText size={12} aria-hidden />}
                     </span>
                     <div>
-                      <span className="text-[12.5px] font-medium text-ink">Step {result.step}: {result.toolName}</span>
+                      <span className="text-[12.5px] font-medium text-ink">
+                        Step {result.step}: {result.toolName}
+                      </span>
                       {result.status === 'running' && (
                         <span className="ml-2 font-mono text-[10px] text-faint">
                           {result.currentFile ? `Processing: ${result.currentFile}` : 'Starting...'}
@@ -366,11 +462,6 @@ export function QueueRunner() {
       </Panel>
     </div>
   )
-}
-
-// Placeholder Select component - uses native select for now
-function Select({ value, onChange, children, ...props }: any) {
-  return <select value={value} onChange={onChange} {...props}>{children}</select>
 }
 
 // Mock tool batch/single invokers - replace with actual IPC calls
