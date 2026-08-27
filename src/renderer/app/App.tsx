@@ -9,6 +9,7 @@ import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
 import { SettingsView } from '../features/shell/SettingsView'
 import { HistoryView } from '../features/shell/HistoryView'
+import { QueueView } from '../features/shell/QueueView'
 import { DropRouter } from '../features/shell/DropRouter'
 import { QuickSwitch } from '../features/shell/QuickSwitch'
 import { Toaster } from '../components/ui/Toaster'
@@ -42,6 +43,8 @@ function Breadcrumb() {
     segments.push({ label: 'History' })
   } else if (view.type === 'settings') {
     segments.push({ label: 'Settings' })
+  } else if (view.type === 'queue') {
+    segments.push({ label: 'Queue Runner' })
   }
 
   return (
@@ -147,6 +150,7 @@ export default function App() {
                 <HistoryView key={view.toolId ?? 'all'} seedToolId={view.toolId} />
               )}
               {view.type === 'settings' && <SettingsView />}
+              {view.type === 'queue' && <QueueView />}
             </div>
           </main>
           <CommandPalette />
