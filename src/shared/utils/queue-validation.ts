@@ -23,10 +23,7 @@ export interface ValidationResult {
 /**
  * Check if tool A's outputs can feed tool B's inputs.
  */
-function canChain(
-  from: ToolDefinition,
-  to: ToolDefinition
-): { ok: boolean; reason?: string } {
+function canChain(from: ToolDefinition, to: ToolDefinition): { ok: boolean; reason?: string } {
   const acceptsFiles = to.capabilities.acceptsFiles
   const acceptsText = to.capabilities.acceptsText
   const producesFiles = from.capabilities.producesFiles
@@ -51,7 +48,7 @@ function canChain(
     const provided = []
     if (producesFiles) provided.push('files')
     if (producesText) provided.push('text')
-    
+
     // Match expected test messages: "requires files" or "requires text"
     if (needed.length === 1) {
       return {
@@ -59,7 +56,7 @@ function canChain(
         reason: `"${to.name}" requires ${needed[0]} but "${from.name}" does not produce ${needed[0]}`
       }
     }
-    
+
     return {
       ok: false,
       reason: `"${to.name}" needs ${needed.join(' or ')} but "${from.name}" provides ${provided.length ? provided.join(' or ') : 'neither'}`

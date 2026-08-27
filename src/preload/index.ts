@@ -92,12 +92,6 @@ const api: StashBridge = {
     save: (input: PromptSaveInput) => invoke(IPC.promptsSave, input),
     delete: (id: number) => invoke(IPC.promptsDelete, id)
   },
-  queues: {
-    list: () => invoke(IPC.queueList),
-    save: (input: QueueSaveInput) => invoke(IPC.queueSave, input),
-    delete: (id: number) => invoke<void>(IPC.queueDelete, id),
-    run: (input: QueueRunInput) => invoke(IPC.queueRun, input)
-  },
   processing: {
     convertImages: (req: ConvertImagesRequest) => invoke(IPC.imagesConvertBatch, req),
     compressImages: (req: CompressImagesRequest) => invoke(IPC.imagesCompressBatch, req),

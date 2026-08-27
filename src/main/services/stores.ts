@@ -364,15 +364,14 @@ export class QueuesStore {
 
   save(input: QueueSaveInput, now: number = Date.now()): QueueRecord {
     if (!input.name.trim()) throw stashError('VALIDATION', 'Queue name is required.')
-    if (!input.spec?.steps?.length) throw stashError('VALIDATION', 'Queue must have at least one step.')
+    if (!input.spec?.steps?.length)
+      throw stashError('VALIDATION', 'Queue must have at least one step.')
 
     const specJson = JSON.stringify(input.spec)
     let id = input.id
     if (id === undefined) {
       const result = this.db
-        .prepare(
-          'INSERT INTO queues (name, spec_json, created_ms, updated_ms) VALUES (?, ?, ?, ?)'
-        )
+        .prepare('INSERT INTO queues (name, spec_json, created_ms, updated_ms) VALUES (?, ?, ?, ?)')
         .run(input.name.trim(), specJson, now, now)
       id = Number(result.lastInsertRowid)
     } else {

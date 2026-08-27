@@ -27,7 +27,9 @@ export interface QueueState {
   // Actions
   listPresets: () => QueuePreset[]
   getPreset: (id: string) => QueuePreset | undefined
-  savePreset: (preset: Omit<QueuePreset, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => Promise<QueuePreset>
+  savePreset: (
+    preset: Omit<QueuePreset, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => Promise<QueuePreset>
   deletePreset: (id: string) => Promise<void>
   setLastUsed: (id: string | null) => Promise<void>
   reorderPresets: (presets: QueuePreset[]) => Promise<void>
@@ -53,7 +55,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       id: preset.id ?? generateId(),
       name: preset.name,
       steps: preset.steps,
-      createdAt: isNew ? now : get().presets.find((p) => p.id === preset.id)?.createdAt ?? now,
+      createdAt: isNew ? now : (get().presets.find((p) => p.id === preset.id)?.createdAt ?? now),
       updatedAt: now
     }
 

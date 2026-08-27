@@ -571,33 +571,6 @@ export interface PromptSaveInput {
   tags: string[]
 }
 
-export interface QueueSpec {
-  name: string
-  steps: Array<{
-    toolId: string
-    options: Record<string, unknown>
-  }>
-}
-
-export interface QueueRunInput {
-  spec: QueueSpec
-  inputFiles: string[]
-}
-
-export interface QueueRecord {
-  id: number
-  name: string
-  specJson: string
-  createdAtMs: number
-  updatedAtMs: number
-}
-
-export interface QueueSaveInput {
-  id?: number
-  name: string
-  spec: QueueSpec
-}
-
 /** Shape exposed on `window.stash` by the preload bridge. */
 export interface StashBridge {
   app: {
@@ -653,12 +626,6 @@ export interface StashBridge {
     list(): Promise<PromptRecord[]>
     save(input: PromptSaveInput): Promise<PromptRecord>
     delete(id: number): Promise<void>
-  }
-  queues: {
-    list(): Promise<QueueRecord[]>
-    save(input: QueueSaveInput): Promise<QueueRecord>
-    delete(id: number): Promise<void>
-    run(input: QueueRunInput): Promise<{ finalFiles: string[] }>
   }
   processing: {
     convertImages(req: ConvertImagesRequest): Promise<ImageBatchResult>

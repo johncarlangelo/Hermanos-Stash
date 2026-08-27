@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { validateQueueChain, getCompatibleNextTools, getCompatiblePreviousTools } from './queue-validation'
+import {
+  validateQueueChain,
+  getCompatibleNextTools,
+  getCompatiblePreviousTools
+} from './queue-validation'
 import type { ToolDefinition } from '../../shared/types/tool'
 
 function makeTool(overrides: Partial<ToolDefinition> = {}): ToolDefinition {
@@ -103,7 +107,10 @@ describe('validateQueueChain', () => {
 })
 
 describe('getCompatibleNextTools', () => {
-  const producer = makeTool({ id: 'producer', capabilities: { producesFiles: true, producesText: true } })
+  const producer = makeTool({
+    id: 'producer',
+    capabilities: { producesFiles: true, producesText: true }
+  })
   const fileConsumer = makeTool({ id: 'file-consumer', capabilities: { acceptsFiles: true } })
   const textConsumer = makeTool({ id: 'text-consumer', capabilities: { acceptsText: true } })
   const neither = makeTool({ id: 'neither' })
@@ -123,7 +130,10 @@ describe('getCompatiblePreviousTools', () => {
   const fileProducer = makeTool({ id: 'file-producer', capabilities: { producesFiles: true } })
   const textProducer = makeTool({ id: 'text-producer', capabilities: { producesText: true } })
   const neither = makeTool({ id: 'neither' })
-  const consumer = makeTool({ id: 'consumer', capabilities: { acceptsFiles: true, acceptsText: true } })
+  const consumer = makeTool({
+    id: 'consumer',
+    capabilities: { acceptsFiles: true, acceptsText: true }
+  })
 
   it('returns tools that can precede the consumer', () => {
     const result = getCompatiblePreviousTools(consumer, [fileProducer, textProducer, neither])

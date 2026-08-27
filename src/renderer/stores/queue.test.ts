@@ -18,12 +18,8 @@ describe('useQueueStore', () => {
   })
 
   it('initializes from prefs', async () => {
-    const savedPresets = [
-      { id: 'q1', name: 'Test', steps: [], createdAt: 1, updatedAt: 1 }
-    ]
-    prefsGet
-      .mockResolvedValueOnce(savedPresets)
-      .mockResolvedValueOnce('q1')
+    const savedPresets = [{ id: 'q1', name: 'Test', steps: [], createdAt: 1, updatedAt: 1 }]
+    prefsGet.mockResolvedValueOnce(savedPresets).mockResolvedValueOnce('q1')
 
     await useQueueStore.getState().initialize()
 

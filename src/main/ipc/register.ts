@@ -33,7 +33,6 @@ import {
   HistoryStore,
   PrefsStore,
   PromptsStore,
-  QueuesStore,
   RecentsStore
 } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
@@ -1590,77 +1589,6 @@ export function registerIpc(services: IpcServices): void {
     })
   })
   handle(IPC.promptsDelete, (_e, id: unknown) => services.prompts.delete(assertNumber(id, 'id')))
-
-  // --- Batch queues -----------------------------------------------------------
-  handle(IPC.queueList, () => services.queues.list())
-  handle(IPC.queueSave, (_e, input: unknown) => {
-    if (typeof input !== 'object' || input === null) {
-      throw stashError('VALIDATION', 'Invalid queue payload.')
-    }
-    const req = input as Record<string, unknown>
-    return services.queues.save({
-      id: req['id'] === undefined ? undefined : assertNumber(req['id'], 'id'),
-      name: typeof req['name'] === 'string' ? req['name'] : '',
-      spec: req['spec'] as QueueSpec
-    })
-  })
-  handle(IPC.queueDelete, (_e, id: unknown) => services.queues.delete(assertNumber(id, 'id')))
-  handle(IPC.queueRun, async (_e, input: unknown) => {
-    if (typeof input !== 'object' || input === null) {
-      throw stashError('VALIDATION', 'Invalid queue run payload.')
-    }
-    const req = input as Record<string, unknown>
-    const spec = req['spec'] as QueueSpec
-    const inputFiles = Array.isArray(req['inputFiles'])
-      ? (req['inputFiles'] as unknown[]).filter((f): f is string => typeof f === 'string')
-      : []
-    if (!spec?.steps?.length) throw stashError('VALIDATION', 'Queue spec must have at least one step.')
-    if (!inputFiles.length) throw stashError('VALIDATION', 'At least one input file is required.')
-
-    // Import progress service for emissions
-    const { progress } = await import('../services/progress.js')
-
-    const operationId = `queue-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    let currentFiles = inputFiles
-    const stepResults: Array<{ step: number; toolId: string; files: string[] }> = []
-
-    try {
-      progress.start(operationId, spec.steps.length, `Queue: ${spec.name ?? 'Unnamed'}`)
-
-      for (let i = 0; i < spec.steps.length; i++) {
-        const step = spec.steps[i]
-        const toolId = step.toolId
-
-        // Validate tool exists and supports batch
-        const toolDef = toolRegistry.get(toolId)
-        if (!toolDef) throw stashError('VALIDATION', `Tool not found: ${toolId}`)
-        if (!toolDef.capabilities.acceptsMultipleFiles && !toolDef.capabilities.supportsBatch) {
-          throw stashError('VALIDATION', `Tool ${toolId} does not support batch processing.`)
-        }
-
-        progress.update(operationId, i + 1, `Step ${i + 1}/${spec.steps.length}: ${toolDef.name}`)
-
-        // Invoke the tool's batch handler
-        // Tools with `acceptsMultipleFiles` use the standard batch IPC
-        const batchResult = await invokeToolBatch(toolId, currentFiles, step.options)
-        const outputFiles = batchResult.outputFiles ?? []
-
-        stepResults.push({ step: i + 1, toolId, files: outputFiles })
-        currentFiles = outputFiles
-
-        if (currentFiles.length === 0) {
-          // No outputs to pass to next step - stop early
-          break
-        }
-      }
-
-      progress.end(operationId, `Completed ${stepResults.length} step(s)`)
-      return { operationId, steps: stepResults, finalFiles: currentFiles }
-    } catch (err) {
-      progress.fail(operationId, normalizeError(err).userMessage)
-      throw err
-    }
-  })
 
   // --- Progress / cancellation ----------------------------------------------
   handle(IPC.progressCancel, (_e, operationId: unknown) =>
