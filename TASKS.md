@@ -254,31 +254,20 @@ milestone), drag-to-reorder pins (dnd-kit, v2), themes beyond accent (dark-only 
 - [x] Local prompt history. *(prompts persisted in SQLite via the Prompt Library)*
 - [ ] Additional tool categories discovered through real usage.
 
-## Milestone 9 — Batch queue runner + Usage dashboard *(planned, build on `m9-queue-dashboard` branch)*
+## Milestone 9 — Batch Queue Runner + Usage Dashboard *(planned)*
 
-**Goal:** power-user chaining and self-knowledge features that leverage existing infrastructure (activity DB, progress IPC, tool capabilities).
+**Goal:** automation depth (queue chaining) + self-awareness (usage insights) for the
+launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-queue-dashboard.md`.
 
-- [ ] **SQLite `queues` table + migration** (id, name, spec_json, timestamps)
-- [ ] **IPC: `queue:run`** (step chaining, file passing) + progress events
-- [ ] **Main-side pipeline executor** (step chaining, output → next input, cancellation)
-- [ ] **Queue builder tool** (draggable steps, tool picker filtered by `supportsBatch`/`acceptsMultipleFiles`, per-step options via dynamic import)
-- [ ] **Queue runner panel** (drop zone, validation, run, results per step)
-- [ ] **History integration** (parent "Queue run" + child per-step entries)
-- [ ] **Dashboard metrics service** (reads activity, computes space saved, file types, success rates, timeline)
-- [ ] **Dashboard view** (metric cards, chart, time-range 7d/30d/90d/all, tool drill-down)
-- [ ] **Sidebar nav + palette entries** for both features
-- [ ] **Verify**: typecheck/build/test + visual QA
+- [ ] **Queue capability validation** (shared, tested): capability graph check before run
+- [ ] **Queue Runner core** (renderer + main IPC): sequential execution, output→input piping
+- [ ] **Queue Builder UI**: sidebar section, ordered step list, per-step params, preset CRUD
+- [ ] **Queue presets persistence**: `queue.presets[]` in prefs, export/import with settings
+- [ ] **Usage Dashboard UI**: reads activity/recents, renders charts, time-range filters
+- [ ] **Sidebar integration**: "Queue" + "Insights" sections below Pinned/Favorites
+- [ ] **Settings/Profile export** (enables queue preset portability)
 
-Full spec: `.hermes/plans/2026-08-26_140000-queue-dashboard.md`
-Full spec: `.hermes/plans/2026-08-26_140000-queue-dashboard.md`. Build on `m9-queue-dashboard` branch.
-
-- [ ] SQLite `queues` table + migration
-- [ ] IPC: `queue:run` + progress events
-- [ ] Main-side pipeline executor (step chaining, file passing)
-- [ ] Queue builder tool (drag steps, per-step options, save/load)
-- [ ] Queue runner panel (drop, validate, run, results)
-- [ ] History integration (parent + child entries)
-- [ ] Dashboard metrics service (reads activity, computes savings)
-- [ ] Dashboard view (metrics grid, chart, time-range, tool drill-down)
-- [ ] Sidebar nav + palette entries for both
-- [ ] Verify: typecheck/build/test + visual QA
+### Out of scope (recorded)
+- Scheduled/recurring queues (cron — own milestone)
+- Conditional branching (if fail → X else Y — v2)
+- Queue sharing via URL/QR (v2)
