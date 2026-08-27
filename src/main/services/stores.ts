@@ -316,3 +316,99 @@ export class PromptsStore {
     )
   }
 }
+
+// ---------------------------------------------------------------------------
+// Batch queues
+// ---------------------------------------------------------------------------
+
+export interface QueueRecord {
+  id: number
+  name: string
+  specJson: string
+  createdAtMs: number
+  updatedAtMs: number
+}
+
+export interface QueueSpec {
+  name: string
+  steps: Array<{
+    toolId: string
+    options: Record<string, unknown>
+  }>
+}
+
+export interface QueueSaveInput {
+  id?: number
+  name: string
+  spec: QueueSpec
+}
+
+export class QueuesStore {
+  constructor(private db: DatabaseSync) {}
+
+  list(): QueueRecord[] {
+    const rows = this.db
+      .prepare(
+        `SELECT id, name, spec_json AS specJson, created_ms AS createdAtMs, updated_ms AS updatedAtMs
+         FROM queues ORDER BY updated_ms DESC`
+      )
+      .all() as Array<Record<string, unknown>>
+    return rows.map((row) => ({
+      id: Number(row['id']),
+      name: String(row['name']),
+      specJson: String(row['specJson']),
+      createdAtMs: Number(row['createdAtMs']),
+      updatedAtMs: Number(row['updatedAtMs'])
+    }))
+  }
+
+  save(input: QueueSaveInput, now: number = Date.now()): QueueRecord {
+    if (!input.name.trim()) throw stashError('VALIDATION', 'Queue name is required.')
+    if (!input.spec?.steps?.length) throw stashError('VALIDATION', 'Queue must have at least one step.')
+
+    const specJson = JSON.stringify(input.spec)
+    let id = input.id
+    if (id === undefined) {
+      const result = this.db
+        .prepare(
+          'INSERT INTO queues (name, spec_json, created_ms, updated_ms) VALUES (?, ?, ?, ?)'
+        )
+        .run(input.name.trim(), specJson, now, now)
+      id = Number(result.lastInsertRowid)
+    } else {
+      const result = this.db
+        .prepare('UPDATE queues SET name = ?, spec_json = ?, updated_ms = ? WHERE id = ?')
+        .run(input.name.trim(), specJson, now, id)
+      if (Number(result.changes) === 0) {
+        throw stashError('VALIDATION', 'That queue no longer exists.', {
+          technicalMessage: `id ${id} not found`
+        })
+      }
+    }
+    const row = this.db
+      .prepare(
+        `SELECT id, name, spec_json AS specJson, created_ms AS createdAtMs, updated_ms AS updatedAtMs
+         FROM queues WHERE id = ?`
+      )
+      .get(id) as Record<string, unknown>
+    return {
+      id: Number(row['id']),
+      name: String(row['name']),
+      specJson: String(row['specJson']),
+      createdAtMs: Number(row['createdAtMs']),
+      updatedAtMs: Number(row['updatedAtMs'])
+    }
+  }
+
+  delete(id: number): void {
+    this.db.prepare('DELETE FROM queues WHERE id = ?').run(id)
+  }
+
+  count(): number {
+    return Number(
+      Object.values(
+        this.db.prepare('SELECT COUNT(*) AS n FROM queues').get() as Record<string, unknown>
+      )[0]
+    )
+  }
+}

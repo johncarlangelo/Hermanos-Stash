@@ -11,7 +11,7 @@ import path from 'node:path'
  * - Migrations run in order; `PRAGMA user_version` tracks the applied level.
  */
 
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 const MIGRATIONS: string[] = [
   // v1: initial schema
@@ -56,6 +56,17 @@ const MIGRATIONS: string[] = [
     updated_ms INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_prompts_updated ON prompts (updated_ms DESC);
+  `,
+  // v3: batch queues
+  `
+  CREATE TABLE IF NOT EXISTS queues (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    spec_json TEXT NOT NULL,
+    created_ms INTEGER NOT NULL,
+    updated_ms INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_queues_updated ON queues (updated_ms DESC);
   `
 ]
 
