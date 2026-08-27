@@ -253,3 +253,32 @@ milestone), drag-to-reorder pins (dnd-kit, v2), themes beyond accent (dark-only 
 - [x] Prompt variable builder. *(`{{variable}}` detection and fill-in-and-copy in the Prompt Library)*
 - [x] Local prompt history. *(prompts persisted in SQLite via the Prompt Library)*
 - [ ] Additional tool categories discovered through real usage.
+
+## Milestone 9 — Batch queue runner + Usage dashboard *(planned, build on `m9-queue-dashboard` branch)*
+
+**Goal:** power-user chaining and self-knowledge features that leverage existing infrastructure (activity DB, progress IPC, tool capabilities).
+
+- [ ] **SQLite `queues` table + migration** (id, name, spec_json, timestamps)
+- [ ] **IPC: `queue:run`** (step chaining, file passing) + progress events
+- [ ] **Main-side pipeline executor** (step chaining, output → next input, cancellation)
+- [ ] **Queue builder tool** (draggable steps, tool picker filtered by `supportsBatch`/`acceptsMultipleFiles`, per-step options via dynamic import)
+- [ ] **Queue runner panel** (drop zone, validation, run, results per step)
+- [ ] **History integration** (parent "Queue run" + child per-step entries)
+- [ ] **Dashboard metrics service** (reads activity, computes space saved, file types, success rates, timeline)
+- [ ] **Dashboard view** (metric cards, chart, time-range 7d/30d/90d/all, tool drill-down)
+- [ ] **Sidebar nav + palette entries** for both features
+- [ ] **Verify**: typecheck/build/test + visual QA
+
+Full spec: `.hermes/plans/2026-08-26_140000-queue-dashboard.md`
+Full spec: `.hermes/plans/2026-08-26_140000-queue-dashboard.md`. Build on `m9-queue-dashboard` branch.
+
+- [ ] SQLite `queues` table + migration
+- [ ] IPC: `queue:run` + progress events
+- [ ] Main-side pipeline executor (step chaining, file passing)
+- [ ] Queue builder tool (drag steps, per-step options, save/load)
+- [ ] Queue runner panel (drop, validate, run, results)
+- [ ] History integration (parent + child entries)
+- [ ] Dashboard metrics service (reads activity, computes savings)
+- [ ] Dashboard view (metrics grid, chart, time-range, tool drill-down)
+- [ ] Sidebar nav + palette entries for both
+- [ ] Verify: typecheck/build/test + visual QA
