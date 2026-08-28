@@ -271,3 +271,13 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - Scheduled/recurring queues (cron — own milestone)
 - Conditional branching (if fail → X else Y — v2)
 - Queue sharing via URL/QR (v2)
+
+## Tool #51 — Image OCR Extractor (`image-ocr`)
+
+**Goal:** extract editable text from images, photos, scans, and screenshots locally and offline using Tesseract OCR.
+
+- [x] **Tesseract OCR Processor (`src/main/processing/ocr.ts`)**: offline `tessdata` resolution (`resources/tessdata/eng.traineddata.gz`), Sharp grayscale/contrast/binarization preprocessing, progress reporting, and cancellation.
+- [x] **OCR IPC Channel (`src/shared/ipc.ts`, `src/main/ipc/register.ts`, `src/preload/index.ts`)**: `images:ocr` IPC channel exposing `window.stash.processing.ocrImage`.
+- [x] **Pure Logic & Unit Tests (`src/renderer/tools/image-ocr/logic.ts`, `logic.test.ts`)**: text stats calculation (words, characters, lines, paragraphs), confidence rating labels, text cleanup routines (13/13 tests pass).
+- [x] **Tool View & UX (`src/renderer/tools/image-ocr/ImageOcrTool.tsx`)**: image preview with dimensions/size, PSM layout mode selector, preprocessing toggles, progress bar, formatted text output with word/char counters, confidence score badge, Copy Text, and Save as `.txt` file export.
+- [x] **Tool Registration (`src/renderer/tools/index.ts`)**: registered in registry and lazy components with capabilities `{ acceptsFiles: true, producesText: true, supportsProgress: true }` under `documents` category (51 tools total).

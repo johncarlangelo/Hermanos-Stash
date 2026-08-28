@@ -714,6 +714,21 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       producesText: true,
       supportsProgress: true
     }
+  },
+  {
+    id: 'image-ocr',
+    name: 'Image OCR Extractor',
+    category: 'documents',
+    description:
+      'Extract editable text from images, photos, scans, and screenshots locally using offline Tesseract OCR.',
+    tags: ['ocr', 'text', 'extract', 'image', 'scan', 'tesseract', 'photo', 'receipt'],
+    icon: 'scan-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true,
+      supportsProgress: true
+    }
   }
 ]
 
@@ -772,6 +787,7 @@ const PdfToTextTool = lazy(() => import('./pdf-to-text/PdfToTextTool'))
 const ImageWatermarkTool = lazy(() => import('./image-watermark/ImageWatermarkTool'))
 const IconPackTool = lazy(() => import('./icon-pack/IconPackTool'))
 const SocialResizerTool = lazy(() => import('./social-resizer/SocialResizerTool'))
+const ImageOcrTool = lazy(() => import('./image-ocr/ImageOcrTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -823,5 +839,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'pdf-to-text': PdfToTextTool,
   'image-watermark': ImageWatermarkTool,
   'icon-pack': IconPackTool,
-  'social-resizer': SocialResizerTool
+  'social-resizer': SocialResizerTool,
+  'image-ocr': ImageOcrTool
 }

@@ -7,10 +7,14 @@ directories:
 files:
   - out/**
 
-# Ship the user-provided FFmpeg binaries inside the installed app.
+# Ship the user-provided FFmpeg binaries and offline Tesseract language data inside the installed app.
 extraResources:
   - from: resources/ffmpeg
     to: ffmpeg
+    filter:
+      - '**/*'
+  - from: resources/tessdata
+    to: tessdata
     filter:
       - '**/*'
 

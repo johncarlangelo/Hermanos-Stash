@@ -26,6 +26,7 @@ export const IPC = {
   imagesConvertBatch: 'images:convert-batch',
   imagesCompressBatch: 'images:compress-batch',
   imagesWatermarkBatch: 'images:watermark-batch',
+  imagesOcr: 'images:ocr',
   socialResizeBatch: 'social:resize-batch',
   iconsGeneratePack: 'icons:generate-pack',
 
@@ -253,6 +254,28 @@ export type WatermarkPosition =
   | 'top-center'
   | 'top-left'
   | 'center'
+
+export type OcrPsmMode = 'auto' | 'single_block' | 'single_line' | 'single_word' | 'sparse_text'
+
+export interface OcrImageRequest {
+  path: string
+  language?: string
+  psm?: OcrPsmMode
+  preprocess?: {
+    grayscale?: boolean
+    contrastEnhance?: boolean
+    threshold?: boolean
+  }
+}
+
+export interface OcrImageResult {
+  text: string
+  confidence: number
+  wordCount: number
+  charCount: number
+  lineCount: number
+  durationMs: number
+}
 
 /** One generated icon-pack artifact, e.g. "icon-128.png" or "favicon.ico". */
 export interface IconPackFile {
@@ -632,6 +655,7 @@ export interface StashBridge {
     compressImages(req: CompressImagesRequest): Promise<ImageBatchResult>
     watermarkImages(req: WatermarkImagesRequest): Promise<ImageBatchResult>
     socialResize(req: SocialResizeRequest): Promise<SocialResizeResult>
+    ocrImage(req: OcrImageRequest, jobId?: string): Promise<OcrImageResult>
   }
   icons: {
     generatePack(req: IconPackRequest): Promise<IconPackResult>

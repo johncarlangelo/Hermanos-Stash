@@ -2,27 +2,23 @@
 
 ## Current milestone
 
-**Milestone 9 (Batch Queue Runner + Usage Dashboard) complete.** 
-Milestone 9 adds automation depth and self-awareness to Hermanos Stash:
-- **Queue Capability Validation** (`shared/utils/queue-validation.ts`): checks tool compatibility graphs (file/text outputs → inputs) before running chains (13 unit tests).
-- **Queue Store & Presets** (`renderer/stores/queue.ts`): CRUD for named queue workflows persisted in local preferences (8 unit tests).
-- **Queue Builder & Runner** (`renderer/features/shell/QueueBuilder.tsx`, `QueueRunner.tsx`, `QueueView.tsx`): sequential execution engine with file piping, per-step status, and unified tabbed interface.
-- **Usage Dashboard** (`renderer/features/shell/UsageDashboard.tsx`): zero-latency insights powered by Recharts reading SQLite activity history (metrics cards, top tools bar chart, category donut, status split, and drill-down history inspection).
-- **Navigation & Shell Integration**: "Queue" and "Insights" sections in persistent sidebar navigation and breadcrumbs.
-- **Settings/Profile Portability**: standalone `.stash-profile` export and import for preferences, themes, queue presets, prompt library, and favorites.
+**Tool #51 (Image OCR Extractor) complete.**
+Hermanos Stash now includes an offline OCR engine:
+- **Offline Tesseract Engine (`main/processing/ocr.ts`)**: bundles `resources/tessdata/eng.traineddata.gz` with Sharp-powered grayscale/contrast/binarization preprocessing, progress streaming, and cooperative cancellation.
+- **Image OCR View (`renderer/tools/image-ocr/ImageOcrTool.tsx`)**: image preview thumbnail with size/dimensions, layout segmentation mode selector (Auto / Single Block / Sparse / Single Line / Single Word), live progress bar, editable output textarea, confidence score badge, word/character/line counters, Copy Text, and Save as `.txt`.
+- **Pure Logic & Unit Tests (`renderer/tools/image-ocr/logic.ts`, `logic.test.ts`)**: 13 unit tests for text cleaning, statistics computation, and confidence rating.
 
 ## Status
 
-50 tools registered across every category on a verified platform: secure Electron
+51 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
-persistence, FFmpeg native integration, batch queue chaining, and usage analytics.
+persistence, FFmpeg native integration, offline Tesseract OCR, batch queue chaining, and usage analytics.
 
-### Milestone 9 — Batch Queue Runner + Usage Dashboard (this phase)
+### Tool #51 — Image OCR Extractor (this phase)
 
-- **Queue Runner & Builder**: unified workspace tab (`QueueView.tsx`) combining preset management, drag/reorder steps, parameter customization, file drop zone, sequential execution, and progress tracking.
-- **Usage Dashboard**: Recharts-driven visual analytics over local SQLite history without cloud or third-party APIs.
-- **Profile Portability**: export and import `.stash-profile` JSON bundles via native dialogs and secure filesystem bridges.
-- Verification: clean typecheck (0 errors), all **54 test files / 597 tests passing**, production build green (`electron-vite build`), headless probe and CDP drag probe exit 0.
+- **Offline OCR**: Tesseract recognition running locally via main-process worker threads, zero cloud calls, zero external API keys.
+- **Preprocess Pipeline**: Sharp contrast normalization and grayscale filtering for high accuracy on low-contrast scans and receipts.
+- **Verification**: 0 typecheck errors, 0 ESLint warnings, all **56 test files / 612 tests passing**, clean production build (`electron-vite build`), headless probe and CDP drag probe exit 0.
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

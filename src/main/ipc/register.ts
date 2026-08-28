@@ -21,6 +21,9 @@ import type {
   MediaBatchResult,
   MediaBatchSuccess,
   MediaCapabilities,
+  OcrImageRequest,
+  OcrImageResult,
+  OcrPsmMode,
   VideoOutputFormat,
   PdfSplitFailure,
   PdfSplitResult,
@@ -60,6 +63,7 @@ import {
   socialResizeImage,
   watermarkImage
 } from '../processing/images'
+import { ocrImage } from '../processing/ocr'
 import {
   FAVICON_NAME,
   ICON_PACK_SIZES,
@@ -1054,6 +1058,36 @@ export function registerIpc(services: IpcServices): void {
       })),
       failed: outcome.failed.map((entry) => ({ label: entry.label, error: entry.error })),
       cancelled: outcome.cancelled
+    }
+  })
+
+  handle(IPC.imagesOcr, async (_e, raw: unknown, jobId?: unknown): Promise<OcrImageResult> => {
+    const req = assertPayload(raw)
+    const imagePath = assertString(req['path'], 'path')
+    const language = typeof req['language'] === 'string' ? req['language'] : undefined
+    const psm = typeof req['psm'] === 'string' ? (req['psm'] as OcrPsmMode) : undefined
+    const preprocess =
+      req['preprocess'] && typeof req['preprocess'] === 'object'
+        ? (req['preprocess'] as OcrImageRequest['preprocess'])
+        : undefined
+
+    const operationId = typeof jobId === 'string' ? jobId : undefined
+    const { id, handle: opHandle } = services.progress.begin('Extracting text with OCR…')
+    const trackingId = operationId ?? id
+
+    try {
+      const result = await ocrImage(
+        { path: imagePath, language, psm, preprocess },
+        (ratio, message) => {
+          opHandle.report(ratio, message)
+        },
+        () => services.progress.isCancelled(trackingId)
+      )
+      opHandle.done('Text extraction complete')
+      return result
+    } catch (err) {
+      opHandle.fail(err)
+      throw err
     }
   })
 

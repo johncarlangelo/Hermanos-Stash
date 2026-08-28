@@ -14,6 +14,8 @@ import type {
   HashTextRequest,
   HistoryEntryInput,
   IconPackRequest,
+  OcrImageRequest,
+  OcrImageResult,
   PromptSaveInput,
   ImagesToPdfRequest,
   OpenFileDialogRequest,
@@ -96,7 +98,9 @@ const api: StashBridge = {
     convertImages: (req: ConvertImagesRequest) => invoke(IPC.imagesConvertBatch, req),
     compressImages: (req: CompressImagesRequest) => invoke(IPC.imagesCompressBatch, req),
     watermarkImages: (req: WatermarkImagesRequest) => invoke(IPC.imagesWatermarkBatch, req),
-    socialResize: (req: SocialResizeRequest) => invoke(IPC.socialResizeBatch, req)
+    socialResize: (req: SocialResizeRequest) => invoke(IPC.socialResizeBatch, req),
+    ocrImage: (req: OcrImageRequest, jobId?: string) =>
+      invoke<OcrImageResult>(IPC.imagesOcr, req, jobId)
   },
   icons: {
     generatePack: (req: IconPackRequest) => invoke(IPC.iconsGeneratePack, req)
