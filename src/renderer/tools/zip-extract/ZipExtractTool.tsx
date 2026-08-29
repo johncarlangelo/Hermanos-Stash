@@ -18,6 +18,8 @@ import { useOutputDir } from '../shared/use-output-dir'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 
+const SUPPORTED_ARCHIVES = ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.bz2', '.xz']
+
 export default function ZipExtractTool() {
   const [zipPath, setZipPath] = useState<string | null>(null)
   const [destination, setDestination] = useOutputDir('zip-extract')
@@ -30,7 +32,7 @@ export default function ZipExtractTool() {
 
   const canRun = zipPath !== null && destination !== '' && !extracting
 
-  // Check whether selected zip is encrypted
+  // Check whether selected archive is encrypted
   useEffect(() => {
     if (!zipPath) {
       setIsEncrypted(false)
@@ -110,10 +112,10 @@ export default function ZipExtractTool() {
   return (
     <div className="flex flex-col gap-4">
       <DropZone
-        accept={['.zip']}
-        label={zipPath ? `Replace ${fileNameOf(zipPath)}` : 'Drop a .zip archive here'}
-        hint="One archive at a time · password-protected archives supported · click to browse"
-        dialogTitle="Choose a ZIP archive to extract"
+        accept={SUPPORTED_ARCHIVES}
+        label={zipPath ? `Replace ${fileNameOf(zipPath)}` : 'Drop an archive here'}
+        hint="Extract .zip, .rar, .7z, and .tar archives · password-protected archives supported · click to browse"
+        dialogTitle="Choose an archive to extract"
         onFiles={(paths) => {
           setZipPath(paths[0] ?? null)
           setResult(null)
@@ -126,7 +128,7 @@ export default function ZipExtractTool() {
         <EmptyState
           icon="folder"
           title="No archive selected yet."
-          hint="Drop or browse for a .zip file above and choose where its contents should go. Password-protected archives and subfolders are extracted securely."
+          hint="Drop or browse for a .zip, .rar, .7z, or .tar archive above and choose where its contents should go. Password-protected archives and subfolders are extracted securely."
         />
       )}
 

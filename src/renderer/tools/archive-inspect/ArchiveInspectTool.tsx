@@ -43,7 +43,7 @@ interface PreviewState {
   text?: string
 }
 
-const SUPPORTED_ARCHIVES = ['.zip']
+const SUPPORTED_ARCHIVES = ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.bz2', '.xz']
 
 const CATEGORY_TABS: Array<{ id: ArchiveCategoryFilter; label: string; icon: typeof Folder }> = [
   { id: 'all', label: 'All', icon: Archive },
@@ -142,28 +142,49 @@ export default function ArchiveInspectTool() {
   }
 
   const handleUnlock = async () => {
-    if (!archivePath || !inspectResult) return
+    if (!archivePath) return
     setError(null)
-    const firstFile = inspectResult.entries.find((e) => !e.isDirectory && e.isEncrypted)
-    if (firstFile) {
-      setLoading(true)
-      try {
+    setLoading(true)
+
+    try {
+      // 1. Inspect archive with password to load all entries (for header-encrypted RAR/ZIP)
+      const freshResult = await window.stash.archives.inspect({
+        path: archivePath,
+        password: password.trim()
+      })
+
+      if (freshResult.isEncrypted && freshResult.entries.length === 0) {
+        throw stashError(
+          'VALIDATION',
+          'Incorrect password for archive. Please verify and try again.'
+        )
+      }
+
+      // 2. If entries are present and encrypted, verify password against the first encrypted file
+      const firstFile = freshResult.entries.find((e) => !e.isDirectory && e.isEncrypted)
+      if (firstFile) {
         await window.stash.archives.readEntry({
           archivePath,
           entryPath: firstFile.path,
           password: password.trim()
         })
-        setUnlocked(true)
-        toastSuccess('Archive unlocked successfully')
-      } catch {
-        setError(
-          stashError('VALIDATION', 'Incorrect password for archive. Please verify and try again.')
-        )
-      } finally {
-        setLoading(false)
       }
-    } else {
+
+      setInspectResult(freshResult)
       setUnlocked(true)
+      toastSuccess('Archive unlocked successfully')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(
+        stashError(
+          'VALIDATION',
+          msg.toLowerCase().includes('password') || msg.toLowerCase().includes('passphrase')
+            ? 'Incorrect password for archive. Please verify and try again.'
+            : `Could not unlock archive: ${msg}`
+        )
+      )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -300,8 +321,8 @@ export default function ArchiveInspectTool() {
         <DropZone
           onFiles={handleDrop}
           accept={SUPPORTED_ARCHIVES}
-          label="Drop a .zip archive here"
-          hint="Inspect, search, and preview files inside archives in-memory · click to browse"
+          label="Drop an archive here"
+          hint="Inspect, search, and preview files inside .zip, .rar, .7z, and .tar archives · click to browse"
           dialogTitle="Choose an archive to inspect"
           multiple={false}
         />

@@ -3,15 +3,17 @@
 This is a living catalog tracking shipped tools and candidates. Currently **52 tools** are implemented and registered across 8 categories.
 
 ## Files & Archives (`files`)
+
 - [x] **File Metadata Viewer** (`file-metadata`) — Inspect size, dates, MIME type, and full path for any local file.
 - [x] **ZIP Creator** (`zip-create`) — Pack any mix of files into a single `.zip` archive entirely locally.
-- [x] **ZIP Extractor** (`zip-extract`) — Extract `.zip` archives into a target directory with zip-slip protection.
-- [x] **Archive Inspector** (`archive-inspect`) — Inspect, search, and preview files inside archives in-memory without extracting to disk.
+- [x] **ZIP & Archive Extractor** (`zip-extract`) — Extract `.zip`, `.rar`, `.7z`, and `.tar` archives into a target directory with password and zip-slip protection.
+- [x] **Archive Inspector** (`archive-inspect`) — Inspect, search, and preview files inside `.zip`, `.rar`, `.7z`, and `.tar` archives in-memory without extracting to disk.
 - [x] **Batch Rename** (`batch-rename`) — Multi-rule file renamer with live dry-run preview (prefix, suffix, find/replace, numbering, extension, casing).
 - [ ] Duplicate filename / content hash finder
 - [ ] Large file tree analyzer
 
 ## Documents & PDF (`documents`)
+
 - [x] **PDF Preview** (`pdf-preview`) — Fast local page navigation, zoom, and document metrics via PDF.js.
 - [x] **PDF Merger** (`pdf-merge`) — Combine multiple PDF files into one ordered document.
 - [x] **PDF Splitter** (`pdf-split`) — Extract page ranges (`1-3, 7`) into separate PDF documents.
@@ -25,6 +27,7 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 - [ ] Document conversion (DOCX/ODT/Markdown → PDF)
 
 ## Images (`images`)
+
 - [x] **Image Preview** (`image-preview`) — Local image inspector with dimensions, byte size, and zoom controls.
 - [x] **Image Converter** (`image-convert`) — Batch conversion between PNG, JPEG, WebP, AVIF, and TIFF with quality controls.
 - [x] **Image Compressor** (`image-compress`) — Shrink image file sizes with quality adjustments and optional downscaling.
@@ -35,6 +38,7 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 - [ ] Image color quantization / palette extractor
 
 ## Video (`video`)
+
 - [x] **Video Converter** (`video-convert`) — Convert videos between MP4, WebM, and MKV via local FFmpeg.
 - [x] **Video Compressor** (`video-compress`) — Shrink video file sizes with CRF quality presets and downscaling.
 - [x] **Video → GIF** (`video-to-gif`) — Turn video clips into smooth animated GIFs with two-pass palette optimization.
@@ -42,12 +46,14 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 - [ ] Video frame extractor (extract frames at interval / timestamp)
 
 ## Audio (`audio`)
+
 - [x] **Audio Extractor** (`extract-audio`) — Pull soundtracks from videos into AAC, MP3, WAV, FLAC, or Opus.
 - [x] **Audio Converter** (`audio-convert`) — Convert audio tracks between MP3, AAC, WAV, FLAC, and Opus locally.
 - [ ] Audio trimmer / visual waveform cutter
 - [ ] Audio volume normalizer / loudness equalizer
 
 ## Text & Data (`text`)
+
 - [x] **JSON Formatter** (`json-format`) — Pretty-print, minify, and validate JSON with precise error pointers.
 - [x] **Base64 Encoder / Decoder** (`base64-codec`) — Encode and decode Base64 text with full UTF-8 Unicode support.
 - [x] **Markdown Preview** (`markdown-preview`) — Live side-by-side Markdown rendering to sanitized HTML.
@@ -60,6 +66,7 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 - [ ] JSON schema validator
 
 ## Developer (`developer`)
+
 - [x] **QR Code Generator** (`qr-generator`) — Generate high-resolution scannable QR codes from text or URLs offline.
 - [x] **QR Decoder** (`qr-decoder`) — Extract text payloads from QR code images offline.
 - [x] **Passphrase Generator** (`passphrase-generator`) — Generate cryptographically secure diceware passphrases and passwords with entropy ratings.
@@ -79,11 +86,13 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 - [ ] User-Agent string parser
 
 ## AI-adjacent & Creative (`future`)
+
 - [x] **Prompt Library** (`prompt-library`) — Manage local reusable prompt templates with `{{variable}}` substitution.
 - [x] **Brand Bible Creator** (`brand-bible`) — Design exportable brand style guides with color palettes, typography, and rules.
 - [ ] Local prompt comparator / diff
 
 ## Product-level Platform Utilities
+
 - [x] **Global Command Palette** (`Ctrl+K`) — Instant fuzzy search across all tools, descriptions, and tags.
 - [x] **Batch Queue Runner & Builder** (`QueueView`) — Multi-tool pipeline execution with output-to-input chaining and validation.
 - [x] **Usage Analytics Dashboard** (`UsageDashboard`) — Local SQLite-powered zero-latency metrics and charts.

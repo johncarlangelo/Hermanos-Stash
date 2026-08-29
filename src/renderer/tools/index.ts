@@ -380,10 +380,11 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     id: 'zip-extract',
-    name: 'ZIP Extractor',
+    name: 'ZIP & Archive Extractor',
     category: 'files',
-    description: 'Extract .zip archives into a folder you choose, with zip-slip protection.',
-    tags: ['unzip', 'extract', 'archive'],
+    description:
+      'Extract .zip, .rar, .7z, and .tar archives into a folder you choose, with password and zip-slip protection.',
+    tags: ['unzip', 'unrar', 'extract', 'archive', 'zip', 'rar', '7z', 'tar', 'password'],
     icon: 'folder',
     version: '1.0.0',
     capabilities: {
@@ -735,8 +736,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: 'Archive Inspector',
     category: 'files',
     description:
-      'Inspect, search, and preview files inside archives in-memory without extracting them to disk.',
-    tags: ['zip', 'archive', 'inspect', 'preview', 'extract', 'tar', 'unzip', 'password'],
+      'Inspect, search, and preview files inside .zip, .rar, .7z, and .tar archives in-memory without extracting them to disk.',
+    tags: [
+      'zip',
+      'rar',
+      '7z',
+      'archive',
+      'inspect',
+      'preview',
+      'extract',
+      'tar',
+      'unzip',
+      'unrar',
+      'password'
+    ],
     icon: 'folder',
     version: '1.0.0',
     capabilities: {

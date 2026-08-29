@@ -82,4 +82,10 @@ describe('Archive Inspector Engine', () => {
   it('throws error for non-existent archive', async () => {
     await expect(inspectArchive({ path: path.join(tmpDir, 'nonexistent.zip') })).rejects.toThrow()
   })
+
+  it('identifies and handles invalid RAR file with structured error', async () => {
+    const fakeRarPath = path.join(tmpDir, 'corrupted.rar')
+    await fsp.writeFile(fakeRarPath, Buffer.from('Rar!\x1a\x07\x00invalid-rar-bytes'))
+    await expect(inspectArchive({ path: fakeRarPath })).rejects.toThrow()
+  })
 })

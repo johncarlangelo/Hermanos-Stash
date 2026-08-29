@@ -1,12 +1,13 @@
 import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { createExtractorFromFile } from 'node-unrar-js'
 import JSZip from 'jszip'
 import { isStashError, stashError } from '../../shared/errors'
 
 /**
- * ZIP creation/extraction over JSZip and tar.exe. Extraction is hardened against
- * zip-slip: entries escaping the output directory are skipped, not followed.
+ * ZIP & Multi-format archive creation/extraction (ZIP, RAR, 7z, TAR, GZ, TGZ, BZ2, XZ).
+ * Extraction is hardened against zip-slip: entries escaping output directory are rejected.
  */
 
 /** Total uncompressed input accepted for one archive (MVP guard). */
@@ -126,6 +127,23 @@ async function countExtractedFiles(dir: string): Promise<{ total: number; topLev
   return { total, topLevel: topLevel.length }
 }
 
+function isRar(filePath: string, buffer?: Buffer): boolean {
+  if (filePath.toLowerCase().endsWith('.rar')) return true
+  if (buffer && buffer.length >= 7) {
+    if (
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x61 &&
+      buffer[2] === 0x72 &&
+      buffer[3] === 0x21 &&
+      buffer[4] === 0x1a &&
+      buffer[5] === 0x07
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 export async function extractZipArchive(
   zipPath: string,
   outputDir: string,
@@ -140,6 +158,56 @@ export async function extractZipArchive(
     })
   }
 
+  await fs.mkdir(outputDir, { recursive: true })
+
+  // 1. Handle RAR archives via node-unrar-js
+  if (isRar(zipPath, raw)) {
+    try {
+      const extractor = await createExtractorFromFile({
+        filepath: zipPath,
+        targetPath: outputDir,
+        password: password || undefined
+      })
+      const extracted = extractor.extract({ password: password || undefined })
+      let count = 0
+      const topLevel = new Set<string>()
+
+      for (const file of extracted.files) {
+        if (!file.fileHeader.flags.directory) {
+          count++
+          const seg = file.fileHeader.name.replace(/\\/g, '/').split('/')[0]
+          if (seg) topLevel.add(seg)
+        }
+      }
+
+      return {
+        extractedCount: count,
+        skipped: [],
+        topLevelCount: topLevel.size
+      }
+    } catch (err) {
+      if (isStashError(err)) throw err
+      const unrarErr = err as { reason?: string; message?: string }
+      if (
+        unrarErr.reason === 'ERAR_MISSING_PASSWORD' ||
+        unrarErr.reason === 'ERAR_BAD_PASSWORD' ||
+        String(unrarErr.message).toLowerCase().includes('password')
+      ) {
+        throw stashError(
+          'VALIDATION',
+          password
+            ? 'Incorrect password for archive.'
+            : 'This archive is password-protected. Please enter a password to extract.',
+          { technicalMessage: String(unrarErr.message ?? err) }
+        )
+      }
+      throw stashError(
+        'FS_READ',
+        `Could not extract RAR archive: ${String(unrarErr.message ?? err)}`
+      )
+    }
+  }
+
   const isEncrypted = isZipBufferEncrypted(raw)
   if (isEncrypted && !password) {
     throw stashError(
@@ -148,10 +216,8 @@ export async function extractZipArchive(
     )
   }
 
-  await fs.mkdir(outputDir, { recursive: true })
-
-  // If password provided or encrypted, extract with tar.exe
-  if (isEncrypted || password) {
+  // 2. If password provided or encrypted, or for non-zip (7z, tar, etc.), extract with tar.exe
+  if (isEncrypted || password || !zipPath.toLowerCase().endsWith('.zip')) {
     try {
       await new Promise<void>((resolve, reject) => {
         const args = ['-x', '-f', zipPath, '-C', outputDir]
@@ -196,7 +262,7 @@ export async function extractZipArchive(
     }
   }
 
-  // Standard unencrypted extraction with JSZip
+  // 3. Standard unencrypted extraction with JSZip
   let zip: JSZip
   try {
     zip = await JSZip.loadAsync(raw)

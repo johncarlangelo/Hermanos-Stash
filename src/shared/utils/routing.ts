@@ -76,8 +76,14 @@ export const EXTENSION_TOOL_HINTS: Record<string, string[]> = {
   m4a: ['audio-convert', 'extract-audio'],
   ogg: ['audio-convert'],
   opus: ['audio-convert'],
-  aac: ['audio-convert', 'extract-audio'],
-  zip: ['archive-inspect', 'zip-extract', 'zip-create']
+  zip: ['archive-inspect', 'zip-extract', 'zip-create'],
+  rar: ['archive-inspect', 'zip-extract'],
+  '7z': ['archive-inspect', 'zip-extract'],
+  tar: ['archive-inspect', 'zip-extract'],
+  gz: ['archive-inspect', 'zip-extract'],
+  tgz: ['archive-inspect', 'zip-extract'],
+  bz2: ['archive-inspect', 'zip-extract'],
+  xz: ['archive-inspect', 'zip-extract']
 }
 
 export function extensionOfPath(filePath: string): string {

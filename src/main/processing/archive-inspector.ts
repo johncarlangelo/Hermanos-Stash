@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
+import { createExtractorFromData, createExtractorFromFile } from 'node-unrar-js'
 import unzipper from 'unzipper'
 import JSZip from 'jszip'
 import { isStashError, stashError } from '../../shared/errors'
@@ -66,6 +67,127 @@ function decodeDosString(buf: Buffer): string {
     return new TextDecoder('utf-8', { fatal: true }).decode(buf)
   } catch {
     return buf.toString('latin1')
+  }
+}
+
+export function isRarFile(filePath: string, buffer?: Buffer): boolean {
+  if (filePath.toLowerCase().endsWith('.rar')) return true
+  if (buffer && buffer.length >= 7) {
+    if (
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x61 &&
+      buffer[2] === 0x72 &&
+      buffer[3] === 0x21 &&
+      buffer[4] === 0x1a &&
+      buffer[5] === 0x07
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+export function isZipFile(filePath: string, buffer?: Buffer): boolean {
+  const ext = filePath.toLowerCase()
+  if (ext.endsWith('.zip')) return true
+  if (buffer && buffer.length >= 4) {
+    if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Inspects a RAR archive (RAR4 & RAR5) via node-unrar-js.
+ */
+export async function inspectRarArchive(
+  filePath: string,
+  password?: string
+): Promise<ArchiveInspectResult> {
+  const stat = await fsp.stat(filePath)
+  try {
+    const extractor = await createExtractorFromFile({
+      filepath: filePath,
+      password: password || undefined
+    })
+    const list = extractor.getFileList()
+    const entries: ArchiveEntryInfo[] = []
+    let totalUncompressed = 0
+    let totalCompressed = 0
+    let fileCount = 0
+    let directoryCount = 0
+    let hasEncrypted = Boolean(list.arcHeader?.flags?.headerEncrypted)
+
+    for (const header of list.fileHeaders) {
+      const isDir =
+        Boolean(header.flags?.directory) || header.name.endsWith('/') || header.name.endsWith('\\')
+      const normalizedPath = header.name.replace(/\\/g, '/')
+      const uncomp = header.unpSize ?? 0
+      const comp = header.packSize ?? 0
+      const isEnc = Boolean(header.flags?.encrypted) || hasEncrypted
+
+      if (isEnc) hasEncrypted = true
+      if (isDir) {
+        directoryCount++
+      } else {
+        fileCount++
+      }
+
+      totalUncompressed += uncomp
+      totalCompressed += comp
+
+      let lastModifiedMs: number | undefined
+      if (header.time) {
+        const parsed = new Date(header.time).getTime()
+        if (!Number.isNaN(parsed)) lastModifiedMs = parsed
+      }
+
+      entries.push({
+        path: normalizedPath,
+        name: path.basename(normalizedPath) || normalizedPath,
+        isDirectory: isDir,
+        uncompressedSize: uncomp,
+        compressedSize: comp,
+        lastModifiedMs,
+        isEncrypted: isEnc,
+        crc32: header.crc
+      })
+    }
+
+    return {
+      path: filePath,
+      totalEntries: entries.length,
+      fileCount,
+      directoryCount,
+      totalUncompressedSize: totalUncompressed,
+      totalCompressedSize: totalCompressed,
+      isEncrypted: hasEncrypted,
+      entries
+    }
+  } catch (err: unknown) {
+    const unrarErr = err as { reason?: string; message?: string }
+    if (
+      unrarErr.reason === 'ERAR_MISSING_PASSWORD' ||
+      unrarErr.reason === 'ERAR_BAD_PASSWORD' ||
+      String(unrarErr.message).toLowerCase().includes('password')
+    ) {
+      return {
+        path: filePath,
+        totalEntries: 0,
+        fileCount: 0,
+        directoryCount: 0,
+        totalUncompressedSize: stat.size,
+        totalCompressedSize: stat.size,
+        isEncrypted: true,
+        entries: []
+      }
+    }
+    throw stashError(
+      'UNSUPPORTED',
+      `"${path.basename(filePath)}" is not a valid or readable RAR archive.`,
+      { technicalMessage: String(unrarErr.message ?? err) }
+    )
   }
 }
 
@@ -213,88 +335,95 @@ export function parseZipCentralDirectory(buffer: Buffer, filePath: string): Arch
 
 /**
  * Inspects all entries and metadata within an archive without extracting to disk.
+ * Supports .zip, .rar, .7z, .tar, .gz, .tgz, .bz2, .xz.
  */
 export async function inspectArchive(req: ArchiveInspectRequest): Promise<ArchiveInspectResult> {
   if (!fs.existsSync(req.path)) {
     throw stashError('FS_READ', `Archive file not found: ${req.path}`)
   }
 
-  try {
-    const buffer = await fsp.readFile(req.path)
-    return parseZipCentralDirectory(buffer, req.path)
-  } catch (err) {
-    if (isStashError(err)) throw err
+  const buffer = await fsp.readFile(req.path)
 
-    // Fallback to unzipper Open.file
+  // 1. RAR detection & inspection
+  if (isRarFile(req.path, buffer)) {
+    return inspectRarArchive(req.path, req.password)
+  }
+
+  // 2. ZIP detection & inspection
+  if (isZipFile(req.path, buffer)) {
     try {
-      const directory = await unzipper.Open.file(req.path)
-      const entries: ArchiveEntryInfo[] = []
-      let totalUncompressed = 0
-      let totalCompressed = 0
-      let fileCount = 0
-      let directoryCount = 0
-      let hasEncrypted = false
-
-      for (const file of directory.files) {
-        const isDir = file.type === 'Directory' || file.path.endsWith('/')
-        if (isDir) {
-          directoryCount++
-        } else {
-          fileCount++
-        }
-
-        const uncompressed = file.uncompressedSize ?? 0
-        const compressed = file.compressedSize ?? 0
-        totalUncompressed += uncompressed
-        totalCompressed += compressed
-
-        const rawFile = file as unknown as { isEncrypted?: boolean; vars?: { flags?: number } }
-        const isEncrypted = Boolean(
-          rawFile.isEncrypted ||
-          (rawFile.vars?.flags !== undefined && (rawFile.vars.flags & 1) !== 0)
-        )
-        if (isEncrypted) {
-          hasEncrypted = true
-        }
-
-        let lastModifiedMs: number | undefined
-        if (file.lastModifiedDateTime) {
-          lastModifiedMs = new Date(file.lastModifiedDateTime).getTime()
-        }
-
-        entries.push({
-          path: file.path,
-          name: path.basename(file.path) || file.path,
-          isDirectory: isDir,
-          uncompressedSize: uncompressed,
-          compressedSize: compressed,
-          lastModifiedMs,
-          isEncrypted,
-          crc32: file.crc32
-        })
-      }
-
-      return {
-        path: req.path,
-        totalEntries: entries.length,
-        fileCount,
-        directoryCount,
-        totalUncompressedSize: totalUncompressed,
-        totalCompressedSize: totalCompressed,
-        isEncrypted: hasEncrypted,
-        entries
-      }
-    } catch {
-      throw stashError(
-        'UNSUPPORTED',
-        `"${path.basename(req.path)}" is not a valid or readable ZIP archive.`
-      )
+      return parseZipCentralDirectory(buffer, req.path)
+    } catch (err) {
+      if (isStashError(err)) throw err
     }
+  }
+
+  // 3. Fallback via unzipper or tar.exe for other archive types (7z, tar, gz, etc.)
+  try {
+    const directory = await unzipper.Open.file(req.path)
+    const entries: ArchiveEntryInfo[] = []
+    let totalUncompressed = 0
+    let totalCompressed = 0
+    let fileCount = 0
+    let directoryCount = 0
+    let hasEncrypted = false
+
+    for (const file of directory.files) {
+      const isDir = file.type === 'Directory' || file.path.endsWith('/')
+      if (isDir) {
+        directoryCount++
+      } else {
+        fileCount++
+      }
+
+      const uncompressed = file.uncompressedSize ?? 0
+      const compressed = file.compressedSize ?? 0
+      totalUncompressed += uncompressed
+      totalCompressed += compressed
+
+      const rawFile = file as unknown as { isEncrypted?: boolean; vars?: { flags?: number } }
+      const isEncrypted = Boolean(
+        rawFile.isEncrypted || (rawFile.vars?.flags !== undefined && (rawFile.vars.flags & 1) !== 0)
+      )
+      if (isEncrypted) hasEncrypted = true
+
+      let lastModifiedMs: number | undefined
+      if (file.lastModifiedDateTime) {
+        lastModifiedMs = new Date(file.lastModifiedDateTime).getTime()
+      }
+
+      entries.push({
+        path: file.path,
+        name: path.basename(file.path) || file.path,
+        isDirectory: isDir,
+        uncompressedSize: uncompressed,
+        compressedSize: compressed,
+        lastModifiedMs,
+        isEncrypted,
+        crc32: file.crc32
+      })
+    }
+
+    return {
+      path: req.path,
+      totalEntries: entries.length,
+      fileCount,
+      directoryCount,
+      totalUncompressedSize: totalUncompressed,
+      totalCompressedSize: totalCompressed,
+      isEncrypted: hasEncrypted,
+      entries
+    }
+  } catch {
+    throw stashError(
+      'UNSUPPORTED',
+      `"${path.basename(req.path)}" is not a valid or readable archive.`
+    )
   }
 }
 
 /**
- * Extracts a single entry to a memory buffer using tar.exe (supports WinZip AES-256 and ZipCrypto)
+ * Extracts a single entry to a memory buffer using tar.exe (supports WinZip AES-256, 7z, and tar)
  */
 function extractEntryBufferViaTar(
   archivePath: string,
@@ -343,6 +472,68 @@ function extractEntryBufferViaTar(
 }
 
 /**
+ * Reads a single entry from a RAR archive directly into memory.
+ */
+async function readRarEntry(
+  filePath: string,
+  entryPath: string,
+  password?: string
+): Promise<ArchiveReadEntryResult> {
+  const raw = await fsp.readFile(filePath)
+  try {
+    const extractor = await createExtractorFromData({
+      data: raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength),
+      password: password || undefined
+    })
+    const normalizedTarget = entryPath.replace(/\\/g, '/').toLowerCase()
+
+    const extracted = extractor.extract({
+      files: (header) => {
+        const name = header.name.replace(/\\/g, '/').toLowerCase()
+        return name === normalizedTarget || header.name === entryPath
+      },
+      password: password || undefined
+    })
+
+    for (const file of extracted.files) {
+      if (file.extraction && file.extraction.length > 0) {
+        return {
+          bytes: file.extraction,
+          mimeType: detectMimeType(entryPath),
+          isTruncated: false
+        }
+      }
+    }
+  } catch (err) {
+    if (isStashError(err)) throw err
+    const unrarErr = err as { reason?: string; message?: string }
+    if (
+      unrarErr.reason === 'ERAR_MISSING_PASSWORD' ||
+      unrarErr.reason === 'ERAR_BAD_PASSWORD' ||
+      String(unrarErr.message).toLowerCase().includes('password')
+    ) {
+      throw stashError('VALIDATION', 'Incorrect password for archive entry.', {
+        technicalMessage: String(unrarErr.message ?? err)
+      })
+    }
+  }
+
+  // Fallback to tar.exe for entry extraction
+  try {
+    const buffer = await extractEntryBufferViaTar(filePath, entryPath, password)
+    return {
+      bytes: new Uint8Array(buffer),
+      mimeType: detectMimeType(entryPath),
+      isTruncated: false
+    }
+  } catch (tarErr) {
+    if (isStashError(tarErr)) throw tarErr
+  }
+
+  throw stashError('FS_READ', `Entry "${entryPath}" not found in archive.`)
+}
+
+/**
  * Reads a single entry from the archive directly into memory for live preview.
  */
 export async function readArchiveEntry(
@@ -356,7 +547,12 @@ export async function readArchiveEntry(
     throw stashError('VALIDATION', `Unsafe entry path: ${req.entryPath}`)
   }
 
-  // 1. Try unzipper first
+  // 1. If RAR archive
+  if (isRarFile(req.archivePath)) {
+    return readRarEntry(req.archivePath, req.entryPath, req.password)
+  }
+
+  // 2. Try unzipper for ZIP archives
   try {
     const directory = await unzipper.Open.file(req.archivePath)
     const file = directory.files.find((f) => f.path === req.entryPath)
@@ -383,7 +579,6 @@ export async function readArchiveEntry(
     }
   } catch (unzipperErr) {
     if (isStashError(unzipperErr)) throw unzipperErr
-    // If password error from unzipper, rethrow clean error
     const msg = String((unzipperErr as Error)?.message ?? unzipperErr)
     if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('bad password')) {
       throw stashError('VALIDATION', 'Incorrect password for encrypted entry.', {
@@ -392,7 +587,7 @@ export async function readArchiveEntry(
     }
   }
 
-  // 2. Try tar.exe with passphrase support (handles AES-256 and WinZip AES)
+  // 3. Try tar.exe with passphrase support (handles AES-256, 7z, and tar)
   try {
     const buffer = await extractEntryBufferViaTar(req.archivePath, req.entryPath, req.password)
     return {
@@ -404,7 +599,7 @@ export async function readArchiveEntry(
     if (isStashError(tarErr)) throw tarErr
   }
 
-  // 3. Fallback: JSZip for unencrypted archives
+  // 4. Fallback: JSZip for unencrypted archives
   try {
     const raw = await fsp.readFile(req.archivePath)
     const zip = await JSZip.loadAsync(raw)

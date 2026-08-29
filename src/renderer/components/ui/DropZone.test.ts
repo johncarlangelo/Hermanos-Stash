@@ -66,5 +66,11 @@ describe('DropZone logic helpers', () => {
       expect(isFileAccepted(mockFile, '', ['.jpg'])).toBe(true)
       expect(isFileAccepted(mockFile, 'C:\\temp\\photo.jpg', ['.jpg'])).toBe(true)
     })
+
+    it('accepts .rar archive files correctly', () => {
+      const mockRar = { name: 'backup.rar' } as unknown as File
+      expect(isFileAccepted(mockRar, 'D:\\backup.rar', ['.zip', '.rar', '.7z'])).toBe(true)
+      expect(isFileAccepted(mockRar, 'D:\\backup.RAR', ['.rar'])).toBe(true)
+    })
   })
 })
