@@ -1,39 +1,44 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Archive,
+  ArrowLeft,
   Check,
+  ChevronRight,
   Copy,
+  CornerLeftUp,
   Download,
   Eye,
   FileCode,
   FileText,
   Film,
   Folder,
-  Image as ImageIcon,
+  FolderOpen,
+  ImageIcon,
   KeyRound,
+  List,
   Lock,
   Music,
   Unlock,
   X
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
+import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
 import { ErrorNote, Panel, Spinner } from '../../components/ui/Feedback'
-import { IconButton } from '../../components/ui/IconButton'
 import { ClearableTagInput } from '../../components/ui/Inputs'
-import { stashError, type StashError } from '../../../shared/errors'
-import type { ArchiveEntryInfo, ArchiveInspectResult } from '../../../shared/ipc'
 import { formatBytes } from '../../../shared/utils/files'
+import { type StashError, stashError } from '../../../shared/errors'
+import type { ArchiveEntryInfo, ArchiveInspectResult } from '../../../shared/ipc'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { fileNameOf } from '../shared/use-file-list'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
 import {
+  type ArchiveCategoryFilter,
   categorizeEntry,
   filterArchiveEntries,
   formatCompressionRatio,
-  guessMimeType,
-  type ArchiveCategoryFilter,
-  type EntryCategory
+  getFolderViewData,
+  guessMimeType
 } from './logic'
 
 interface PreviewState {
@@ -66,6 +71,8 @@ export default function ArchiveInspectTool() {
   const [unlocked, setUnlocked] = useState(true)
 
   // Explorer State
+  const [currentDir, setCurrentDir] = useState('')
+  const [viewMode, setViewMode] = useState<'folder' | 'flat'>('folder')
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<ArchiveCategoryFilter>('all')
   const [selectedEntry, setSelectedEntry] = useState<ArchiveEntryInfo | null>(null)
@@ -73,20 +80,21 @@ export default function ArchiveInspectTool() {
   // Live In-Memory Preview State
   const [previewData, setPreviewData] = useState<PreviewState | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [videoError, setVideoError] = useState(false)
   const [copied, setCopied] = useState(false)
   const [extracting, setExtracting] = useState(false)
 
   // Cleanup object URLs when preview changes or tool unmounts
   useEffect(() => {
     return () => {
-      if (previewData?.blobUrl) {
+      if (previewData?.blobUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(previewData.blobUrl)
       }
     }
   }, [previewData])
 
   const clearArchive = useCallback(() => {
-    if (previewData?.blobUrl) {
+    if (previewData?.blobUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(previewData.blobUrl)
     }
     setArchivePath(null)
@@ -95,9 +103,11 @@ export default function ArchiveInspectTool() {
     setPreviewData(null)
     setPassword('')
     setError(null)
+    setCurrentDir('')
     setSearchQuery('')
     setCategoryFilter('all')
     setUnlocked(true)
+    setVideoError(false)
   }, [previewData])
 
   const loadArchive = useCallback(async (targetPath: string, pass?: string) => {
@@ -105,6 +115,8 @@ export default function ArchiveInspectTool() {
     setError(null)
     setSelectedEntry(null)
     setPreviewData(null)
+    setCurrentDir('')
+    setVideoError(false)
 
     try {
       const result = await window.stash.archives.inspect({
@@ -147,7 +159,7 @@ export default function ArchiveInspectTool() {
     setLoading(true)
 
     try {
-      // 1. Inspect archive with password to load all entries (for header-encrypted RAR/ZIP)
+      // 1. Re-inspect archive with password to read entries if header was encrypted
       const freshResult = await window.stash.archives.inspect({
         path: archivePath,
         password: password.trim()
@@ -160,7 +172,7 @@ export default function ArchiveInspectTool() {
         )
       }
 
-      // 2. If entries are present and encrypted, verify password against the first encrypted file
+      // 2. If archive has encrypted files, test-read the first encrypted file to verify key
       const firstFile = freshResult.entries.find((e) => !e.isDirectory && e.isEncrypted)
       if (firstFile) {
         await window.stash.archives.readEntry({
@@ -195,6 +207,7 @@ export default function ArchiveInspectTool() {
 
       setSelectedEntry(entry)
       setPreviewLoading(true)
+      setVideoError(false)
       setError(null)
 
       if (previewData?.blobUrl) {
@@ -206,24 +219,36 @@ export default function ArchiveInspectTool() {
         const readRes = await window.stash.archives.readEntry({
           archivePath,
           entryPath: entry.path,
-          ...(password ? { password } : {})
+          ...(password ? { password: password.trim() } : {})
         })
 
+        const uint8 =
+          readRes.bytes instanceof Uint8Array ? readRes.bytes : new Uint8Array(readRes.bytes)
         const category = categorizeEntry(entry.path, entry.isDirectory)
-        const mimeType = readRes.mimeType || guessMimeType(entry.path)
+        let mimeType = readRes.mimeType || guessMimeType(entry.path)
+
+        // Video MIME normalizer for Chromium media engine
+        if (
+          category === 'video' &&
+          (entry.path.toLowerCase().endsWith('.mov') || entry.path.toLowerCase().endsWith('.m4v'))
+        ) {
+          mimeType = 'video/mp4'
+        }
 
         let blobUrl: string | undefined
         let textContent: string | undefined
 
-        if (['image', 'video', 'audio', 'pdf'].includes(category)) {
-          const blob = new Blob([readRes.bytes as unknown as BlobPart], { type: mimeType })
+        if (readRes.streamUrl) {
+          blobUrl = readRes.streamUrl
+        } else if (['image', 'video', 'audio', 'pdf'].includes(category)) {
+          const blob = new Blob([uint8 as unknown as BlobPart], { type: mimeType })
           blobUrl = URL.createObjectURL(blob)
         } else if (category === 'text') {
-          textContent = new TextDecoder('utf-8').decode(readRes.bytes)
+          textContent = new TextDecoder('utf-8').decode(uint8)
         }
 
         setPreviewData({
-          bytes: readRes.bytes,
+          bytes: uint8,
           mimeType,
           blobUrl,
           text: textContent
@@ -259,24 +284,29 @@ export default function ArchiveInspectTool() {
 
     setExtracting(true)
     try {
-      const ext = selectedEntry.name.split('.').pop() ?? ''
       const defaultName = selectedEntry.name
-      const dialogRes = await window.stash.dialogs.saveFile({
+      const saveRes = await window.stash.dialogs.saveFile({
         title: `Extract ${selectedEntry.name}`,
-        defaultName,
-        filters: ext ? [{ name: 'Matching File', extensions: [ext] }] : undefined
+        defaultName
       })
 
-      if (dialogRes.cancelled || !dialogRes.path) return
+      if (saveRes.cancelled || !saveRes.path) return
 
       await window.stash.archives.extractEntry({
         archivePath,
         entryPath: selectedEntry.path,
-        targetPath: dialogRes.path,
-        ...(password ? { password } : {})
+        targetPath: saveRes.path,
+        ...(password ? { password: password.trim() } : {})
       })
 
-      toastSuccess(`Extracted ${selectedEntry.name}`)
+      toastSuccess(`Extracted "${selectedEntry.name}"`)
+      recordHistoryQuietly({
+        toolId: 'archive-inspect',
+        operation: 'Extract Single Entry',
+        inputs: [selectedEntry.name],
+        outputs: [saveRes.path],
+        status: 'success'
+      })
     } catch (err) {
       toastError(err)
     } finally {
@@ -284,20 +314,32 @@ export default function ArchiveInspectTool() {
     }
   }
 
-  const filteredEntries = useMemo(() => {
-    if (!inspectResult) return []
+  // Folder View Data & Filtering
+  const isGlobalFiltering = Boolean(searchQuery.trim() || categoryFilter !== 'all')
+
+  const folderViewData = useMemo(() => {
+    if (!inspectResult?.entries) return { currentPath: '', breadcrumbs: [], items: [] }
+    return getFolderViewData(inspectResult.entries, currentDir)
+  }, [inspectResult?.entries, currentDir])
+
+  const flatFilteredEntries = useMemo(() => {
+    if (!inspectResult?.entries) return []
     return filterArchiveEntries(inspectResult.entries, {
       query: searchQuery,
-      category: categoryFilter,
-      sortBy: 'path',
-      sortOrder: 'asc'
+      category: categoryFilter
     })
-  }, [inspectResult, searchQuery, categoryFilter])
+  }, [inspectResult?.entries, searchQuery, categoryFilter])
 
-  const renderTypeIcon = (cat: EntryCategory) => {
-    switch (cat) {
-      case 'folder':
-        return <Folder size={14} className="text-accent" />
+  const navigateUp = () => {
+    if (!currentDir) return
+    const parts = currentDir.split('/').filter(Boolean)
+    parts.pop()
+    setCurrentDir(parts.join('/'))
+  }
+
+  const renderTypeIcon = (category: string, isDir = false) => {
+    if (isDir) return <Folder size={14} className="text-amber-400" />
+    switch (category) {
       case 'image':
         return <ImageIcon size={14} className="text-cyan-400" />
       case 'video':
@@ -305,11 +347,11 @@ export default function ArchiveInspectTool() {
       case 'audio':
         return <Music size={14} className="text-violet-400" />
       case 'pdf':
-        return <FileText size={14} className="text-amber-400" />
+        return <FileText size={14} className="text-emerald-400" />
       case 'text':
-        return <FileCode size={14} className="text-emerald-400" />
+        return <FileCode size={14} className="text-accent" />
       default:
-        return <FileText size={14} className="text-faint" />
+        return <FileText size={14} className="text-dim" />
     }
   }
 
@@ -329,9 +371,9 @@ export default function ArchiveInspectTool() {
       ) : loading ? (
         <Panel className="flex h-72 flex-col items-center justify-center p-8 text-center">
           <Spinner />
-          <p className="mt-3 text-[13.5px] font-medium text-ink">Reading archive index…</p>
+          <p className="mt-3 text-[13.5px] font-medium text-ink">Reading archive structure…</p>
           <p className="mt-1 text-[11.5px] text-faint">
-            Parsing archive central directory in-memory.
+            Parsing archive headers and directory structure in-memory.
           </p>
         </Panel>
       ) : (
@@ -345,6 +387,12 @@ export default function ArchiveInspectTool() {
                   <>
                     <span className="text-faint">·</span>
                     <span>{inspectResult.fileCount} files</span>
+                    {inspectResult.directoryCount > 0 && (
+                      <>
+                        <span className="text-faint">·</span>
+                        <span>{inspectResult.directoryCount} folders</span>
+                      </>
+                    )}
                     <span className="text-faint">·</span>
                     <span>{formatBytes(inspectResult.totalUncompressedSize)}</span>
                     <span className="text-faint">·</span>
@@ -429,13 +477,43 @@ export default function ArchiveInspectTool() {
               {/* Left Column: Explorer */}
               <div className="space-y-3 lg:col-span-6">
                 <Panel className="space-y-3 p-3.5">
-                  {/* Search & Category Tabs */}
+                  {/* Search, Filter Tabs & View Mode Switcher */}
                   <div className="space-y-2.5">
-                    <ClearableTagInput
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      placeholder="Filter entries by name or path…"
-                    />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <ClearableTagInput
+                          value={searchQuery}
+                          onChange={setSearchQuery}
+                          placeholder="Search files across all folders…"
+                        />
+                      </div>
+                      <div className="flex items-center rounded border border-line bg-base/60 p-0.5">
+                        <button
+                          type="button"
+                          title="Folder Hierarchy View"
+                          onClick={() => setViewMode('folder')}
+                          className={`rounded p-1 transition-colors cursor-pointer ${
+                            viewMode === 'folder' && !isGlobalFiltering
+                              ? 'bg-surface text-accent'
+                              : 'text-faint hover:text-ink'
+                          }`}
+                        >
+                          <FolderOpen size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Flat List View"
+                          onClick={() => setViewMode('flat')}
+                          className={`rounded p-1 transition-colors cursor-pointer ${
+                            viewMode === 'flat' || isGlobalFiltering
+                              ? 'bg-surface text-accent'
+                              : 'text-faint hover:text-ink'
+                          }`}
+                        >
+                          <List size={14} />
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="flex flex-wrap gap-1 border-b border-line/60 pb-2">
                       {CATEGORY_TABS.map((tab) => {
@@ -460,45 +538,175 @@ export default function ArchiveInspectTool() {
                     </div>
                   </div>
 
-                  {/* Entries Table */}
-                  <div className="max-h-[460px] overflow-y-auto rounded border border-line/50 bg-base/50 divide-y divide-line/30">
-                    {filteredEntries.length === 0 ? (
-                      <div className="py-8 text-center text-[12px] text-faint">
-                        No files matching &quot;{searchQuery}&quot;
-                      </div>
-                    ) : (
-                      filteredEntries.map((entry) => {
-                        const cat = categorizeEntry(entry.path, entry.isDirectory)
-                        const isSelected = selectedEntry?.path === entry.path
+                  {/* Breadcrumb Navigation Bar (when in Folder View without global search) */}
+                  {!isGlobalFiltering && viewMode === 'folder' && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto rounded border border-line/60 bg-base/60 px-2.5 py-1.5 text-[11.5px]">
+                      {currentDir ? (
+                        <button
+                          type="button"
+                          onClick={navigateUp}
+                          title="Go to parent folder"
+                          className="flex items-center gap-1 rounded p-1 text-dim hover:bg-surface hover:text-ink cursor-pointer"
+                        >
+                          <ArrowLeft size={12} />
+                        </button>
+                      ) : (
+                        <Folder size={13} className="text-amber-400 shrink-0" />
+                      )}
 
+                      {folderViewData.breadcrumbs.map((crumb, idx) => {
+                        const isLast = idx === folderViewData.breadcrumbs.length - 1
                         return (
-                          <button
-                            key={entry.path}
-                            type="button"
-                            onClick={() => void selectEntry(entry)}
-                            disabled={entry.isDirectory}
-                            className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors ${
-                              entry.isDirectory
-                                ? 'cursor-default bg-surface/30 text-dim'
-                                : 'cursor-pointer hover:bg-surface/80'
-                            } ${isSelected ? 'bg-accent/10 text-accent font-medium border-l-2 border-accent' : 'text-ink'}`}
-                          >
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="shrink-0">{renderTypeIcon(cat)}</span>
-                              <span className="truncate font-mono text-[11.5px]" title={entry.path}>
-                                {entry.path}
-                              </span>
-                            </div>
-
-                            <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
-                              {!entry.isDirectory && (
-                                <span>{formatBytes(entry.uncompressedSize)}</span>
-                              )}
-                              {entry.isEncrypted && <Lock size={10} className="text-amber-400" />}
-                            </div>
-                          </button>
+                          <React.Fragment key={crumb.path}>
+                            {idx > 0 && <ChevronRight size={11} className="text-faint shrink-0" />}
+                            <button
+                              type="button"
+                              onClick={() => setCurrentDir(crumb.path)}
+                              disabled={isLast}
+                              className={`truncate max-w-[120px] transition-colors cursor-pointer ${
+                                isLast
+                                  ? 'font-semibold text-ink cursor-default'
+                                  : 'text-dim hover:text-accent hover:underline'
+                              }`}
+                              title={crumb.label}
+                            >
+                              {crumb.label}
+                            </button>
+                          </React.Fragment>
                         )
-                      })
+                      })}
+                    </div>
+                  )}
+
+                  {/* Entries List / Tree View */}
+                  <div className="max-h-[440px] overflow-y-auto rounded border border-line/50 bg-base/50 divide-y divide-line/30">
+                    {isGlobalFiltering || viewMode === 'flat' ? (
+                      /* Flat Filtered List */
+                      flatFilteredEntries.length === 0 ? (
+                        <div className="py-8 text-center text-[12px] text-faint">
+                          No files matching &quot;{searchQuery}&quot;
+                        </div>
+                      ) : (
+                        flatFilteredEntries.map((entry) => {
+                          const cat = categorizeEntry(entry.path, entry.isDirectory)
+                          const isSelected = selectedEntry?.path === entry.path
+
+                          return (
+                            <button
+                              key={entry.path}
+                              type="button"
+                              onClick={() => void selectEntry(entry)}
+                              disabled={entry.isDirectory}
+                              className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors ${
+                                entry.isDirectory
+                                  ? 'cursor-default bg-surface/30 text-dim'
+                                  : 'cursor-pointer hover:bg-surface/80'
+                              } ${isSelected ? 'bg-accent/10 text-accent font-medium border-l-2 border-accent' : 'text-ink'}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0">{renderTypeIcon(cat)}</span>
+                                <span
+                                  className="truncate font-mono text-[11.5px]"
+                                  title={entry.path}
+                                >
+                                  {entry.path}
+                                </span>
+                              </div>
+
+                              <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
+                                {!entry.isDirectory && (
+                                  <span>{formatBytes(entry.uncompressedSize)}</span>
+                                )}
+                                {entry.isEncrypted && <Lock size={10} className="text-amber-400" />}
+                              </div>
+                            </button>
+                          )
+                        })
+                      )
+                    ) : (
+                      /* Hierarchical Folder Structure */
+                      <>
+                        {/* Parent Folder item (..) */}
+                        {currentDir && (
+                          <button
+                            type="button"
+                            onClick={navigateUp}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-dim hover:bg-surface/80 hover:text-ink cursor-pointer border-b border-line/30"
+                          >
+                            <CornerLeftUp size={14} className="text-accent shrink-0" />
+                            <span className="font-medium text-[11.5px]">.. (Parent folder)</span>
+                          </button>
+                        )}
+
+                        {folderViewData.items.length === 0 ? (
+                          <div className="py-8 text-center text-[12px] text-faint">
+                            Empty folder
+                          </div>
+                        ) : (
+                          folderViewData.items.map((item) => {
+                            if (item.isDirectory) {
+                              return (
+                                <button
+                                  key={item.fullPath}
+                                  type="button"
+                                  onClick={() => setCurrentDir(item.fullPath)}
+                                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] text-ink hover:bg-surface/80 cursor-pointer transition-colors"
+                                >
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <Folder size={14} className="text-amber-400 shrink-0" />
+                                    <span className="truncate font-medium text-[12px]">
+                                      {item.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
+                                    {item.itemCount !== undefined && (
+                                      <span>
+                                        {item.itemCount} item{item.itemCount === 1 ? '' : 's'}
+                                      </span>
+                                    )}
+                                    <ChevronRight size={12} className="text-dim" />
+                                  </div>
+                                </button>
+                              )
+                            }
+
+                            const entry = item.entry
+                            if (!entry) return null
+                            const cat = categorizeEntry(entry.path, false)
+                            const isSelected = selectedEntry?.path === entry.path
+
+                            return (
+                              <button
+                                key={entry.path}
+                                type="button"
+                                onClick={() => void selectEntry(entry)}
+                                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-accent/10 text-accent font-medium border-l-2 border-accent'
+                                    : 'text-ink hover:bg-surface/80'
+                                }`}
+                              >
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="shrink-0">{renderTypeIcon(cat)}</span>
+                                  <span
+                                    className="truncate font-mono text-[11.5px]"
+                                    title={entry.name}
+                                  >
+                                    {entry.name}
+                                  </span>
+                                </div>
+
+                                <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
+                                  <span>{formatBytes(entry.uncompressedSize)}</span>
+                                  {entry.isEncrypted && (
+                                    <Lock size={10} className="text-amber-400" />
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })
+                        )}
+                      </>
                     )}
                   </div>
                 </Panel>
@@ -577,11 +785,39 @@ export default function ArchiveInspectTool() {
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : categorizeEntry(selectedEntry.path, false) === 'video' ? (
-                            <video
-                              controls
-                              src={previewData.blobUrl}
-                              className="max-h-full max-w-full rounded"
-                            />
+                            <div className="flex flex-col items-center justify-center h-full w-full p-2">
+                              {videoError ? (
+                                <div className="flex flex-col items-center justify-center p-6 text-center max-w-sm">
+                                  <Film size={36} className="text-amber-400 mb-2" />
+                                  <p className="text-[13px] font-medium text-ink">
+                                    Video Codec Not Supported in Browser
+                                  </p>
+                                  <p className="mt-1 text-[11.5px] text-dim">
+                                    This video format ({previewData.mimeType}) requires extraction
+                                    to play in your media player.
+                                  </p>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    className="mt-3"
+                                    onClick={() => void handleExtractSingle()}
+                                    disabled={extracting}
+                                  >
+                                    <Download size={13} /> Extract & Play
+                                  </Button>
+                                </div>
+                              ) : (
+                                <video
+                                  controls
+                                  autoPlay={false}
+                                  playsInline
+                                  preload="metadata"
+                                  src={previewData.blobUrl}
+                                  onError={() => setVideoError(true)}
+                                  className="max-h-full max-w-full rounded shadow-md bg-black/40"
+                                />
+                              )}
+                            </div>
                           ) : categorizeEntry(selectedEntry.path, false) === 'audio' ? (
                             <div className="w-full max-w-md p-4 text-center">
                               <Music size={36} className="mx-auto text-violet-400 mb-3" />

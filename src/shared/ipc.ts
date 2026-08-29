@@ -390,6 +390,7 @@ export interface ArchiveReadEntryResult {
   bytes: Uint8Array
   mimeType?: string
   isTruncated: boolean
+  streamUrl?: string
 }
 
 export interface ArchiveExtractEntryRequest {

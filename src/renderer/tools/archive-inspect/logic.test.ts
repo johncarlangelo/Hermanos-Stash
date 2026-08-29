@@ -4,6 +4,7 @@ import {
   categorizeEntry,
   filterArchiveEntries,
   formatCompressionRatio,
+  getFolderViewData,
   guessMimeType
 } from './logic'
 
@@ -150,6 +151,51 @@ describe('Archive Inspector Logic', () => {
       expect(sorted[1].name).toBe('demo.mp4')
       expect(sorted[2].name).toBe('logo.png')
       expect(sorted[3].name).toBe('index.ts')
+    })
+  })
+
+  describe('getFolderViewData', () => {
+    const hierarchicalEntries: ArchiveEntryInfo[] = [
+      { path: 'ACC\'s.txt', name: 'ACC\'s.txt', isDirectory: false, uncompressedSize: 50, compressedSize: 30, isEncrypted: false },
+      { path: 'Photos/summer/beach.jpg', name: 'beach.jpg', isDirectory: false, uncompressedSize: 2048, compressedSize: 1024, isEncrypted: false },
+      { path: 'Photos/summer/sunset.png', name: 'sunset.png', isDirectory: false, uncompressedSize: 4096, compressedSize: 2048, isEncrypted: false },
+      { path: 'Photos/winter/snow.jpg', name: 'snow.jpg', isDirectory: false, uncompressedSize: 1024, compressedSize: 512, isEncrypted: false },
+      { path: 'Videos/intro.mp4', name: 'intro.mp4', isDirectory: false, uncompressedSize: 10000, compressedSize: 8000, isEncrypted: true },
+      { path: 'Docs/', name: 'Docs', isDirectory: true, uncompressedSize: 0, compressedSize: 0, isEncrypted: false }
+    ]
+
+    it('returns root level items with direct files and subfolders', () => {
+      const root = getFolderViewData(hierarchicalEntries, '')
+      expect(root.currentPath).toBe('')
+      expect(root.breadcrumbs).toEqual([{ label: 'Root', path: '' }])
+
+      const folderNames = root.items.filter((i) => i.isDirectory).map((i) => i.name)
+      const fileNames = root.items.filter((i) => !i.isDirectory).map((i) => i.name)
+
+      expect(folderNames).toContain('Docs')
+      expect(folderNames).toContain('Photos')
+      expect(folderNames).toContain('Videos')
+      expect(fileNames).toContain('ACC\'s.txt')
+
+      const photosFolder = root.items.find((i) => i.name === 'Photos')
+      expect(photosFolder?.itemCount).toBe(3) // beach, sunset, snow
+    })
+
+    it('navigates into subfolders accurately', () => {
+      const sub = getFolderViewData(hierarchicalEntries, 'Photos')
+      expect(sub.currentPath).toBe('Photos')
+      expect(sub.breadcrumbs).toEqual([
+        { label: 'Root', path: '' },
+        { label: 'Photos', path: 'Photos' }
+      ])
+
+      const subfolderNames = sub.items.filter((i) => i.isDirectory).map((i) => i.name)
+      expect(subfolderNames).toEqual(['summer', 'winter'])
+
+      const summer = getFolderViewData(hierarchicalEntries, 'Photos/summer')
+      expect(summer.breadcrumbs.length).toBe(3)
+      const summerFiles = summer.items.map((i) => i.name)
+      expect(summerFiles).toEqual(['beach.jpg', 'sunset.png'])
     })
   })
 })

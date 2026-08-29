@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, protocol, shell } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import { openDatabase } from './services/db'
@@ -13,7 +13,22 @@ import { TempWorkspaceManager } from './services/temp-workspace'
 import { ProgressBus } from './ipc/progress'
 import { WriteScopeGuard } from './ipc/write-scope'
 import { registerIpc } from './ipc/register'
+import { getCachedMedia } from './services/media-stream'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR, overlayHeightFor } from '../shared/utils/zoom'
+
+// Register custom media streaming scheme before app ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'stash-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true
+    }
+  }
+])
 
 // Prevent GPU cache issues in some environments; harmless elsewhere.
 app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication')
@@ -125,6 +140,51 @@ if (!gotLock && !isSmokeTest) {
   })
 
   app.whenReady().then(() => {
+    // Protocol handler for in-memory media streaming with range requests
+    protocol.handle('stash-media', (request) => {
+      try {
+        const parsed = new URL(request.url)
+        const id = parsed.pathname.replace(/^\/+/, '') || parsed.hostname
+        const media = getCachedMedia(id)
+
+        if (!media) {
+          return new Response('Media not found or expired', { status: 404 })
+        }
+
+        const { buffer, mimeType } = media
+        const rangeHeader = request.headers.get('range')
+
+        if (rangeHeader) {
+          const parts = rangeHeader.replace(/bytes=/, '').split('-')
+          const start = parseInt(parts[0], 10) || 0
+          const end = parts[1] ? parseInt(parts[1], 10) : buffer.length - 1
+          const clampedEnd = Math.min(end, buffer.length - 1)
+          const chunk = buffer.subarray(start, clampedEnd + 1)
+
+          return new Response(new Uint8Array(chunk), {
+            status: 206,
+            headers: {
+              'Content-Type': mimeType,
+              'Content-Range': `bytes ${start}-${clampedEnd}/${buffer.length}`,
+              'Content-Length': String(chunk.length),
+              'Accept-Ranges': 'bytes'
+            }
+          })
+        }
+
+        return new Response(new Uint8Array(buffer), {
+          status: 200,
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': String(buffer.length),
+            'Accept-Ranges': 'bytes'
+          }
+        })
+      } catch (err) {
+        return new Response(String(err), { status: 500 })
+      }
+    })
+
     const zoomFactor = initializeServices()
 
     if (isSmokeTest) {

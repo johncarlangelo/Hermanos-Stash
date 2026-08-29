@@ -15,6 +15,7 @@ import type {
   ArchiveReadEntryRequest,
   ArchiveReadEntryResult
 } from '../../shared/ipc'
+import { registerMediaBuffer } from '../services/media-stream'
 import { isUnsafeEntryName } from './archives'
 
 const MAX_PREVIEW_BYTES = 64 * 1024 * 1024 // 64 MB preview buffer limit
@@ -29,9 +30,11 @@ const MIME_MAP: Record<string, string> = {
   bmp: 'image/bmp',
   ico: 'image/x-icon',
   mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/mp4',
   webm: 'video/webm',
-  mkv: 'video/x-matroska',
-  mov: 'video/quicktime',
+  mkv: 'video/webm',
+  avi: 'video/x-msvideo',
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
   ogg: 'audio/ogg',
@@ -471,6 +474,25 @@ function extractEntryBufferViaTar(
   })
 }
 
+function buildEntryResult(bytes: Uint8Array | Buffer, entryPath: string): ArchiveReadEntryResult {
+  const mimeType = detectMimeType(entryPath)
+  const isMedia =
+    mimeType.startsWith('video/') || mimeType.startsWith('audio/') || mimeType.startsWith('image/')
+  let streamUrl: string | undefined
+
+  if (isMedia) {
+    const streamId = registerMediaBuffer(bytes, mimeType)
+    streamUrl = `stash-media://stream/${streamId}`
+  }
+
+  return {
+    bytes: bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes),
+    mimeType,
+    isTruncated: false,
+    streamUrl
+  }
+}
+
 /**
  * Reads a single entry from a RAR archive directly into memory.
  */
@@ -497,11 +519,7 @@ async function readRarEntry(
 
     for (const file of extracted.files) {
       if (file.extraction && file.extraction.length > 0) {
-        return {
-          bytes: file.extraction,
-          mimeType: detectMimeType(entryPath),
-          isTruncated: false
-        }
+        return buildEntryResult(file.extraction, entryPath)
       }
     }
   } catch (err) {
@@ -521,11 +539,7 @@ async function readRarEntry(
   // Fallback to tar.exe for entry extraction
   try {
     const buffer = await extractEntryBufferViaTar(filePath, entryPath, password)
-    return {
-      bytes: new Uint8Array(buffer),
-      mimeType: detectMimeType(entryPath),
-      isTruncated: false
-    }
+    return buildEntryResult(buffer, entryPath)
   } catch (tarErr) {
     if (isStashError(tarErr)) throw tarErr
   }
@@ -571,11 +585,7 @@ export async function readArchiveEntry(
       }
 
       const buffer = await file.buffer(req.password)
-      return {
-        bytes: new Uint8Array(buffer),
-        mimeType: detectMimeType(req.entryPath),
-        isTruncated: false
-      }
+      return buildEntryResult(buffer, req.entryPath)
     }
   } catch (unzipperErr) {
     if (isStashError(unzipperErr)) throw unzipperErr
@@ -590,11 +600,7 @@ export async function readArchiveEntry(
   // 3. Try tar.exe with passphrase support (handles AES-256, 7z, and tar)
   try {
     const buffer = await extractEntryBufferViaTar(req.archivePath, req.entryPath, req.password)
-    return {
-      bytes: new Uint8Array(buffer),
-      mimeType: detectMimeType(req.entryPath),
-      isTruncated: false
-    }
+    return buildEntryResult(buffer, req.entryPath)
   } catch (tarErr) {
     if (isStashError(tarErr)) throw tarErr
   }
@@ -606,11 +612,7 @@ export async function readArchiveEntry(
     const zipEntry = zip.file(req.entryPath)
     if (zipEntry) {
       const buffer = await zipEntry.async('nodebuffer')
-      return {
-        bytes: new Uint8Array(buffer),
-        mimeType: detectMimeType(req.entryPath),
-        isTruncated: false
-      }
+      return buildEntryResult(buffer, req.entryPath)
     }
   } catch {
     // Ignore fallback error

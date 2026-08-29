@@ -78,9 +78,11 @@ const MIME_MAP: Record<string, string> = {
   bmp: 'image/bmp',
   ico: 'image/x-icon',
   mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/mp4',
   webm: 'video/webm',
-  mkv: 'video/x-matroska',
-  mov: 'video/quicktime',
+  mkv: 'video/webm',
+  avi: 'video/x-msvideo',
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
   ogg: 'audio/ogg',
@@ -203,4 +205,115 @@ export function filterArchiveEntries(
 
     return sortOrder === 'asc' ? cmp : -cmp
   })
+}
+
+export interface ArchiveFolderItem {
+  name: string
+  fullPath: string
+  isDirectory: boolean
+  entry?: ArchiveEntryInfo
+  itemCount?: number
+  size?: number
+  isEncrypted?: boolean
+}
+
+export interface ArchiveFolderViewData {
+  currentPath: string
+  breadcrumbs: Array<{ label: string; path: string }>
+  items: ArchiveFolderItem[]
+}
+
+/**
+ * Groups archive entries into a structured current-directory folder hierarchy view.
+ */
+export function getFolderViewData(
+  entries: ArchiveEntryInfo[],
+  currentDir: string
+): ArchiveFolderViewData {
+  const normalizedDir = currentDir.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+  const prefix = normalizedDir ? `${normalizedDir}/` : ''
+
+  // Build breadcrumbs
+  const breadcrumbs: Array<{ label: string; path: string }> = [{ label: 'Root', path: '' }]
+  if (normalizedDir) {
+    const parts = normalizedDir.split('/')
+    let accum = ''
+    for (const part of parts) {
+      accum = accum ? `${accum}/${part}` : part
+      breadcrumbs.push({ label: part, path: accum })
+    }
+  }
+
+  const folderMap = new Map<
+    string,
+    { fullPath: string; count: number; size: number; isEncrypted: boolean }
+  >()
+  const directFiles: ArchiveFolderItem[] = []
+
+  for (const entry of entries) {
+    const cleanPath = entry.path.replace(/\\/g, '/').replace(/^\/+/, '')
+
+    if (prefix) {
+      if (!cleanPath.startsWith(prefix) || cleanPath === prefix) continue
+    }
+
+    const relPath = prefix ? cleanPath.slice(prefix.length) : cleanPath
+    const segments = relPath.split('/').filter(Boolean)
+
+    if (segments.length === 0) continue
+
+    if (segments.length === 1 && !entry.isDirectory && !relPath.endsWith('/')) {
+      // Direct child file in this folder
+      directFiles.push({
+        name: segments[0],
+        fullPath: entry.path,
+        isDirectory: false,
+        entry,
+        size: entry.uncompressedSize,
+        isEncrypted: entry.isEncrypted
+      })
+    } else {
+      // It's a subfolder or file inside a deeper subfolder
+      const folderName = segments[0]
+      const folderFullPath = prefix ? `${prefix}${folderName}` : folderName
+      const existing = folderMap.get(folderName)
+
+      if (existing) {
+        if (!entry.isDirectory) {
+          existing.count++
+          existing.size += entry.uncompressedSize || 0
+        }
+        if (entry.isEncrypted) existing.isEncrypted = true
+      } else {
+        folderMap.set(folderName, {
+          fullPath: folderFullPath,
+          count: entry.isDirectory ? 0 : 1,
+          size: entry.isDirectory ? 0 : entry.uncompressedSize || 0,
+          isEncrypted: Boolean(entry.isEncrypted)
+        })
+      }
+    }
+  }
+
+  const folderItems: ArchiveFolderItem[] = Array.from(folderMap.entries()).map(([name, data]) => ({
+    name,
+    fullPath: data.fullPath,
+    isDirectory: true,
+    itemCount: data.count,
+    size: data.size,
+    isEncrypted: data.isEncrypted
+  }))
+
+  folderItems.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+  )
+  directFiles.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+  )
+
+  return {
+    currentPath: normalizedDir,
+    breadcrumbs,
+    items: [...folderItems, ...directFiles]
+  }
 }
