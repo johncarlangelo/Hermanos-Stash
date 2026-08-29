@@ -320,21 +320,27 @@ export default function ArchiveInspectTool() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface/80 px-3.5 py-2 text-[12px] text-dim">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium text-ink">{fileNameOf(archivePath)}</span>
-                <span className="text-faint">·</span>
-                <span>{inspectResult.fileCount} files</span>
-                <span className="text-faint">·</span>
-                <span>{formatBytes(inspectResult.totalUncompressedSize)}</span>
-                <span className="text-faint">·</span>
-                <span className="text-emerald-400">
-                  {formatCompressionRatio(
-                    inspectResult.totalUncompressedSize,
-                    inspectResult.totalCompressedSize
-                  )}
-                </span>
-                {inspectResult.isEncrypted && (
-                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10.5px] font-medium text-amber-400 border border-amber-500/20">
-                    <Lock size={10} /> Password
-                  </span>
+                {unlocked ? (
+                  <>
+                    <span className="text-faint">·</span>
+                    <span>{inspectResult.fileCount} files</span>
+                    <span className="text-faint">·</span>
+                    <span>{formatBytes(inspectResult.totalUncompressedSize)}</span>
+                    <span className="text-faint">·</span>
+                    <span className="text-emerald-400">
+                      {formatCompressionRatio(
+                        inspectResult.totalUncompressedSize,
+                        inspectResult.totalCompressedSize
+                      )}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-faint">·</span>
+                    <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10.5px] font-medium text-amber-400 border border-amber-500/20">
+                      <Lock size={10} /> Password Protected
+                    </span>
+                  </>
                 )}
               </div>
               <IconButton
@@ -356,7 +362,7 @@ export default function ArchiveInspectTool() {
               <div>
                 <h2 className="text-[15px] font-semibold text-ink">Password Protected Archive</h2>
                 <p className="mt-1 text-[12px] text-dim">
-                  This archive requires a password to decrypt and preview its contents in-memory.
+                  Enter the archive password to unlock and inspect its contents.
                 </p>
               </div>
 
@@ -366,16 +372,18 @@ export default function ArchiveInspectTool() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter archive password…"
                     value={password}
+                    autoFocus
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') void handleUnlock()
                     }}
-                    className="h-9 w-full rounded-md border border-line bg-base px-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+                    className="h-9 w-full rounded-md border border-line bg-base px-3 pr-9 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute top-1/2 right-2.5 -translate-y-1/2 text-faint hover:text-ink cursor-pointer"
+                    title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <Unlock size={14} /> : <Lock size={14} />}
                   </button>
@@ -390,7 +398,7 @@ export default function ArchiveInspectTool() {
                   loading={loading}
                 >
                   <Unlock size={14} />
-                  Unlock Archive
+                  Unlock & Inspect Archive
                 </Button>
               </div>
             </Panel>
