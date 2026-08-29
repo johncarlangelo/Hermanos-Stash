@@ -226,27 +226,17 @@ export default function ImageOcrTool() {
   const confidenceRating = confidence !== null ? formatConfidence(confidence) : null
 
   return (
-    <div className="relative mx-auto w-full max-w-5xl space-y-6 px-8 py-8">
-      <div>
-        <h1 className="text-[19px] font-semibold tracking-tight text-ink flex items-center gap-2">
-          <ScanText size={20} className="text-accent" />
-          Image OCR Extractor
-        </h1>
-        <p className="mt-0.5 text-[12.5px] text-dim">
-          Extract editable text from images, photos, scans, and screenshots locally using offline
-          Tesseract OCR.
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-4">
       {error && <ErrorNote error={error} />}
 
       {!selectedImage ? (
         <DropZone
           onFiles={(paths: string[]) => void loadFile(paths)}
           accept={SUPPORTED_EXTENSIONS}
-          hint="PNG, JPG, WebP, BMP, or TIFF image"
+          label="Drop an image here"
+          hint="PNG · JPG · WebP · BMP · TIFF · GIF — offline recognition"
+          dialogTitle="Choose an image for OCR"
           multiple={false}
-          className="h-64"
         />
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
