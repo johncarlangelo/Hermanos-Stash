@@ -78,7 +78,8 @@ After implementation:
 
 - run the narrowest relevant tests first;
 - run the broader verification suite before declaring completion;
-- update `PROGRESS.md`;
+- update `TOOL_CATALOG.md` and `TOOL_SPEC.md` whenever tools are added or modified;
+- update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
 - never mark a task complete without evidence.
 
