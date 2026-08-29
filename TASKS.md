@@ -281,3 +281,13 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Pure Logic & Unit Tests (`src/renderer/tools/image-ocr/logic.ts`, `logic.test.ts`)**: text stats calculation (words, characters, lines, paragraphs), confidence rating labels, text cleanup routines (13/13 tests pass).
 - [x] **Tool View & UX (`src/renderer/tools/image-ocr/ImageOcrTool.tsx`)**: image preview with dimensions/size, PSM layout mode selector, preprocessing toggles, progress bar, formatted text output with word/char counters, confidence score badge, Copy Text, and Save as `.txt` file export.
 - [x] **Tool Registration (`src/renderer/tools/index.ts`)**: registered in registry and lazy components with capabilities `{ acceptsFiles: true, producesText: true, supportsProgress: true }` under `documents` category (51 tools total).
+
+## Tool #52 — Archive Inspector (`archive-inspect`)
+
+**Goal:** inspect, search, and preview files inside archives in-memory without extracting them to disk, with password protection support.
+
+- [x] **Archive Inspector Engine (`src/main/processing/archive-inspector.ts`, `archive-inspector.test.ts`)**: entry tree traversal via `unzipper` and `JSZip` fallback, memory-only stream buffers, password-protected archive decryption, and single-file extraction (5/5 unit tests pass).
+- [x] **Archive IPC Channels (`src/shared/ipc.ts`, `src/main/ipc/register.ts`, `src/preload/index.ts`)**: `archivesInspect`, `archivesReadEntry`, and `archivesExtractEntry` channels exposing `window.stash.archives.inspect`, `readEntry`, and `extractEntry`.
+- [x] **Pure Logic & Unit Tests (`src/renderer/tools/archive-inspect/logic.ts`, `logic.test.ts`)**: extension categorization, compression ratio calculation, search/category filtering, and MIME type guessing (16/16 unit tests pass).
+- [x] **Tool View & UX (`src/renderer/tools/archive-inspect/ArchiveInspectTool.tsx`)**: interactive file explorer, category tabs (Images, Videos, Audio, Code/Text, PDFs), password unlock prompt, live in-memory previews with zoom/player controls, and 1-click single-file extract.
+- [x] **Tool Registration & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `PROGRESS.md`, `DECISIONS.md`)**: registered with capabilities `{ acceptsFiles: true, producesFiles: true }` under `files` category (52 tools total).

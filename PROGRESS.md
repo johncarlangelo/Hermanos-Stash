@@ -2,23 +2,24 @@
 
 ## Current milestone
 
-**Tool #51 (Image OCR Extractor) complete.**
-Hermanos Stash now includes an offline OCR engine:
-- **Offline Tesseract Engine (`main/processing/ocr.ts`)**: bundles `resources/tessdata/eng.traineddata.gz` with Sharp-powered grayscale/contrast/binarization preprocessing, progress streaming, and cooperative cancellation.
-- **Image OCR View (`renderer/tools/image-ocr/ImageOcrTool.tsx`)**: image preview thumbnail with size/dimensions, layout segmentation mode selector (Auto / Single Block / Sparse / Single Line / Single Word), live progress bar, editable output textarea, confidence score badge, word/character/line counters, Copy Text, and Save as `.txt`.
-- **Pure Logic & Unit Tests (`renderer/tools/image-ocr/logic.ts`, `logic.test.ts`)**: 13 unit tests for text cleaning, statistics computation, and confidence rating.
+**Tool #52 (Archive Inspector) complete.**
+Hermanos Stash now includes an in-memory archive inspection and streaming engine:
+- **Archive Inspector Processor (`src/main/processing/archive-inspector.ts`)**: inspects `.zip` archives, determines entry hierarchy, reads uncompressed/compressed sizes and CRC, supports password decryption (ZipCrypto & AES), and streams entry buffers directly into memory.
+- **Archive Inspector View (`src/renderer/tools/archive-inspect/ArchiveInspectTool.tsx`)**: interactive file explorer with instant search, category filtering (Images, Videos, Audio, Code/Text, PDFs), password unlock prompt, and live in-memory previews with single-file extraction.
+- **Pure Logic & Unit Tests (`src/renderer/tools/archive-inspect/logic.ts`, `logic.test.ts`, `archive-inspector.test.ts`)**: 21 unit tests for categorization, filtering, compression ratios, and MIME detection.
 
 ## Status
 
-51 tools registered across every category on a verified platform: secure Electron
+52 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
-persistence, FFmpeg native integration, offline Tesseract OCR, batch queue chaining, and usage analytics.
+persistence, FFmpeg native integration, offline Tesseract OCR, in-memory archive inspector, batch queue chaining, and usage analytics.
 
-### Tool #51 — Image OCR Extractor (this phase)
+### Tool #52 — Archive Inspector (this phase)
 
-- **Offline OCR**: Tesseract recognition running locally via main-process worker threads, zero cloud calls, zero external API keys.
-- **Preprocess Pipeline**: Sharp contrast normalization and grayscale filtering for high accuracy on low-contrast scans and receipts.
-- **Verification**: 0 typecheck errors, 0 ESLint warnings, all **56 test files / 612 tests passing**, clean production build (`electron-vite build`), headless probe and CDP drag probe exit 0.
+- **In-Memory Streaming**: zero disk extraction when previewing images, videos, audio, text, and documents.
+- **Password Support**: memory-only password decryption for encrypted `.zip` archives.
+- **Single-File Extraction**: export individual entries on demand without unpacking the full archive.
+- **Verification**: 0 typecheck errors, 0 ESLint warnings, all **58 test files / 633 tests passing**, clean production build (`electron-vite build`), headless probe and CDP drag probe exit 0.
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

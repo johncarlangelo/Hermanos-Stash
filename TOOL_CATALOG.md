@@ -1,13 +1,13 @@
 # Hermanos Stash — Tool Catalog
 
-This is a living catalog tracking shipped tools and candidates. Currently **51 tools** are implemented and registered across 8 categories.
+This is a living catalog tracking shipped tools and candidates. Currently **52 tools** are implemented and registered across 8 categories.
 
 ## Files & Archives (`files`)
 - [x] **File Metadata Viewer** (`file-metadata`) — Inspect size, dates, MIME type, and full path for any local file.
 - [x] **ZIP Creator** (`zip-create`) — Pack any mix of files into a single `.zip` archive entirely locally.
 - [x] **ZIP Extractor** (`zip-extract`) — Extract `.zip` archives into a target directory with zip-slip protection.
+- [x] **Archive Inspector** (`archive-inspect`) — Inspect, search, and preview files inside archives in-memory without extracting to disk.
 - [x] **Batch Rename** (`batch-rename`) — Multi-rule file renamer with live dry-run preview (prefix, suffix, find/replace, numbering, extension, casing).
-- [ ] Archive inspector (tar, 7z, rar preview without full extraction)
 - [ ] Duplicate filename / content hash finder
 - [ ] Large file tree analyzer
 

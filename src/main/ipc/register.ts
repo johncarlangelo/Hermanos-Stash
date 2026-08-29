@@ -52,6 +52,11 @@ import {
 } from './validate'
 import { createZipArchive, extractZipArchive } from '../processing/archives'
 import {
+  inspectArchive,
+  readArchiveEntry,
+  extractArchiveEntry
+} from '../processing/archive-inspector'
+import {
   SUPPORTED_FORMATS,
   WATERMARK_POSITIONS,
   clampWatermarkFontSize,
@@ -1147,6 +1152,46 @@ export function registerIpc(services: IpcServices): void {
     const outputDir = assertString(req['outputDir'], 'outputDir')
     services.writeScope.assertAllowed(outputDir)
     return extractZipArchive(zipPath, outputDir)
+  })
+
+  handle(IPC.archivesInspect, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const targetPath = assertString(req['path'], 'path')
+    const password = assertOptionalString(req['password'], 'password')
+    return inspectArchive({
+      path: targetPath,
+      ...(password ? { password } : {})
+    })
+  })
+
+  handle(IPC.archivesReadEntry, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const archivePath = assertString(req['archivePath'], 'archivePath')
+    const entryPath = assertString(req['entryPath'], 'entryPath')
+    const password = assertOptionalString(req['password'], 'password')
+    const maxBytes =
+      req['maxBytes'] === undefined ? undefined : assertNumber(req['maxBytes'], 'maxBytes')
+    return readArchiveEntry({
+      archivePath,
+      entryPath,
+      ...(password ? { password } : {}),
+      ...(maxBytes !== undefined ? { maxBytes } : {})
+    })
+  })
+
+  handle(IPC.archivesExtractEntry, async (_e, raw: unknown) => {
+    const req = assertPayload(raw)
+    const archivePath = assertString(req['archivePath'], 'archivePath')
+    const entryPath = assertString(req['entryPath'], 'entryPath')
+    const targetPath = assertString(req['targetPath'], 'targetPath')
+    const password = assertOptionalString(req['password'], 'password')
+    services.writeScope.assertAllowed(targetPath)
+    return extractArchiveEntry({
+      archivePath,
+      entryPath,
+      targetPath,
+      ...(password ? { password } : {})
+    })
   })
 
   handle(IPC.filesBatchRename, async (_e, raw: unknown) => {

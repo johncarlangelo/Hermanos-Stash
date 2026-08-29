@@ -32,6 +32,9 @@ export const IPC = {
 
   zipCreateBatch: 'files:zip-create',
   zipExtractBatch: 'files:zip-extract',
+  archivesInspect: 'archives:inspect',
+  archivesReadEntry: 'archives:read-entry',
+  archivesExtractEntry: 'archives:extract-entry',
   filesBatchRename: 'files:batch-rename',
 
   pdfMergeBatch: 'pdf:merge-batch',
@@ -346,6 +349,58 @@ export interface ZipExtractResult {
   /** Entry names rejected by the zip-slip guard. */
   skipped: string[]
   topLevelCount: number
+}
+
+export interface ArchiveEntryInfo {
+  path: string
+  name: string
+  isDirectory: boolean
+  uncompressedSize: number
+  compressedSize: number
+  lastModifiedMs?: number
+  isEncrypted: boolean
+  crc32?: number
+}
+
+export interface ArchiveInspectRequest {
+  path: string
+  password?: string
+}
+
+export interface ArchiveInspectResult {
+  path: string
+  totalEntries: number
+  fileCount: number
+  directoryCount: number
+  totalUncompressedSize: number
+  totalCompressedSize: number
+  isEncrypted: boolean
+  entries: ArchiveEntryInfo[]
+}
+
+export interface ArchiveReadEntryRequest {
+  archivePath: string
+  entryPath: string
+  password?: string
+  maxBytes?: number
+}
+
+export interface ArchiveReadEntryResult {
+  bytes: Uint8Array
+  mimeType?: string
+  isTruncated: boolean
+}
+
+export interface ArchiveExtractEntryRequest {
+  archivePath: string
+  entryPath: string
+  targetPath: string
+  password?: string
+}
+
+export interface ArchiveExtractEntryResult {
+  bytesWritten: number
+  targetPath: string
 }
 
 export interface PdfMergeRequest {
@@ -663,6 +718,9 @@ export interface StashBridge {
   archives: {
     createZip(req: ZipCreateRequest): Promise<ZipCreateResult>
     extractZip(req: ZipExtractRequest): Promise<ZipExtractResult>
+    inspect(req: ArchiveInspectRequest): Promise<ArchiveInspectResult>
+    readEntry(req: ArchiveReadEntryRequest): Promise<ArchiveReadEntryResult>
+    extractEntry(req: ArchiveExtractEntryRequest): Promise<ArchiveExtractEntryResult>
   }
   pdfs: {
     merge(req: PdfMergeRequest): Promise<PdfMergeResult>

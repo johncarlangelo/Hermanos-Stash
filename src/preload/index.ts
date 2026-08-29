@@ -33,7 +33,13 @@ import type {
   VideoToGifRequest,
   WatermarkImagesRequest,
   ZipCreateRequest,
-  ZipExtractRequest
+  ZipExtractRequest,
+  ArchiveInspectRequest,
+  ArchiveInspectResult,
+  ArchiveReadEntryRequest,
+  ArchiveReadEntryResult,
+  ArchiveExtractEntryRequest,
+  ArchiveExtractEntryResult
 } from '../shared/ipc'
 
 /**
@@ -107,7 +113,12 @@ const api: StashBridge = {
   },
   archives: {
     createZip: (req: ZipCreateRequest) => invoke(IPC.zipCreateBatch, req),
-    extractZip: (req: ZipExtractRequest) => invoke(IPC.zipExtractBatch, req)
+    extractZip: (req: ZipExtractRequest) => invoke(IPC.zipExtractBatch, req),
+    inspect: (req: ArchiveInspectRequest) => invoke<ArchiveInspectResult>(IPC.archivesInspect, req),
+    readEntry: (req: ArchiveReadEntryRequest) =>
+      invoke<ArchiveReadEntryResult>(IPC.archivesReadEntry, req),
+    extractEntry: (req: ArchiveExtractEntryRequest) =>
+      invoke<ArchiveExtractEntryResult>(IPC.archivesExtractEntry, req)
   },
   pdfs: {
     merge: (req: PdfMergeRequest) => invoke(IPC.pdfMergeBatch, req),

@@ -729,6 +729,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       producesText: true,
       supportsProgress: true
     }
+  },
+  {
+    id: 'archive-inspect',
+    name: 'Archive Inspector',
+    category: 'files',
+    description:
+      'Inspect, search, and preview files inside archives in-memory without extracting them to disk.',
+    tags: ['zip', 'archive', 'inspect', 'preview', 'extract', 'tar', 'unzip', 'password'],
+    icon: 'folder',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -788,6 +802,7 @@ const ImageWatermarkTool = lazy(() => import('./image-watermark/ImageWatermarkTo
 const IconPackTool = lazy(() => import('./icon-pack/IconPackTool'))
 const SocialResizerTool = lazy(() => import('./social-resizer/SocialResizerTool'))
 const ImageOcrTool = lazy(() => import('./image-ocr/ImageOcrTool'))
+const ArchiveInspectTool = lazy(() => import('./archive-inspect/ArchiveInspectTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -840,5 +855,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'image-watermark': ImageWatermarkTool,
   'icon-pack': IconPackTool,
   'social-resizer': SocialResizerTool,
-  'image-ocr': ImageOcrTool
+  'image-ocr': ImageOcrTool,
+  'archive-inspect': ArchiveInspectTool
 }
