@@ -142,8 +142,29 @@ export default function ArchiveInspectTool() {
   }
 
   const handleUnlock = async () => {
-    if (!archivePath) return
-    await loadArchive(archivePath, password)
+    if (!archivePath || !inspectResult) return
+    setError(null)
+    const firstFile = inspectResult.entries.find((e) => !e.isDirectory && e.isEncrypted)
+    if (firstFile) {
+      setLoading(true)
+      try {
+        await window.stash.archives.readEntry({
+          archivePath,
+          entryPath: firstFile.path,
+          password: password.trim()
+        })
+        setUnlocked(true)
+        toastSuccess('Archive unlocked successfully')
+      } catch {
+        setError(
+          stashError('VALIDATION', 'Incorrect password for archive. Please verify and try again.')
+        )
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      setUnlocked(true)
+    }
   }
 
   // Load preview for a selected entry
@@ -292,54 +313,7 @@ export default function ArchiveInspectTool() {
             Parsing archive central directory in-memory.
           </p>
         </Panel>
-      ) : inspectResult && inspectResult.isEncrypted && !unlocked ? (
-        /* Password Unlock Panel */
-        <Panel className="mx-auto max-w-md space-y-4 p-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-400">
-            <KeyRound size={22} />
-          </div>
-          <div>
-            <h2 className="text-[15px] font-semibold text-ink">Password Protected Archive</h2>
-            <p className="mt-1 text-[12px] text-dim">
-              This archive requires a password to decrypt and preview its contents in-memory.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter archive password…"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleUnlock()
-                }}
-                className="h-9 w-full rounded-md border border-line bg-base px-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-faint hover:text-ink cursor-pointer"
-              >
-                {showPassword ? <Unlock size={14} /> : <Lock size={14} />}
-              </button>
-            </div>
-
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => void handleUnlock()}
-              className="w-full justify-center"
-              disabled={!password.trim()}
-            >
-              <Unlock size={14} />
-              Unlock Archive
-            </Button>
-          </div>
-        </Panel>
       ) : (
-        /* Workstation Layout */
         <div className="space-y-4">
           {/* Top Bar with Archive info and Close Button */}
           {archivePath && inspectResult && (
@@ -373,207 +347,257 @@ export default function ArchiveInspectTool() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Left Column: Explorer */}
-            <div className="space-y-3 lg:col-span-6">
-              <Panel className="space-y-3 p-3.5">
-                {/* Search & Category Tabs */}
-                <div className="space-y-2.5">
-                  <ClearableTagInput
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Filter entries by name or path…"
+          {inspectResult && inspectResult.isEncrypted && !unlocked ? (
+            /* Password Unlock Panel */
+            <Panel className="mx-auto max-w-md space-y-4 p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                <KeyRound size={22} />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-semibold text-ink">Password Protected Archive</h2>
+                <p className="mt-1 text-[12px] text-dim">
+                  This archive requires a password to decrypt and preview its contents in-memory.
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter archive password…"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleUnlock()
+                    }}
+                    className="h-9 w-full rounded-md border border-line bg-base px-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
                   />
-
-                  <div className="flex flex-wrap gap-1 border-b border-line/60 pb-2">
-                    {CATEGORY_TABS.map((tab) => {
-                      const Icon = tab.icon
-                      const active = categoryFilter === tab.id
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setCategoryFilter(tab.id)}
-                          className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11.5px] font-medium transition-colors cursor-pointer ${
-                            active
-                              ? 'bg-accent/15 text-accent border border-accent/30'
-                              : 'text-dim hover:bg-surface hover:text-ink'
-                          }`}
-                        >
-                          <Icon size={12} />
-                          {tab.label}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-faint hover:text-ink cursor-pointer"
+                  >
+                    {showPassword ? <Unlock size={14} /> : <Lock size={14} />}
+                  </button>
                 </div>
 
-                {/* Entries Table */}
-                <div className="max-h-[460px] overflow-y-auto rounded border border-line/50 bg-base/50 divide-y divide-line/30">
-                  {filteredEntries.length === 0 ? (
-                    <div className="py-8 text-center text-[12px] text-faint">
-                      No files matching &quot;{searchQuery}&quot;
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => void handleUnlock()}
+                  className="w-full justify-center"
+                  disabled={!password.trim() || loading}
+                  loading={loading}
+                >
+                  <Unlock size={14} />
+                  Unlock Archive
+                </Button>
+              </div>
+            </Panel>
+          ) : (
+            /* Workstation Layout */
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              {/* Left Column: Explorer */}
+              <div className="space-y-3 lg:col-span-6">
+                <Panel className="space-y-3 p-3.5">
+                  {/* Search & Category Tabs */}
+                  <div className="space-y-2.5">
+                    <ClearableTagInput
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Filter entries by name or path…"
+                    />
+
+                    <div className="flex flex-wrap gap-1 border-b border-line/60 pb-2">
+                      {CATEGORY_TABS.map((tab) => {
+                        const Icon = tab.icon
+                        const active = categoryFilter === tab.id
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setCategoryFilter(tab.id)}
+                            className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11.5px] font-medium transition-colors cursor-pointer ${
+                              active
+                                ? 'bg-accent/15 text-accent border border-accent/30'
+                                : 'text-dim hover:bg-surface hover:text-ink'
+                            }`}
+                          >
+                            <Icon size={12} />
+                            {tab.label}
+                          </button>
+                        )
+                      })}
                     </div>
-                  ) : (
-                    filteredEntries.map((entry) => {
-                      const cat = categorizeEntry(entry.path, entry.isDirectory)
-                      const isSelected = selectedEntry?.path === entry.path
+                  </div>
 
-                      return (
-                        <button
-                          key={entry.path}
-                          type="button"
-                          onClick={() => void selectEntry(entry)}
-                          disabled={entry.isDirectory}
-                          className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors ${
-                            entry.isDirectory
-                              ? 'cursor-default bg-surface/30 text-dim'
-                              : 'cursor-pointer hover:bg-surface/80'
-                          } ${isSelected ? 'bg-accent/10 text-accent font-medium border-l-2 border-accent' : 'text-ink'}`}
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="shrink-0">{renderTypeIcon(cat)}</span>
-                            <span className="truncate font-mono text-[11.5px]" title={entry.path}>
-                              {entry.path}
-                            </span>
-                          </div>
-
-                          <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
-                            {!entry.isDirectory && (
-                              <span>{formatBytes(entry.uncompressedSize)}</span>
-                            )}
-                            {entry.isEncrypted && <Lock size={10} className="text-amber-400" />}
-                          </div>
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
-              </Panel>
-            </div>
-
-            {/* Right Column: Live In-Memory Preview */}
-            <div className="lg:col-span-6">
-              <Panel className="flex flex-col h-[560px] p-4">
-                {selectedEntry ? (
-                  <div className="flex flex-col h-full space-y-3">
-                    {/* Preview Header */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
-                      <div className="min-w-0">
-                        <p
-                          className="truncate font-medium text-[13px] text-ink"
-                          title={selectedEntry.name}
-                        >
-                          {selectedEntry.name}
-                        </p>
-                        <p className="text-[11px] text-faint">
-                          {previewData?.mimeType || guessMimeType(selectedEntry.path)} ·{' '}
-                          {formatBytes(selectedEntry.uncompressedSize)}
-                          {selectedEntry.compressedSize > 0 && (
-                            <span>
-                              {' '}
-                              (
-                              {formatCompressionRatio(
-                                selectedEntry.uncompressedSize,
-                                selectedEntry.compressedSize
-                              )}
-                              )
-                            </span>
-                          )}
-                        </p>
+                  {/* Entries Table */}
+                  <div className="max-h-[460px] overflow-y-auto rounded border border-line/50 bg-base/50 divide-y divide-line/30">
+                    {filteredEntries.length === 0 ? (
+                      <div className="py-8 text-center text-[12px] text-faint">
+                        No files matching &quot;{searchQuery}&quot;
                       </div>
+                    ) : (
+                      filteredEntries.map((entry) => {
+                        const cat = categorizeEntry(entry.path, entry.isDirectory)
+                        const isSelected = selectedEntry?.path === entry.path
 
-                      <div className="flex items-center gap-2">
-                        {previewData?.text !== undefined && (
+                        return (
+                          <button
+                            key={entry.path}
+                            type="button"
+                            onClick={() => void selectEntry(entry)}
+                            disabled={entry.isDirectory}
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] transition-colors ${
+                              entry.isDirectory
+                                ? 'cursor-default bg-surface/30 text-dim'
+                                : 'cursor-pointer hover:bg-surface/80'
+                            } ${isSelected ? 'bg-accent/10 text-accent font-medium border-l-2 border-accent' : 'text-ink'}`}
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0">{renderTypeIcon(cat)}</span>
+                              <span className="truncate font-mono text-[11.5px]" title={entry.path}>
+                                {entry.path}
+                              </span>
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-2 text-[11px] text-faint">
+                              {!entry.isDirectory && (
+                                <span>{formatBytes(entry.uncompressedSize)}</span>
+                              )}
+                              {entry.isEncrypted && <Lock size={10} className="text-amber-400" />}
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </Panel>
+              </div>
+
+              {/* Right Column: Live In-Memory Preview */}
+              <div className="lg:col-span-6">
+                <Panel className="flex flex-col h-[560px] p-4">
+                  {selectedEntry ? (
+                    <div className="flex flex-col h-full space-y-3">
+                      {/* Preview Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+                        <div className="min-w-0">
+                          <p
+                            className="truncate font-medium text-[13px] text-ink"
+                            title={selectedEntry.name}
+                          >
+                            {selectedEntry.name}
+                          </p>
+                          <p className="text-[11px] text-faint">
+                            {previewData?.mimeType || guessMimeType(selectedEntry.path)} ·{' '}
+                            {formatBytes(selectedEntry.uncompressedSize)}
+                            {selectedEntry.compressedSize > 0 && (
+                              <span>
+                                {' '}
+                                (
+                                {formatCompressionRatio(
+                                  selectedEntry.uncompressedSize,
+                                  selectedEntry.compressedSize
+                                )}
+                                )
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {previewData?.text !== undefined && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => void handleCopyText()}
+                            >
+                              {copied ? (
+                                <Check size={13} className="text-emerald-400" />
+                              ) : (
+                                <Copy size={13} />
+                              )}
+                              {copied ? 'Copied' : 'Copy'}
+                            </Button>
+                          )}
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => void handleCopyText()}
+                            onClick={() => void handleExtractSingle()}
+                            disabled={extracting}
                           >
-                            {copied ? (
-                              <Check size={13} className="text-emerald-400" />
-                            ) : (
-                              <Copy size={13} />
-                            )}
-                            {copied ? 'Copied' : 'Copy'}
+                            <Download size={13} />
+                            Extract
                           </Button>
+                        </div>
+                      </div>
+
+                      {/* Preview Content Area */}
+                      <div className="relative flex-1 overflow-hidden rounded border border-line/60 bg-base/60 flex items-center justify-center p-3">
+                        {previewLoading ? (
+                          <div className="flex flex-col items-center gap-2 text-center">
+                            <Spinner />
+                            <p className="text-[12px] text-dim">Streaming from archive…</p>
+                          </div>
+                        ) : previewData?.blobUrl ? (
+                          categorizeEntry(selectedEntry.path, false) === 'image' ? (
+                            <img
+                              src={previewData.blobUrl}
+                              alt={selectedEntry.name}
+                              className="max-h-full max-w-full object-contain rounded"
+                            />
+                          ) : categorizeEntry(selectedEntry.path, false) === 'video' ? (
+                            <video
+                              controls
+                              src={previewData.blobUrl}
+                              className="max-h-full max-w-full rounded"
+                            />
+                          ) : categorizeEntry(selectedEntry.path, false) === 'audio' ? (
+                            <div className="w-full max-w-md p-4 text-center">
+                              <Music size={36} className="mx-auto text-violet-400 mb-3" />
+                              <audio controls src={previewData.blobUrl} className="w-full" />
+                            </div>
+                          ) : (
+                            <iframe
+                              src={previewData.blobUrl}
+                              title={selectedEntry.name}
+                              className="h-full w-full rounded border-0"
+                            />
+                          )
+                        ) : previewData?.text !== undefined ? (
+                          <textarea
+                            readOnly
+                            value={previewData.text}
+                            className="h-full w-full resize-none font-mono text-[12px] leading-relaxed text-ink bg-transparent border-0 outline-none p-1"
+                          />
+                        ) : (
+                          <div className="text-center text-faint">
+                            <FileText size={32} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-[12.5px] font-medium text-dim">Binary File</p>
+                            <p className="mt-1 text-[11px]">
+                              Click <strong>Extract</strong> to export this file to disk.
+                            </p>
+                          </div>
                         )}
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void handleExtractSingle()}
-                          disabled={extracting}
-                        >
-                          <Download size={13} />
-                          Extract
-                        </Button>
                       </div>
                     </div>
-
-                    {/* Preview Content Area */}
-                    <div className="relative flex-1 overflow-hidden rounded border border-line/60 bg-base/60 flex items-center justify-center p-3">
-                      {previewLoading ? (
-                        <div className="flex flex-col items-center gap-2 text-center">
-                          <Spinner />
-                          <p className="text-[12px] text-dim">Streaming from archive…</p>
-                        </div>
-                      ) : previewData?.blobUrl ? (
-                        categorizeEntry(selectedEntry.path, false) === 'image' ? (
-                          <img
-                            src={previewData.blobUrl}
-                            alt={selectedEntry.name}
-                            className="max-h-full max-w-full object-contain rounded"
-                          />
-                        ) : categorizeEntry(selectedEntry.path, false) === 'video' ? (
-                          <video
-                            controls
-                            src={previewData.blobUrl}
-                            className="max-h-full max-w-full rounded"
-                          />
-                        ) : categorizeEntry(selectedEntry.path, false) === 'audio' ? (
-                          <div className="w-full max-w-md p-4 text-center">
-                            <Music size={36} className="mx-auto text-violet-400 mb-3" />
-                            <audio controls src={previewData.blobUrl} className="w-full" />
-                          </div>
-                        ) : (
-                          <iframe
-                            src={previewData.blobUrl}
-                            title={selectedEntry.name}
-                            className="h-full w-full rounded border-0"
-                          />
-                        )
-                      ) : previewData?.text !== undefined ? (
-                        <textarea
-                          readOnly
-                          value={previewData.text}
-                          className="h-full w-full resize-none font-mono text-[12px] leading-relaxed text-ink bg-transparent border-0 outline-none p-1"
-                        />
-                      ) : (
-                        <div className="text-center text-faint">
-                          <FileText size={32} className="mx-auto mb-2 opacity-50" />
-                          <p className="text-[12.5px] font-medium text-dim">Binary File</p>
-                          <p className="mt-1 text-[11px]">
-                            Click <strong>Extract</strong> to export this file to disk.
-                          </p>
-                        </div>
-                      )}
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-faint">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-line bg-surface mb-3">
+                        <Eye size={20} className="text-dim" />
+                      </div>
+                      <p className="text-[13.5px] font-medium text-ink">In-Memory Live Preview</p>
+                      <p className="mt-1 max-w-xs text-[11.5px] text-faint">
+                        Click any image, video, audio, code, or document on the left to preview it
+                        directly from RAM.
+                      </p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6 text-faint">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-line bg-surface mb-3">
-                      <Eye size={20} className="text-dim" />
-                    </div>
-                    <p className="text-[13.5px] font-medium text-ink">In-Memory Live Preview</p>
-                    <p className="mt-1 max-w-xs text-[11.5px] text-faint">
-                      Click any image, video, audio, code, or document on the left to preview it
-                      directly from RAM.
-                    </p>
-                  </div>
-                )}
-              </Panel>
+                  )}
+                </Panel>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

@@ -1150,8 +1150,9 @@ export function registerIpc(services: IpcServices): void {
     const req = assertPayload(raw)
     const zipPath = assertString(req['zipPath'], 'zipPath')
     const outputDir = assertString(req['outputDir'], 'outputDir')
+    const password = assertOptionalString(req['password'], 'password')
     services.writeScope.assertAllowed(outputDir)
-    return extractZipArchive(zipPath, outputDir)
+    return extractZipArchive(zipPath, outputDir, password)
   })
 
   handle(IPC.archivesInspect, async (_e, raw: unknown) => {

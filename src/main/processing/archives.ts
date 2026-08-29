@@ -1,10 +1,11 @@
+import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import JSZip from 'jszip'
 import { isStashError, stashError } from '../../shared/errors'
 
 /**
- * ZIP creation/extraction over JSZip. Extraction is hardened against
+ * ZIP creation/extraction over JSZip and tar.exe. Extraction is hardened against
  * zip-slip: entries escaping the output directory are skipped, not followed.
  */
 
@@ -74,9 +75,61 @@ export function isUnsafeEntryName(name: string): boolean {
   return name.split(/[\\/]/).includes('..')
 }
 
+/**
+ * Checks if a zip buffer contains encrypted entries by scanning central directory flags.
+ */
+function isZipBufferEncrypted(buffer: Buffer): boolean {
+  if (buffer.length < 22) return false
+  const maxSearch = Math.min(buffer.length - 22, 65557)
+  let eocdOffset = -1
+  for (let i = buffer.length - 22; i >= buffer.length - 22 - maxSearch && i >= 0; i--) {
+    if (buffer.readUInt32LE(i) === 0x06054b50) {
+      eocdOffset = i
+      break
+    }
+  }
+  if (eocdOffset === -1) return false
+
+  const cdSize = buffer.readUInt32LE(eocdOffset + 12)
+  const cdOffset = buffer.readUInt32LE(eocdOffset + 16)
+  let pos = cdOffset
+  const end = Math.min(buffer.length, cdOffset + cdSize)
+
+  while (pos + 46 <= end) {
+    if (buffer.readUInt32LE(pos) !== 0x02014b50) break
+    const flags = buffer.readUInt16LE(pos + 8)
+    const method = buffer.readUInt16LE(pos + 10)
+    if ((flags & 1) !== 0 || method === 99) return true
+
+    const nameLen = buffer.readUInt16LE(pos + 28)
+    const extraLen = buffer.readUInt16LE(pos + 30)
+    const commentLen = buffer.readUInt16LE(pos + 32)
+    pos += 46 + nameLen + extraLen + commentLen
+  }
+  return false
+}
+
+async function countExtractedFiles(dir: string): Promise<{ total: number; topLevel: number }> {
+  const topLevel = await fs.readdir(dir)
+  let total = 0
+  async function walk(current: string): Promise<void> {
+    const entries = await fs.readdir(current, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        await walk(path.join(current, entry.name))
+      } else {
+        total++
+      }
+    }
+  }
+  await walk(dir)
+  return { total, topLevel: topLevel.length }
+}
+
 export async function extractZipArchive(
   zipPath: string,
-  outputDir: string
+  outputDir: string,
+  password?: string
 ): Promise<{ extractedCount: number; skipped: string[]; topLevelCount: number }> {
   let raw: Buffer
   try {
@@ -87,6 +140,63 @@ export async function extractZipArchive(
     })
   }
 
+  const isEncrypted = isZipBufferEncrypted(raw)
+  if (isEncrypted && !password) {
+    throw stashError(
+      'VALIDATION',
+      `"${path.basename(zipPath)}" is password-protected. Please enter a password to extract.`
+    )
+  }
+
+  await fs.mkdir(outputDir, { recursive: true })
+
+  // If password provided or encrypted, extract with tar.exe
+  if (isEncrypted || password) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const args = ['-x', '-f', zipPath, '-C', outputDir]
+        if (password) args.push('--passphrase', password)
+
+        execFile('tar.exe', args, (err, _stdout, stderr) => {
+          if (err) {
+            const errMsg = String(stderr || err.message)
+            if (
+              errMsg.toLowerCase().includes('passphrase') ||
+              errMsg.toLowerCase().includes('password') ||
+              errMsg.toLowerCase().includes('bad') ||
+              errMsg.toLowerCase().includes('header')
+            ) {
+              reject(
+                stashError('VALIDATION', 'Incorrect password for archive.', {
+                  technicalMessage: errMsg
+                })
+              )
+            } else {
+              reject(
+                stashError('FS_READ', `Could not extract archive: ${errMsg}`, {
+                  technicalMessage: errMsg
+                })
+              )
+            }
+            return
+          }
+          resolve()
+        })
+      })
+
+      // Count extracted items
+      const countStats = await countExtractedFiles(outputDir)
+      return {
+        extractedCount: countStats.total,
+        skipped: [],
+        topLevelCount: countStats.topLevel
+      }
+    } catch (err) {
+      if (isStashError(err)) throw err
+    }
+  }
+
+  // Standard unencrypted extraction with JSZip
   let zip: JSZip
   try {
     zip = await JSZip.loadAsync(raw)
@@ -94,7 +204,6 @@ export async function extractZipArchive(
     throw stashError('UNSUPPORTED', `"${path.basename(zipPath)}" isn't a valid ZIP archive.`)
   }
 
-  await fs.mkdir(outputDir, { recursive: true })
   const resolvedRoot = path.resolve(outputDir) + path.sep
   const skipped: string[] = []
   const topLevel = new Set<string>()

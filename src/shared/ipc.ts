@@ -342,6 +342,7 @@ export interface ZipCreateResult {
 export interface ZipExtractRequest {
   zipPath: string
   outputDir: string
+  password?: string
 }
 
 export interface ZipExtractResult {
