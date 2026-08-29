@@ -20,7 +20,8 @@ describe('toolsForExtension', () => {
       'pdf-rotate',
       'pdf-reorder',
       'pdf-compress',
-      'pdf-to-images'
+      'pdf-to-images',
+      'pdf-to-text'
     ])
     expect(toolsForExtension('png')[0]).toBe('image-preview')
   })

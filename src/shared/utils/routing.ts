@@ -13,22 +13,63 @@ export const EXTENSION_TOOL_HINTS: Record<string, string[]> = {
     'pdf-rotate',
     'pdf-reorder',
     'pdf-compress',
-    'pdf-to-images'
+    'pdf-to-images',
+    'pdf-to-text'
   ],
-  png: ['image-preview', 'qr-decoder', 'image-convert', 'image-compress', 'image-exif'],
-  jpg: ['image-preview', 'qr-decoder', 'image-convert', 'image-compress', 'image-exif'],
-  jpeg: ['image-preview', 'qr-decoder', 'image-convert', 'image-compress', 'image-exif'],
-  webp: ['image-preview', 'qr-decoder', 'image-convert', 'image-compress'],
-  gif: ['image-preview', 'image-convert'],
-  bmp: ['image-preview', 'qr-decoder', 'image-convert'],
-  avif: ['image-preview', 'image-convert'],
-  tiff: ['image-preview', 'image-convert', 'image-exif'],
-  tif: ['image-preview', 'image-convert', 'image-exif'],
+  png: [
+    'image-preview',
+    'image-ocr',
+    'qr-decoder',
+    'image-convert',
+    'image-compress',
+    'image-exif',
+    'image-watermark',
+    'social-resizer',
+    'icon-pack',
+    'images-to-pdf'
+  ],
+  jpg: [
+    'image-preview',
+    'image-ocr',
+    'qr-decoder',
+    'image-convert',
+    'image-compress',
+    'image-exif',
+    'image-watermark',
+    'social-resizer',
+    'images-to-pdf'
+  ],
+  jpeg: [
+    'image-preview',
+    'image-ocr',
+    'qr-decoder',
+    'image-convert',
+    'image-compress',
+    'image-exif',
+    'image-watermark',
+    'social-resizer',
+    'images-to-pdf'
+  ],
+  webp: [
+    'image-preview',
+    'image-ocr',
+    'qr-decoder',
+    'image-convert',
+    'image-compress',
+    'image-watermark',
+    'social-resizer'
+  ],
+  gif: ['image-preview', 'image-ocr', 'image-convert', 'image-watermark', 'social-resizer'],
+  bmp: ['image-preview', 'image-ocr', 'qr-decoder', 'image-convert'],
+  avif: ['image-preview', 'image-convert', 'social-resizer'],
+  tiff: ['image-preview', 'image-ocr', 'image-convert', 'image-exif', 'social-resizer'],
+  tif: ['image-preview', 'image-ocr', 'image-convert', 'image-exif'],
+  svg: ['image-preview', 'icon-pack'],
   mp4: ['video-convert', 'video-compress', 'video-to-gif', 'extract-audio'],
-  mov: ['video-convert', 'video-compress', 'extract-audio'],
-  mkv: ['video-convert', 'video-compress', 'extract-audio'],
-  avi: ['video-convert', 'video-compress', 'extract-audio'],
-  webm: ['video-convert', 'video-compress', 'extract-audio'],
+  mov: ['video-convert', 'video-compress', 'video-to-gif', 'extract-audio'],
+  mkv: ['video-convert', 'video-compress', 'video-to-gif', 'extract-audio'],
+  avi: ['video-convert', 'video-compress', 'video-to-gif', 'extract-audio'],
+  webm: ['video-convert', 'video-compress', 'video-to-gif', 'extract-audio'],
   mp3: ['audio-convert', 'extract-audio'],
   wav: ['audio-convert', 'extract-audio'],
   flac: ['audio-convert', 'extract-audio'],
@@ -36,7 +77,7 @@ export const EXTENSION_TOOL_HINTS: Record<string, string[]> = {
   ogg: ['audio-convert'],
   opus: ['audio-convert'],
   aac: ['audio-convert', 'extract-audio'],
-  zip: ['zip-extract', 'zip-create']
+  zip: ['archive-inspect', 'zip-extract', 'zip-create']
 }
 
 export function extensionOfPath(filePath: string): string {

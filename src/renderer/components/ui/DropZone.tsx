@@ -4,7 +4,7 @@ import type { FileFilter } from '../../../shared/ipc'
 import { normalizeError } from '../../../shared/errors'
 
 export interface DropZoneProps {
-  /** Accepted extensions, e.g. ['.pdf', '.png']. Empty means any file. */
+  /** Accepted extensions, e.g. ['.pdf', '.png'] or ['zip']. Empty means any file. */
   accept?: string[]
   multiple?: boolean
   disabled?: boolean
@@ -18,6 +18,63 @@ export interface DropZoneProps {
 interface DragState {
   active: boolean
   valid: boolean
+}
+
+/**
+ * Normalizes an extension to lowercase with leading dot, e.g. 'ZIP' -> '.zip'.
+ */
+export function normalizeExtension(ext: string): string {
+  const clean = ext.trim().toLowerCase()
+  return clean.startsWith('.') ? clean : `.${clean}`
+}
+
+/**
+ * Extracts the file extension (with leading dot, lowercase) from a path or file name.
+ */
+export function getFileExtension(pathOrName: string): string {
+  const base = pathOrName.split(/[\\/]/).pop() ?? pathOrName
+  const dot = base.lastIndexOf('.')
+  if (dot < 0) return ''
+  return base.slice(dot).toLowerCase().trim()
+}
+
+/**
+ * Resolves a dropped File object to an absolute filesystem path or filename.
+ */
+export function resolveDroppedPath(file: File): string {
+  try {
+    if (typeof window !== 'undefined' && window.stash?.files?.getPathForFile) {
+      const bridgePath = window.stash.files.getPathForFile(file)
+      if (typeof bridgePath === 'string' && bridgePath.trim().length > 0) {
+        return bridgePath.trim()
+      }
+    }
+  } catch {
+    // webUtils may throw on synthetic file objects in non-Electron test environments
+  }
+
+  const directPath = (file as unknown as { path?: string }).path
+  if (typeof directPath === 'string' && directPath.trim().length > 0) {
+    return directPath.trim()
+  }
+
+  return file.name || ''
+}
+
+/**
+ * Checks whether a given file matches the accepted extensions.
+ */
+export function isFileAccepted(file: File, resolvedPath: string, accept: string[]): boolean {
+  if (!accept || accept.length === 0) return true
+  const normalizedAccept = accept.map(normalizeExtension)
+
+  const pathExt = getFileExtension(resolvedPath)
+  if (pathExt && normalizedAccept.includes(pathExt)) return true
+
+  const nameExt = getFileExtension(file.name)
+  if (nameExt && normalizedAccept.includes(nameExt)) return true
+
+  return false
 }
 
 /**
@@ -45,11 +102,10 @@ export function DropZone({
     (files: ArrayLike<File>): string[] => {
       const paths: string[] = []
       for (const file of Array.from(files)) {
-        // Electron ≥32 removed File.path; resolve via the preload bridge.
-        const filePath = window.stash.files.getPathForFile(file)
-        if (!filePath) continue
-        if (accept.length > 0 && !accept.includes(extensionOf(filePath))) continue
-        paths.push(filePath)
+        const resolvedPath = resolveDroppedPath(file)
+        if (!resolvedPath) continue
+        if (!isFileAccepted(file, resolvedPath, accept)) continue
+        paths.push(resolvedPath)
       }
       return paths
     },
@@ -59,11 +115,21 @@ export function DropZone({
   const handleDrop = (e: React.DragEvent) => {
     if (disabled) return
     e.preventDefault()
+    e.stopPropagation()
     depthCounter.current = 0
     setDrag({ active: false, valid: true })
-    const paths = filterValid(e.dataTransfer.files)
+
+    const rawFiles = e.dataTransfer.files?.length
+      ? Array.from(e.dataTransfer.files)
+      : Array.from(e.dataTransfer.items || [])
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null)
+
+    if (rawFiles.length === 0) return
+
+    const paths = filterValid(rawFiles)
     if (paths.length === 0 || (!multiple && paths.length !== 1)) {
-      const expected = accept.length ? ` ${accept.join(', ')}` : ''
+      const expected = accept.length ? ` ${accept.map(normalizeExtension).join(', ')}` : ''
       setError(
         paths.length === 0
           ? `That file type isn't supported here.${expected ? ` Expected:${expected}` : ''}`
@@ -81,7 +147,14 @@ export function DropZone({
     if (disabled) return
     try {
       const filters: FileFilter[] =
-        accept.length > 0 ? [{ name: 'Supported files', extensions: accept.map(stripDot) }] : []
+        accept.length > 0
+          ? [
+              {
+                name: 'Supported files',
+                extensions: accept.map((e) => normalizeExtension(e).replace(/^\./, ''))
+              }
+            ]
+          : []
       const result = await window.stash.dialogs.openFile({
         title: dialogTitle,
         filters,
@@ -96,21 +169,16 @@ export function DropZone({
     }
   }
 
-  const multipleAccepted = accept.length === 0
-
   const borderTone = !drag.active
     ? 'border-line hover:border-line-strong'
     : drag.valid
       ? 'border-accent/80 bg-accent-soft/40'
-      : // Extension validity can't be verified mid-drag when a filter is set,
-        // so show a neutral "armed" state instead of implying acceptance or rejection.
-        'border-line-strong bg-raised'
+      : 'border-line-strong bg-raised'
 
   return (
-    <div className={className}>
+    <div className={`relative flex flex-col ${className}`} data-dropzone>
       <div
         role="button"
-        data-dropzone
         tabIndex={disabled ? -1 : 0}
         aria-disabled={disabled}
         aria-label={`${label}. Click to browse.`}
@@ -124,19 +192,26 @@ export function DropZone({
         onDragEnter={(e) => {
           if (disabled) return
           e.preventDefault()
+          e.stopPropagation()
           depthCounter.current += 1
           setDrag({
             active: true,
-            valid: e.dataTransfer.types.includes('Files') && multipleAccepted
+            valid: e.dataTransfer.types.includes('Files')
           })
         }}
-        onDragOver={(e) => e.preventDefault()}
-        onDragLeave={() => {
+        onDragOver={(e) => {
+          if (disabled) return
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           depthCounter.current -= 1
           if (depthCounter.current <= 0) setDrag({ active: false, valid: true })
         }}
         onDrop={handleDrop}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 transition-all duration-150 ease-out ${
+        className={`flex w-full h-full flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 transition-all duration-150 ease-out ${
           disabled ? 'cursor-not-allowed opacity-45' : ''
         } ${accepted ? 'accept-pulse' : ''} ${borderTone}`}
       >
@@ -172,14 +247,4 @@ export function DropZone({
       />
     </div>
   )
-}
-
-function extensionOf(path: string): string {
-  const name = path.split(/[\\/]/).pop() ?? path
-  const dot = name.lastIndexOf('.')
-  return dot <= 0 ? '' : name.slice(dot).toLowerCase()
-}
-
-function stripDot(ext: string): string {
-  return ext.replace(/^\./, '')
 }
