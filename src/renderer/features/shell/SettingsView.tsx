@@ -6,6 +6,7 @@ import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback
 import { AccentPicker } from './AccentPicker'
 import { setDensityPreference, type Density } from '../../accent-runtime'
 import { DENSITY_PREF_KEY } from '../../accent-runtime'
+import { useWorkspace, WORKSPACE_WIDTH_KEY, type WorkspaceWidth } from '../../stores/workspace'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
 
@@ -35,6 +36,8 @@ export function SettingsView() {
   const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
   const [accent, setAccent] = useState<string | null>(null)
   const [density, setDensity] = useState<Density>('comfortable')
+  const workspaceWidth = useWorkspace((s) => s.width)
+  const setWorkspaceWidth = useWorkspace((s) => s.setWidth)
 
   useEffect(() => {
     window.stash.app
@@ -118,6 +121,7 @@ export function SettingsView() {
         savedQueuePresets,
         savedLastUsedQueue,
         savedPins,
+        savedWorkspaceWidth,
         favorites,
         prompts
       ] = await Promise.all([
@@ -127,6 +131,7 @@ export function SettingsView() {
         window.stash.prefs.get<unknown>('queue.presets'),
         window.stash.prefs.get<unknown>('queue.lastUsed'),
         window.stash.prefs.get<unknown>('pinnedTools'),
+        window.stash.prefs.get<string>(WORKSPACE_WIDTH_KEY),
         window.stash.favorites.list().catch(() => []),
         window.stash.prompts.list().catch(() => [])
       ])
@@ -138,6 +143,7 @@ export function SettingsView() {
           zoom: savedZoom ?? zoom,
           accent: savedAccent ?? accent,
           density: savedDensity ?? density,
+          workspaceWidth: (savedWorkspaceWidth as WorkspaceWidth) ?? workspaceWidth,
           pinnedTools: savedPins ?? []
         },
         queue: {
@@ -189,6 +195,12 @@ export function SettingsView() {
           await setDensityPreference(profile.prefs.density)
           setDensity(profile.prefs.density)
         }
+        if (
+          profile.prefs.workspaceWidth === 'wide' ||
+          profile.prefs.workspaceWidth === 'standard'
+        ) {
+          await setWorkspaceWidth(profile.prefs.workspaceWidth)
+        }
         if (Array.isArray(profile.prefs.pinnedTools)) {
           await window.stash.prefs.set('pinnedTools', profile.prefs.pinnedTools)
         }
@@ -228,15 +240,21 @@ export function SettingsView() {
   return (
     <div className="relative">
       <div className="relative mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
-        <div>
-          <h1 className="text-[19px] font-semibold tracking-tight text-ink">Settings</h1>
-          <p className="mt-0.5 text-[12.5px] text-dim">
-            Everything is stored locally on this machine. No account, no cloud.
+        <header className="mb-2">
+          <SectionHeading>Settings</SectionHeading>
+          <p className="mt-1 text-[13px] text-dim">
+            Application preferences and local system info.
           </p>
-        </div>
+        </header>
+
+        {clearedAt && (
+          <SuccessNote
+            message={`All recorded tool runs were removed from your local history at ${clearedAt}.`}
+          />
+        )}
 
         <Panel className="px-4 py-4">
-          <SectionHeading>About</SectionHeading>
+          <SectionHeading>Application</SectionHeading>
           <dl className="mt-3 space-y-2 text-[12.5px]">
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-faint">Version</dt>
@@ -293,6 +311,40 @@ export function SettingsView() {
           <p className="mt-1.5 text-[11px] text-faint">
             Compact fits more on screen. Applied immediately and remembered.
           </p>
+
+          <p className="mt-3 text-[12px] text-dim">Workspace Canvas Width</p>
+          <div
+            role="radiogroup"
+            aria-label="Workspace canvas width"
+            className="mt-2 inline-flex rounded-md border border-line p-0.5"
+          >
+            {(
+              [
+                { id: 'wide', label: 'Wide / Expanded' },
+                { id: 'standard', label: 'Standard / Compact' }
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={workspaceWidth === option.id}
+                onClick={() => void setWorkspaceWidth(option.id)}
+                className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] transition-colors duration-150 ${
+                  workspaceWidth === option.id
+                    ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
+                    : 'text-faint hover:text-dim'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-faint">
+            Wide utilizes full monitor width for spacious multi-column workstations. Applied
+            immediately and remembered.
+          </p>
+
           <div className="mt-3 flex items-center gap-3">
             <FieldRow label="Zoom" htmlFor="settings-zoom">
               <Select

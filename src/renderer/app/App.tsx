@@ -19,6 +19,7 @@ import { getIcon } from '../components/icons'
 import { toolRegistry } from '../../shared/tool-registry/registry'
 import { useLibrary } from '../stores/library'
 import { useNav } from '../stores/nav'
+import { useWorkspace } from '../stores/workspace'
 
 function Breadcrumb() {
   const view = useNav((s) => s.view)
@@ -79,10 +80,12 @@ function Breadcrumb() {
 export default function App() {
   const view = useNav((s) => s.view)
   const loadLibrary = useLibrary((s) => s.load)
+  const loadWorkspace = useWorkspace((s) => s.load)
 
   useEffect(() => {
     void loadLibrary()
-  }, [loadLibrary])
+    void loadWorkspace()
+  }, [loadLibrary, loadWorkspace])
 
   // Global shortcuts: Esc returns Home; Ctrl/Cmd+1..5 open favorites.
   useEffect(() => {

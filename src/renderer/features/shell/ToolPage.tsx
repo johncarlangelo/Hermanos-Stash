@@ -1,5 +1,5 @@
-import { Component, Suspense, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Maximize2, Minimize2, Pin, Star } from 'lucide-react'
+import { Component, Suspense, useEffect, useMemo } from 'react'
+import { ArrowLeft, Pin, Star } from 'lucide-react'
 import { getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
@@ -9,26 +9,13 @@ import { Button } from '../../components/ui/Button'
 import { useLibrary } from '../../stores/library'
 import { usePins } from '../../stores/pins'
 import { useNav } from '../../stores/nav'
+import { useWorkspace } from '../../stores/workspace'
 
 /**
  * Tool component map. Each tool contributes a lazily-loaded view; the shell
  * never imports tool implementations directly (ARCHITECTURE.md).
  */
 import { TOOL_COMPONENTS } from '../../tools'
-
-const WORKSTATION_TOOLS = new Set([
-  'archive-inspect',
-  'text-diff',
-  'markdown-preview',
-  'image-preview',
-  'pdf-preview',
-  'pdf-merge',
-  'pdf-split',
-  'pdf-reorder',
-  'batch-rename',
-  'brand-bible',
-  'prompt-library'
-])
 
 function Fallback() {
   return (
@@ -48,14 +35,9 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const pins = usePins((s) => s.pins)
   const togglePin = usePins((s) => s.togglePin)
   const pinsLoaded = usePins((s) => s.loaded)
+  const workspaceWidth = useWorkspace((s) => s.width)
 
   const tool = useMemo(() => toolRegistry.get(toolId), [toolId])
-  const isWorkstation = WORKSTATION_TOOLS.has(toolId)
-  const [isWide, setIsWide] = useState<boolean>(() => isWorkstation)
-
-  useEffect(() => {
-    setIsWide(isWorkstation)
-  }, [isWorkstation, toolId])
 
   useEffect(() => {
     if (tool) void recordRecent(tool.id)
@@ -94,7 +76,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
     <div className="relative">
       <div
         className={`relative mx-auto w-full px-6 sm:px-8 py-8 transition-all duration-200 ${
-          isWide ? 'max-w-6xl 2xl:max-w-7xl' : 'max-w-3xl'
+          workspaceWidth === 'wide' ? 'max-w-6xl 2xl:max-w-7xl' : 'max-w-3xl'
         }`}
       >
         {/* Header — hero style with glowing icon badge */}
@@ -155,22 +137,6 @@ export function ToolPage({ toolId }: { toolId: string }) {
               )}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
-              {/* Wide / Compact Workspace Toggle */}
-              <button
-                type="button"
-                aria-label={isWide ? 'Switch to compact view' : 'Expand workspace to wide view'}
-                aria-pressed={isWide}
-                onClick={() => setIsWide(!isWide)}
-                title={isWide ? 'Switch to compact view' : 'Expand workspace to wide view'}
-                className={`cursor-pointer rounded-md border p-2 transition-all duration-150 ease-out ${
-                  isWide
-                    ? 'border-accent/50 bg-accent-soft text-accent hover:bg-accent-soft/70'
-                    : 'border-line bg-surface/70 text-faint hover:border-line-strong hover:text-ink'
-                }`}
-              >
-                {isWide ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-              </button>
-
               {pinsLoaded && (
                 <button
                   type="button"
