@@ -6,7 +6,13 @@ import {
   escapeXml,
   generateReactComponent,
   generateSvgString,
+  getDoubleArrowPath,
+  getHeartPath,
+  getPlusPoints,
   getPolygonPoints,
+  getRingPath,
+  getShieldPath,
+  getSpeechBubblePath,
   getStarPoints,
   renderShapeToSvgElement,
   snapCoordinate
@@ -47,6 +53,30 @@ describe('SVG Creator Logic', () => {
     expect(polygon.split(' ').length).toBe(6)
   })
 
+  it('calculates geometric math paths accurately', () => {
+    const heart = getHeartPath(100, 100)
+    expect(heart).toContain('M')
+    expect(heart).toContain('C')
+
+    const bubble = getSpeechBubblePath(120, 90, 8)
+    expect(bubble).toContain('M')
+    expect(bubble).toContain('Q')
+
+    const shield = getShieldPath(100, 100)
+    expect(shield).toContain('M')
+    expect(shield).toContain('Q')
+
+    const plus = getPlusPoints(100, 100, 0.35)
+    expect(plus.split(' ').length).toBe(12)
+
+    const ring = getRingPath(100, 100, 0.6)
+    expect(ring).toContain('A')
+
+    const doubleArrow = getDoubleArrowPath(140, 24, 2)
+    expect(doubleArrow).toContain('M')
+    expect(doubleArrow).toContain('L')
+  })
+
   it('escapes XML special characters in text', () => {
     expect(escapeXml('<script>alert("1 & 2")</script>')).toBe(
       '&lt;script&gt;alert(&quot;1 &amp; 2&quot;)&lt;/script&gt;'
@@ -65,6 +95,15 @@ describe('SVG Creator Logic', () => {
     expect(renderedCircle).toContain('<circle')
     expect(renderedCircle).toContain('fill="#00ff00"')
 
+    const heart = createDefaultShape('heart', testConfig, { fill: '#ec4899' })
+    const renderedHeart = renderShapeToSvgElement(heart)
+    expect(renderedHeart).toContain('<path')
+    expect(renderedHeart).toContain('fill="#ec4899"')
+
+    const ring = createDefaultShape('ring', testConfig, { fill: '#8b5cf6' })
+    const renderedRing = renderShapeToSvgElement(ring)
+    expect(renderedRing).toContain('fill-rule="evenodd"')
+
     const text = createDefaultShape('text', testConfig, { text: 'Hello SVG' })
     const renderedText = renderShapeToSvgElement(text)
     expect(renderedText).toContain('<text')
@@ -74,7 +113,8 @@ describe('SVG Creator Logic', () => {
   it('generates a complete valid SVG document', () => {
     const shapes: Shape[] = [
       createDefaultShape('rect', testConfig, { fill: '#10b981' }),
-      createDefaultShape('circle', testConfig, { fill: '#f59e0b' })
+      createDefaultShape('circle', testConfig, { fill: '#f59e0b' }),
+      createDefaultShape('heart', testConfig, { fill: '#ef4444' })
     ]
 
     const svg = generateSvgString(testConfig, shapes)
