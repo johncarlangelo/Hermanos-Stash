@@ -756,6 +756,31 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'svg-creator',
+    name: 'SVG & Vector Studio',
+    category: 'images',
+    description:
+      'Design vector shapes, graphics, and icons with live code generation and multi-format export.',
+    tags: [
+      'svg',
+      'vector',
+      'shapes',
+      'icon',
+      'graphic',
+      'designer',
+      'canvas',
+      'png-export',
+      'react-icon'
+    ],
+    icon: 'pen-tool',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: false,
+      producesFiles: true,
+      producesText: true
+    }
   }
 ]
 
@@ -816,6 +841,7 @@ const IconPackTool = lazy(() => import('./icon-pack/IconPackTool'))
 const SocialResizerTool = lazy(() => import('./social-resizer/SocialResizerTool'))
 const ImageOcrTool = lazy(() => import('./image-ocr/ImageOcrTool'))
 const ArchiveInspectTool = lazy(() => import('./archive-inspect/ArchiveInspectTool'))
+const SvgCreatorTool = lazy(() => import('./svg-creator/SvgCreatorTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -869,5 +895,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'icon-pack': IconPackTool,
   'social-resizer': SocialResizerTool,
   'image-ocr': ImageOcrTool,
-  'archive-inspect': ArchiveInspectTool
+  'archive-inspect': ArchiveInspectTool,
+  'svg-creator': SvgCreatorTool
 }

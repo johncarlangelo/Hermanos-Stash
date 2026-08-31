@@ -15,8 +15,10 @@ import {
   Loader2,
   Lock,
   Music,
+  PenTool,
   Search,
   Settings,
+  Shapes,
   Sparkles,
   Star,
   TriangleAlert,
@@ -47,7 +49,9 @@ const ICONS: Record<string, LucideIcon> = {
   upload: UploadCloud,
   alert: TriangleAlert,
   loader: Loader2,
-  lock: Lock
+  lock: Lock,
+  'pen-tool': PenTool,
+  shapes: Shapes
 }
 
 /** Resolve a Lucide icon by name with a neutral fallback. */

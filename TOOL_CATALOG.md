@@ -1,6 +1,6 @@
 # Hermanos Stash — Tool Catalog
 
-This is a living catalog tracking shipped tools and candidates. Currently **52 tools** are implemented and registered across 8 categories.
+This is a living catalog tracking shipped tools and candidates. Currently **53 tools** are implemented and registered across 8 categories.
 
 ## Files & Archives (`files`)
 
@@ -28,6 +28,7 @@ This is a living catalog tracking shipped tools and candidates. Currently **52 t
 
 ## Images (`images`)
 
+- [x] **SVG & Vector Studio** (`svg-creator`) — Design vector shapes, graphics, and icons with live code generation, multi-layer styling, and multi-resolution PNG/WebP export.
 - [x] **Image Preview** (`image-preview`) — Local image inspector with dimensions, byte size, and zoom controls.
 - [x] **Image Converter** (`image-convert`) — Batch conversion between PNG, JPEG, WebP, AVIF, and TIFF with quality controls.
 - [x] **Image Compressor** (`image-compress`) — Shrink image file sizes with quality adjustments and optional downscaling.
