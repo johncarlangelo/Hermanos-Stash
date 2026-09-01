@@ -166,6 +166,9 @@ ${asciiResult.html}
         <div className="flex items-center gap-2">
           <Terminal size={18} className="text-accent" />
           <h2 className="font-semibold text-[14px]">Image to ASCII Art Converter</h2>
+          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-amber-400 tracking-wider uppercase">
+            BETA
+          </span>
           <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
             ANSI & HTML Color Modes
           </span>

@@ -790,6 +790,10 @@ export default function SvgCreatorTool() {
       {/* Top Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface/80 px-3.5 py-2 text-[12px] text-dim">
         <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-amber-400 tracking-wider uppercase">
+            BETA
+          </span>
+
           {/* Preset Canvas Sizing */}
           <select
             value={`${config.width}x${config.height}`}

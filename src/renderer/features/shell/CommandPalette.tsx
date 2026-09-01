@@ -180,6 +180,11 @@ function PaletteRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[13px] font-medium text-ink">{tool.name}</span>
+          {tool.isBeta && (
+            <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 font-mono text-[8px] font-semibold text-amber-400 tracking-wider uppercase">
+              BETA
+            </span>
+          )}
           {isFavorite && (
             <Star size={11} className="shrink-0 text-accent" fill="currentColor" aria-hidden />
           )}
@@ -275,7 +280,14 @@ function PreviewContent({
           <Icon size={18} strokeWidth={1.6} className="text-accent" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-medium text-ink">{tool.name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-[14px] font-medium text-ink">{tool.name}</p>
+            {tool.isBeta && (
+              <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 font-mono text-[8.5px] font-semibold text-amber-400 tracking-wider uppercase">
+                BETA
+              </span>
+            )}
+          </div>
           <p className="font-mono text-[9.5px] tracking-wide text-faint uppercase">
             {categoryLabel}
           </p>

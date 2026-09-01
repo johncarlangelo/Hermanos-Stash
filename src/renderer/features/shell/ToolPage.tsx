@@ -99,9 +99,16 @@ export function ToolPage({ toolId }: { toolId: string }) {
                   <Icon size={21} strokeWidth={1.6} className="text-accent" />
                 </span>
                 <div className="min-w-0">
-                  <h1 className="truncate text-[20px] font-semibold tracking-tight text-ink">
-                    {tool.name}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="truncate text-[20px] font-semibold tracking-tight text-ink">
+                      {tool.name}
+                    </h1>
+                    {tool.isBeta && (
+                      <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-amber-400 tracking-wider uppercase">
+                        BETA
+                      </span>
+                    )}
+                  </div>
                   <p className="font-mono text-[10.5px] tracking-wide text-faint uppercase">
                     {category?.label ?? tool.category}
                   </p>

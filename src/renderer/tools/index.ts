@@ -780,7 +780,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: false,
       producesFiles: true,
       producesText: true
-    }
+    },
+    isBeta: true
   },
   {
     id: 'ascii-banner',
@@ -793,7 +794,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsText: true,
       producesText: true
-    }
+    },
+    isBeta: true
   },
   {
     id: 'image-to-ascii',
@@ -806,7 +808,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsFiles: true,
       producesText: true
-    }
+    },
+    isBeta: true
   },
   {
     id: 'ascii-table',

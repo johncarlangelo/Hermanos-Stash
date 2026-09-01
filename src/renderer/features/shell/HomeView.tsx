@@ -37,7 +37,14 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
             aria-hidden
           />
         </span>
-        <span className="text-[13px] font-medium text-ink">{tool.name}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[13px] font-medium text-ink">{tool.name}</span>
+          {tool.isBeta && (
+            <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 font-mono text-[8.5px] font-semibold text-amber-400 tracking-wider uppercase">
+              BETA
+            </span>
+          )}
+        </div>
         <span className="line-clamp-2 min-h-[2.2em] text-[11.5px] leading-relaxed text-dim">
           {tool.description}
         </span>

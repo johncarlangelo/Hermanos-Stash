@@ -28,4 +28,6 @@ export interface ToolDefinition {
   icon: string
   version: string
   capabilities: ToolCapabilities
+  /** Whether this tool is currently in beta status. */
+  isBeta?: boolean
 }
