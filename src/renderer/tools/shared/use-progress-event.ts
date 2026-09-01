@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ProgressEvent } from '../../../shared/ipc'
+import type { HistoryEntryInput, ProgressEvent } from '../../../shared/ipc'
 
 /**
  * Latest progress event pushed from main. Subscribing on mount (not on
@@ -8,16 +8,30 @@ import type { ProgressEvent } from '../../../shared/ipc'
  */
 export function useProgressEvent(): ProgressEvent | null {
   const [event, setEvent] = useState<ProgressEvent | null>(null)
-  useEffect(() => window.stash.progress.subscribe(setEvent), [])
+  useEffect(() => window.stash?.progress?.subscribe?.(setEvent), [])
   return event
 }
 
 /** Best-effort history write; failures must never break the tool flow. */
 export function recordHistoryQuietly(
-  entry: Parameters<typeof window.stash.history.record>[0]
+  entryOrToolId: HistoryEntryInput | string,
+  toolName?: string,
+  _category?: string,
+  summary?: string
 ): void {
   try {
-    void window.stash.history.record(entry)
+    if (typeof entryOrToolId === 'string') {
+      void window.stash?.history?.record?.({
+        toolId: entryOrToolId,
+        operation: toolName || entryOrToolId,
+        inputs: [],
+        outputs: [],
+        status: 'success',
+        message: summary || `${toolName || entryOrToolId} executed`
+      })
+    } else {
+      void window.stash?.history?.record?.(entryOrToolId)
+    }
   } catch {
     // Ignore — activity history must not surface errors into the tool UI.
   }

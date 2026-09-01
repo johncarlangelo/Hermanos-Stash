@@ -11,7 +11,8 @@ export interface DropZoneProps {
   label?: string
   hint?: string
   dialogTitle?: string
-  onFiles: (paths: string[]) => void
+  onFiles?: (paths: string[]) => void
+  onRawFiles?: (files: File[]) => void
   className?: string
 }
 
@@ -90,6 +91,7 @@ export function DropZone({
   hint,
   dialogTitle,
   onFiles,
+  onRawFiles,
   className = ''
 }: DropZoneProps) {
   const [drag, setDrag] = useState<DragState>({ active: false, valid: true })
@@ -127,6 +129,13 @@ export function DropZone({
 
     if (rawFiles.length === 0) return
 
+    const validRawFiles = rawFiles.filter((f) => isFileAccepted(f, f.name, accept))
+    if (validRawFiles.length === 0) {
+      const expected = accept.length ? ` ${accept.map(normalizeExtension).join(', ')}` : ''
+      setError(`That file type isn't supported here.${expected ? ` Expected:${expected}` : ''}`)
+      return
+    }
+
     const paths = filterValid(rawFiles)
     if (paths.length === 0 || (!multiple && paths.length !== 1)) {
       const expected = accept.length ? ` ${accept.map(normalizeExtension).join(', ')}` : ''
@@ -140,29 +149,55 @@ export function DropZone({
     setError(null)
     setAccepted(true)
     setTimeout(() => setAccepted(false), 550)
-    onFiles(multiple ? paths : paths.slice(0, 1))
+    if (onRawFiles) {
+      onRawFiles(multiple ? validRawFiles : validRawFiles.slice(0, 1))
+    }
+    if (onFiles) {
+      onFiles(multiple ? paths : paths.slice(0, 1))
+    }
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return
+    const rawFiles = Array.from(e.target.files)
+    const validRawFiles = rawFiles.filter((f) => isFileAccepted(f, f.name, accept))
+    const paths = filterValid(rawFiles)
+    setError(null)
+    setAccepted(true)
+    setTimeout(() => setAccepted(false), 550)
+    if (onRawFiles) {
+      onRawFiles(multiple ? validRawFiles : validRawFiles.slice(0, 1))
+    }
+    if (onFiles) {
+      onFiles(multiple ? paths : paths.slice(0, 1))
+    }
+    e.target.value = ''
   }
 
   const handleBrowse = async () => {
     if (disabled) return
     try {
-      const filters: FileFilter[] =
-        accept.length > 0
-          ? [
-              {
-                name: 'Supported files',
-                extensions: accept.map((e) => normalizeExtension(e).replace(/^\./, ''))
-              }
-            ]
-          : []
-      const result = await window.stash.dialogs.openFile({
-        title: dialogTitle,
-        filters,
-        multiSelections: multiple
-      })
-      if (!result.cancelled && result.paths.length > 0) {
-        setError(null)
-        onFiles(result.paths)
+      if (typeof window !== 'undefined' && window.stash?.dialogs?.openFile) {
+        const filters: FileFilter[] =
+          accept.length > 0
+            ? [
+                {
+                  name: 'Supported files',
+                  extensions: accept.map((e) => normalizeExtension(e).replace(/^\./, ''))
+                }
+              ]
+            : []
+        const result = await window.stash.dialogs.openFile({
+          title: dialogTitle,
+          filters,
+          multiSelections: multiple
+        })
+        if (!result.cancelled && result.paths.length > 0) {
+          setError(null)
+          if (onFiles) onFiles(result.paths)
+        }
+      } else {
+        inputRef.current?.click()
       }
     } catch (err) {
       setError(normalizeError(err).userMessage)
@@ -177,6 +212,14 @@ export function DropZone({
 
   return (
     <div className={`relative flex flex-col ${className}`} data-dropzone>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple={multiple}
+        accept={accept.join(',')}
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -205,10 +248,14 @@ export function DropZone({
           e.stopPropagation()
         }}
         onDragLeave={(e) => {
+          if (disabled) return
           e.preventDefault()
           e.stopPropagation()
           depthCounter.current -= 1
-          if (depthCounter.current <= 0) setDrag({ active: false, valid: true })
+          if (depthCounter.current <= 0) {
+            depthCounter.current = 0
+            setDrag({ active: false, valid: true })
+          }
         }}
         onDrop={handleDrop}
         className={`flex w-full h-full flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 transition-all duration-150 ease-out ${
@@ -237,14 +284,6 @@ export function DropZone({
           {error}
         </p>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        tabIndex={-1}
-        aria-hidden
-        multiple={multiple}
-      />
     </div>
   )
 }

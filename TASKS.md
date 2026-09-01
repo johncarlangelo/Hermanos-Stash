@@ -291,3 +291,37 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Pure Logic & Unit Tests (`src/renderer/tools/archive-inspect/logic.ts`, `logic.test.ts`)**: extension categorization, compression ratio calculation, search/category filtering, and MIME type guessing (16/16 unit tests pass).
 - [x] **Tool View & UX (`src/renderer/tools/archive-inspect/ArchiveInspectTool.tsx`)**: interactive file explorer, category tabs (Images, Videos, Audio, Code/Text, PDFs), password unlock prompt, live in-memory previews with zoom/player controls, and 1-click single-file extract.
 - [x] **Tool Registration & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `PROGRESS.md`, `DECISIONS.md`)**: registered with capabilities `{ acceptsFiles: true, producesFiles: true }` under `files` category (52 tools total).
+
+## Milestone 10 — 22-Tool Workstation Suite Expansion (75 Total Tools)
+
+**Goal:** Add a comprehensive suite of local-first utilities across ASCII, Text/Data, Developer/Security, Images/Design, Documents/PDF, and Storage/Audio.
+
+- [x] **Phase 1: ASCII & Retro Terminal Tools Suite**
+  - [x] `ascii-banner` (ASCII Art & Retro Banner Generator) — FIGlet-style standard/slant/block fonts, custom borders, letter spacing.
+  - [x] `image-to-ascii` (Image → ASCII Art Converter) — Custom character sets, inverted mode, ANSI terminal & HTML export.
+  - [x] `ascii-table` (ASCII & Unicode Table Generator) — Markdown, Unicode single/double/rounded borders, column alignment, CSV/TSV parsing.
+- [x] **Phase 2: Text & Data Utilities**
+  - [x] `xml-json` (XML ⇄ JSON Converter & Formatter) — Pure bidirectional converter, attribute prefixes, pretty-printing.
+  - [x] `text-analyzer` (Text Statistics & Readability Analyzer) — Syllable counting, Flesch Reading Ease, reading/speaking time, keywords.
+- [x] **Phase 3: Developer & Security Utilities**
+  - [x] `curl-converter` (cURL ⇄ Multi-Language Code Generator) — Fetch, Python, Go, Rust, PHP, Node.js code generation.
+  - [x] `json-schema` (JSON Schema Validator & Generator) — Draft-07 inference from sample JSON and offline validation.
+  - [x] `chmod-calculator` (Chmod & Unix Permission Calculator) — Interactive permission grid, octal/symbolic/binary, sticky/SUID/SGID.
+  - [x] `keypair-generator` (Cryptographic Keypair Generator) — RSA (2048/4096), ECDSA, Ed25519 in SPKI/PKCS#8 PEM formats.
+  - [x] `semver-calculator` (SemVer Calculator & Range Tester) — Major/minor/patch/prerelease bumping, caret/tilde range matching.
+- [x] **Phase 4: Image & Design Studio**
+  - [x] `image-palette` (Image Color Palette Extractor) — K-Means dominant color extraction, WCAG contrast, CSS variables, Tailwind swatches.
+  - [x] `image-slicer` (Image Slicer & Grid Splitter) — 3x3 Instagram grids, 3x1 carousels, batch ZIP export.
+  - [x] `image-grid` (Contact Sheet & Collage Grid Builder) — High-res contact sheets, configurable gutters, margins, and captions.
+  - [x] `gradient-studio` (CSS & Vector Gradient Studio) — Linear, radial, and conic gradients with color stops and SVG/CSS code export.
+- [x] **Phase 5: Documents & PDF Processing**
+  - [x] `pdf-numberer` (PDF Page Numberer & Bates Stamper) — Sequential page numbering, Bates numbering, 6-cell positioning.
+  - [x] `pdf-watermark` (PDF Watermarker & Stamp Applier) — Diagonal and tiled vector watermarks with rotation, opacity, and color picker.
+  - [x] `markdown-to-pdf` (Markdown → PDF Document Exporter) — Markdown parsing into paginated vector PDF documents.
+- [x] **Phase 6: Files, Storage & Audio Utilities**
+  - [x] `duplicate-finder` (Duplicate File & Hash Matcher) — Fast size bucketing, WebCrypto SHA-256 matching, recoverable space calculation.
+  - [x] `folder-analyzer` (Folder Storage Analyzer) — Category breakdown, disk space distribution bar, top largest files.
+  - [x] `checksum-verifier` (File Checksum Signature Verifier) — SHA-256/512/1 hash calculation and `.sha256sum` signature verification.
+  - [x] `audio-trimmer` (Audio Waveform Visualizer & Trimmer) — Web Audio peak extraction, interactive waveform scrubbing, WAV encoding.
+  - [x] `audio-normalize` (Audio Loudness Normalizer) — Streaming target loudness normalization (-14 LUFS, Apple Music, EBU R128).
+

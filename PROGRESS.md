@@ -2,24 +2,22 @@
 
 ## Current milestone
 
-**Tool #52 (Archive Inspector) complete.**
-Hermanos Stash now includes an in-memory archive inspection and streaming engine:
-- **Archive Inspector Processor (`src/main/processing/archive-inspector.ts`)**: inspects `.zip` archives, determines entry hierarchy, reads uncompressed/compressed sizes and CRC, supports password decryption (ZipCrypto & AES), and streams entry buffers directly into memory.
-- **Archive Inspector View (`src/renderer/tools/archive-inspect/ArchiveInspectTool.tsx`)**: interactive file explorer with instant search, category filtering (Images, Videos, Audio, Code/Text, PDFs), password unlock prompt, and live in-memory previews with single-file extraction.
-- **Pure Logic & Unit Tests (`src/renderer/tools/archive-inspect/logic.ts`, `logic.test.ts`, `archive-inspector.test.ts`)**: 21 unit tests for categorization, filtering, compression ratios, and MIME detection.
+**Milestone 8: 22-Tool Suite Workstation Expansion (75 Total Tools) complete.**
+Hermanos Stash now includes an expanded suite of 75 modular tools spanning text, ASCII, images, audio, documents, and developer utilities:
+- **ASCII & Terminal Studio**: ASCII Banner Generator (`ascii-banner`), Image to ASCII Art Converter (`image-to-ascii`), and ASCII/Unicode Table Generator (`ascii-table`).
+- **Text & Data Suite**: XML ⇄ JSON Converter & Formatter (`xml-json`) and Text Statistics & Readability Analyzer (`text-analyzer`).
+- **Developer & Security Studio**: cURL Multi-Language Code Generator (`curl-converter`), JSON Schema Validator & Generator (`json-schema`), Chmod Unix Permission Calculator (`chmod-calculator`), Cryptographic Keypair Generator (`keypair-generator`), and SemVer Calculator (`semver-calculator`).
+- **Image & Design Suite**: Image Color Palette Extractor (`image-palette`), Image Slicer & Grid Splitter (`image-slicer`), Image Grid & Contact Sheet Builder (`image-grid`), and Gradient & Mesh Studio (`gradient-studio`).
+- **Documents & PDF Processing**: PDF Page Numberer & Bates Stamper (`pdf-numberer`), PDF Watermarker & Stamp Applier (`pdf-watermark`), and Markdown → PDF Exporter (`markdown-to-pdf`).
+- **Files, Storage & Audio Utilities**: Duplicate File Finder (`duplicate-finder`), Folder Storage Analyzer (`folder-analyzer`), File Checksum Verifier (`checksum-verifier`), Audio Waveform Trimmer (`audio-trimmer`), and Audio Loudness Normalizer (`audio-normalize`).
 
 ## Status
 
-52 tools registered across every category on a verified platform: secure Electron
+75 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
-persistence, FFmpeg native integration, offline Tesseract OCR, in-memory archive inspector, batch queue chaining, and usage analytics.
-
-### Tool #52 — Archive Inspector (this phase)
-
-- **In-Memory Streaming**: zero disk extraction when previewing images, videos, audio, text, and documents.
-- **Password Support**: memory-only password decryption for encrypted `.zip` archives.
-- **Single-File Extraction**: export individual entries on demand without unpacking the full archive.
-- **Verification**: 0 typecheck errors, 0 ESLint warnings, all **58 test files / 633 tests passing**, clean production build (`electron-vite build`), headless probe and CDP drag probe exit 0.
+persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
+in-memory archive inspector, batch queue chaining, and usage analytics.
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **84 test files / 742 tests passing (100%)**.
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

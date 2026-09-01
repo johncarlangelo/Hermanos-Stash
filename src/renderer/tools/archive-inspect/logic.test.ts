@@ -156,12 +156,54 @@ describe('Archive Inspector Logic', () => {
 
   describe('getFolderViewData', () => {
     const hierarchicalEntries: ArchiveEntryInfo[] = [
-      { path: 'ACC\'s.txt', name: 'ACC\'s.txt', isDirectory: false, uncompressedSize: 50, compressedSize: 30, isEncrypted: false },
-      { path: 'Photos/summer/beach.jpg', name: 'beach.jpg', isDirectory: false, uncompressedSize: 2048, compressedSize: 1024, isEncrypted: false },
-      { path: 'Photos/summer/sunset.png', name: 'sunset.png', isDirectory: false, uncompressedSize: 4096, compressedSize: 2048, isEncrypted: false },
-      { path: 'Photos/winter/snow.jpg', name: 'snow.jpg', isDirectory: false, uncompressedSize: 1024, compressedSize: 512, isEncrypted: false },
-      { path: 'Videos/intro.mp4', name: 'intro.mp4', isDirectory: false, uncompressedSize: 10000, compressedSize: 8000, isEncrypted: true },
-      { path: 'Docs/', name: 'Docs', isDirectory: true, uncompressedSize: 0, compressedSize: 0, isEncrypted: false }
+      {
+        path: "ACC's.txt",
+        name: "ACC's.txt",
+        isDirectory: false,
+        uncompressedSize: 50,
+        compressedSize: 30,
+        isEncrypted: false
+      },
+      {
+        path: 'Photos/summer/beach.jpg',
+        name: 'beach.jpg',
+        isDirectory: false,
+        uncompressedSize: 2048,
+        compressedSize: 1024,
+        isEncrypted: false
+      },
+      {
+        path: 'Photos/summer/sunset.png',
+        name: 'sunset.png',
+        isDirectory: false,
+        uncompressedSize: 4096,
+        compressedSize: 2048,
+        isEncrypted: false
+      },
+      {
+        path: 'Photos/winter/snow.jpg',
+        name: 'snow.jpg',
+        isDirectory: false,
+        uncompressedSize: 1024,
+        compressedSize: 512,
+        isEncrypted: false
+      },
+      {
+        path: 'Videos/intro.mp4',
+        name: 'intro.mp4',
+        isDirectory: false,
+        uncompressedSize: 10000,
+        compressedSize: 8000,
+        isEncrypted: true
+      },
+      {
+        path: 'Docs/',
+        name: 'Docs',
+        isDirectory: true,
+        uncompressedSize: 0,
+        compressedSize: 0,
+        isEncrypted: false
+      }
     ]
 
     it('returns root level items with direct files and subfolders', () => {
@@ -175,7 +217,7 @@ describe('Archive Inspector Logic', () => {
       expect(folderNames).toContain('Docs')
       expect(folderNames).toContain('Photos')
       expect(folderNames).toContain('Videos')
-      expect(fileNames).toContain('ACC\'s.txt')
+      expect(fileNames).toContain("ACC's.txt")
 
       const photosFolder = root.items.find((i) => i.name === 'Photos')
       expect(photosFolder?.itemCount).toBe(3) // beach, sunset, snow

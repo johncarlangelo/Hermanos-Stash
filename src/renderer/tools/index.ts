@@ -781,6 +781,300 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       producesFiles: true,
       producesText: true
     }
+  },
+  {
+    id: 'ascii-banner',
+    name: 'ASCII Art & Retro Banner Generator',
+    category: 'text',
+    description: 'Create multi-line ASCII art, retro terminal banners, and framed typography.',
+    tags: ['ascii', 'banner', 'retro', 'figlet', 'terminal', 'art', 'text-art'],
+    icon: 'terminal',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'image-to-ascii',
+    name: 'Image → ASCII Art Converter',
+    category: 'images',
+    description: 'Convert photos and graphics into customizable ASCII & ANSI text art.',
+    tags: ['image', 'ascii', 'art', 'ansi', 'terminal', 'braille', 'retro'],
+    icon: 'image',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'ascii-table',
+    name: 'ASCII & Unicode Table Generator',
+    category: 'text',
+    description: 'Convert CSV, TSV, and JSON data into formatted Unicode and Markdown tables.',
+    tags: ['table', 'ascii', 'unicode', 'markdown', 'csv', 'grid'],
+    icon: 'table',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'xml-json',
+    name: 'XML ⇄ JSON Converter & Formatter',
+    category: 'text',
+    description: 'Bi-directional XML and JSON converter with custom attribute prefixes.',
+    tags: ['xml', 'json', 'converter', 'format', 'parser'],
+    icon: 'braces',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'text-analyzer',
+    name: 'Text Statistics & Readability Analyzer',
+    category: 'text',
+    description:
+      'Analyze word counts, reading time, keyword density, and Flesch-Kincaid readability.',
+    tags: ['text', 'analyzer', 'readability', 'statistics', 'words', 'flesch'],
+    icon: 'bar-chart',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'curl-converter',
+    name: 'cURL ⇄ Multi-Language Code Generator',
+    category: 'developer',
+    description:
+      'Convert cURL commands into JavaScript Fetch, Axios, Python Requests, Go, Rust, and PHP.',
+    tags: ['curl', 'http', 'api', 'fetch', 'axios', 'python', 'requests', 'code'],
+    icon: 'terminal',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'json-schema',
+    name: 'JSON Schema Validator & Generator',
+    category: 'developer',
+    description: 'Generate JSON Schema Draft-07 from sample payloads and validate data live.',
+    tags: ['json', 'schema', 'validator', 'draft-07', 'types'],
+    icon: 'shield-check',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'chmod-calculator',
+    name: 'Chmod & Unix Permission Calculator',
+    category: 'developer',
+    description:
+      'Interactive 3x3 permission matrix with octal, symbolic, and natural language explainers.',
+    tags: ['chmod', 'unix', 'permissions', 'octal', 'symbolic', 'linux'],
+    icon: 'key',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: false,
+      producesText: true
+    }
+  },
+  {
+    id: 'keypair-generator',
+    name: 'Cryptographic Keypair Generator',
+    category: 'developer',
+    description: 'Generate RSA 2048/4096 and ECDSA P-256/384 keypairs with PEM export.',
+    tags: ['crypto', 'rsa', 'ecdsa', 'keypair', 'pem', 'security'],
+    icon: 'key',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: false,
+      producesText: true
+    }
+  },
+  {
+    id: 'semver-calculator',
+    name: 'SemVer Calculator & Range Tester',
+    category: 'developer',
+    description: 'Calculate SemVer 2.0 bumps, test version ranges (^, ~), and sort version lists.',
+    tags: ['semver', 'version', 'calculator', 'range', 'npm'],
+    icon: 'git-compare',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'image-palette',
+    name: 'Image Color Palette & Swatch Extractor',
+    category: 'images',
+    description:
+      'Extract dominant color palettes with WCAG contrast ratios, CSS variables, and Tailwind export.',
+    tags: ['palette', 'color', 'swatches', 'kmeans', 'wcag', 'tailwind'],
+    icon: 'palette',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'image-slicer',
+    name: 'Image Slicer & Grid Splitter',
+    category: 'images',
+    description: 'Slice banners into social carousels and 3x3 grids with instant ZIP export.',
+    tags: ['slicer', 'grid', 'instagram', 'carousel', 'split', 'zip'],
+    icon: 'scissors',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'image-grid',
+    name: 'Contact Sheet & Collage Grid Builder',
+    category: 'images',
+    description: 'Combine multiple images into high-resolution photo contact sheets and collages.',
+    tags: ['contact-sheet', 'grid', 'collage', 'photo', 'layout'],
+    icon: 'grid',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'gradient-studio',
+    name: 'CSS & Vector Gradient Studio',
+    category: 'images',
+    description: 'Create linear, radial, and conic gradients with SVG vector and CSS export.',
+    tags: ['gradient', 'css', 'svg', 'radial', 'linear', 'conic'],
+    icon: 'palette',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: false,
+      producesText: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-numberer',
+    name: 'PDF Page Numberer & Bates Stamper',
+    category: 'documents',
+    description: 'Stamp sequential page numbers, Bates numbers, and custom headers onto PDF pages.',
+    tags: ['pdf', 'number', 'bates', 'pages', 'stamp', 'footer'],
+    icon: 'hash',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'pdf-watermark',
+    name: 'PDF Watermarker & Stamp Applier',
+    category: 'documents',
+    description: 'Stamp confidential watermarks and diagonal text stamps across PDF documents.',
+    tags: ['pdf', 'watermark', 'stamp', 'confidential', 'draft'],
+    icon: 'shield-check',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'markdown-to-pdf',
+    name: 'Markdown / Text → PDF Exporter',
+    category: 'documents',
+    description:
+      'Render formatted Markdown notes and specifications into paginated vector PDF documents.',
+    tags: ['markdown', 'pdf', 'export', 'document', 'convert'],
+    icon: 'file-text',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'duplicate-finder',
+    name: 'Duplicate File & Hash Matcher',
+    category: 'files',
+    description: 'Find identical duplicate files by size and SHA-256 hash to reclaim disk space.',
+    tags: ['duplicate', 'files', 'hash', 'cleaner', 'storage'],
+    icon: 'hard-drive',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'folder-analyzer',
+    name: 'Disk Space & Folder Tree Analyzer',
+    category: 'files',
+    description: 'Inspect storage distribution, media category breakdown, and largest files.',
+    tags: ['folder', 'disk', 'space', 'analyzer', 'storage', 'breakdown'],
+    icon: 'hard-drive',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'checksum-verifier',
+    name: 'File Checksum Signature Verifier',
+    category: 'files',
+    description: 'Verify file integrity using SHA-256, SHA-512, and standard .sha256sum files.',
+    tags: ['checksum', 'sha256', 'hash', 'verify', 'integrity'],
+    icon: 'shield-check',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesText: true
+    }
+  },
+  {
+    id: 'audio-trimmer',
+    name: 'Audio Waveform Visualizer & Trimmer',
+    category: 'audio',
+    description:
+      'Visual waveform scrubber with start/end markers, fade envelopes, and lossless WAV export.',
+    tags: ['audio', 'trimmer', 'waveform', 'cutter', 'wav', 'mp3'],
+    icon: 'scissors',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
+    id: 'audio-normalize',
+    name: 'Audio Loudness & Volume Normalizer',
+    category: 'audio',
+    description:
+      'Normalize audio volume to EBU R128 (-23 LUFS) and streaming platforms (-14 LUFS).',
+    tags: ['audio', 'normalize', 'loudness', 'lufs', 'gain', 'volume'],
+    icon: 'volume',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -843,6 +1137,29 @@ const ImageOcrTool = lazy(() => import('./image-ocr/ImageOcrTool'))
 const ArchiveInspectTool = lazy(() => import('./archive-inspect/ArchiveInspectTool'))
 const SvgCreatorTool = lazy(() => import('./svg-creator/SvgCreatorTool'))
 
+const AsciiBannerTool = lazy(() => import('./ascii-banner/AsciiBannerTool'))
+const ImageToAsciiTool = lazy(() => import('./image-to-ascii/ImageToAsciiTool'))
+const AsciiTableTool = lazy(() => import('./ascii-table/AsciiTableTool'))
+const XmlJsonTool = lazy(() => import('./xml-json/XmlJsonTool'))
+const TextAnalyzerTool = lazy(() => import('./text-analyzer/TextAnalyzerTool'))
+const CurlConverterTool = lazy(() => import('./curl-converter/CurlConverterTool'))
+const JsonSchemaTool = lazy(() => import('./json-schema/JsonSchemaTool'))
+const ChmodCalculatorTool = lazy(() => import('./chmod-calculator/ChmodCalculatorTool'))
+const KeypairGeneratorTool = lazy(() => import('./keypair-generator/KeypairGeneratorTool'))
+const SemverCalculatorTool = lazy(() => import('./semver-calculator/SemverCalculatorTool'))
+const ImagePaletteTool = lazy(() => import('./image-palette/ImagePaletteTool'))
+const ImageSlicerTool = lazy(() => import('./image-slicer/ImageSlicerTool'))
+const ImageGridTool = lazy(() => import('./image-grid/ImageGridTool'))
+const GradientStudioTool = lazy(() => import('./gradient-studio/GradientStudioTool'))
+const PdfNumbererTool = lazy(() => import('./pdf-numberer/PdfNumbererTool'))
+const PdfWatermarkTool = lazy(() => import('./pdf-watermark/PdfWatermarkTool'))
+const MarkdownToPdfTool = lazy(() => import('./markdown-to-pdf/MarkdownToPdfTool'))
+const DuplicateFinderTool = lazy(() => import('./duplicate-finder/DuplicateFinderTool'))
+const FolderAnalyzerTool = lazy(() => import('./folder-analyzer/FolderAnalyzerTool'))
+const ChecksumVerifierTool = lazy(() => import('./checksum-verifier/ChecksumVerifierTool'))
+const AudioTrimmerTool = lazy(() => import('./audio-trimmer/AudioTrimmerTool'))
+const AudioNormalizeTool = lazy(() => import('./audio-normalize/AudioNormalizeTool'))
+
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
   'base64-codec': Base64Tool,
@@ -896,5 +1213,27 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'social-resizer': SocialResizerTool,
   'image-ocr': ImageOcrTool,
   'archive-inspect': ArchiveInspectTool,
-  'svg-creator': SvgCreatorTool
+  'svg-creator': SvgCreatorTool,
+  'ascii-banner': AsciiBannerTool,
+  'image-to-ascii': ImageToAsciiTool,
+  'ascii-table': AsciiTableTool,
+  'xml-json': XmlJsonTool,
+  'text-analyzer': TextAnalyzerTool,
+  'curl-converter': CurlConverterTool,
+  'json-schema': JsonSchemaTool,
+  'chmod-calculator': ChmodCalculatorTool,
+  'keypair-generator': KeypairGeneratorTool,
+  'semver-calculator': SemverCalculatorTool,
+  'image-palette': ImagePaletteTool,
+  'image-slicer': ImageSlicerTool,
+  'image-grid': ImageGridTool,
+  'gradient-studio': GradientStudioTool,
+  'pdf-numberer': PdfNumbererTool,
+  'pdf-watermark': PdfWatermarkTool,
+  'markdown-to-pdf': MarkdownToPdfTool,
+  'duplicate-finder': DuplicateFinderTool,
+  'folder-analyzer': FolderAnalyzerTool,
+  'checksum-verifier': ChecksumVerifierTool,
+  'audio-trimmer': AudioTrimmerTool,
+  'audio-normalize': AudioNormalizeTool
 }
