@@ -83,7 +83,15 @@ export const IPC = {
   queueRun: 'queue:run',
   queueList: 'queue:list',
   queueSave: 'queue:save',
-  queueDelete: 'queue:delete'
+  queueDelete: 'queue:delete',
+
+  assetsList: 'assets:list',
+  assetsAdd: 'assets:add',
+  assetsAddBatch: 'assets:add-batch',
+  assetsToggleFavorite: 'assets:toggle-favorite',
+  assetsRemove: 'assets:remove',
+  assetsCheckExistence: 'assets:check-existence',
+  assetsCleanupMissing: 'assets:cleanup-missing'
 } as const
 
 export interface FileFilter {
@@ -651,6 +659,31 @@ export interface PromptSaveInput {
   tags: string[]
 }
 
+export type AssetCategory = 'image' | 'document' | 'audio' | 'video' | 'code' | 'archive' | 'other'
+
+export interface AssetRecord {
+  id: number
+  filePath: string
+  fileName: string
+  fileSize: number
+  fileType: AssetCategory
+  mimeType: string | null
+  sourceToolId: string | null
+  favorite: boolean
+  tags: string[]
+  addedMs: number
+  lastAccessedMs: number
+  exists?: boolean
+}
+
+export interface AssetFilter {
+  type?: string
+  favorite?: boolean
+  search?: string
+  limit?: number
+  offset?: number
+}
+
 /** Shape exposed on `window.stash` by the preload bridge. */
 export interface StashBridge {
   app: {
@@ -749,5 +782,14 @@ export interface StashBridge {
   progress: {
     subscribe(listener: (event: ProgressEvent) => void): () => void
     cancel(operationId: string): Promise<void>
+  }
+  assets: {
+    list(filter?: AssetFilter): Promise<AssetRecord[]>
+    add(filePath: string, sourceToolId?: string, tags?: string[]): Promise<AssetRecord>
+    addBatch(filePaths: string[], sourceToolId?: string): Promise<AssetRecord[]>
+    toggleFavorite(id: number): Promise<boolean>
+    remove(id: number): Promise<void>
+    checkExistence(id: number): Promise<{ id: number; exists: boolean }>
+    cleanupMissing(): Promise<number>
   }
 }

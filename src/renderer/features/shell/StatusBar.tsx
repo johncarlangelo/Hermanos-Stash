@@ -36,6 +36,8 @@ export function StatusBar() {
         return view.toolId ? `history · ${view.toolId}` : 'history'
       case 'settings':
         return 'settings'
+      case 'gallery':
+        return 'gallery · local assets'
       default:
         return 'workspace'
     }

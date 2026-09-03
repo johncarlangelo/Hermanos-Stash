@@ -39,7 +39,8 @@ import type {
   ArchiveReadEntryRequest,
   ArchiveReadEntryResult,
   ArchiveExtractEntryRequest,
-  ArchiveExtractEntryResult
+  ArchiveExtractEntryResult,
+  AssetFilter
 } from '../shared/ipc'
 
 /**
@@ -158,6 +159,17 @@ const api: StashBridge = {
       }
     },
     cancel: (operationId: string) => invoke<void>(IPC.progressCancel, operationId)
+  },
+  assets: {
+    list: (filter?: AssetFilter) => invoke(IPC.assetsList, filter),
+    add: (filePath: string, sourceToolId?: string, tags?: string[]) =>
+      invoke(IPC.assetsAdd, filePath, sourceToolId, tags),
+    addBatch: (filePaths: string[], sourceToolId?: string) =>
+      invoke(IPC.assetsAddBatch, filePaths, sourceToolId),
+    toggleFavorite: (id: number) => invoke(IPC.assetsToggleFavorite, id),
+    remove: (id: number) => invoke(IPC.assetsRemove, id),
+    checkExistence: (id: number) => invoke(IPC.assetsCheckExistence, id),
+    cleanupMissing: () => invoke(IPC.assetsCleanupMissing)
   }
 }
 

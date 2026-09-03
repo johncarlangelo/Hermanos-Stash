@@ -11,6 +11,7 @@ export type View =
   | { type: 'settings' }
   | { type: 'queue'; presetId?: string }
   | { type: 'insights' }
+  | { type: 'gallery'; filterType?: string }
 
 interface NavState {
   view: View
@@ -26,6 +27,7 @@ interface NavState {
   openSettings: () => void
   openQueue: (presetId?: string) => void
   openInsights: () => void
+  openGallery: (filterType?: string) => void
   setPaletteOpen: (open: boolean, seedQuery?: string) => void
 }
 
@@ -58,6 +60,14 @@ export const useNav = create<NavState>((set) => ({
   openSettings: () => set({ view: { type: 'settings' }, paletteOpen: false }),
   openQueue: (presetId?: string) => set({ view: { type: 'queue', presetId }, paletteOpen: false }),
   openInsights: () => set({ view: { type: 'insights' }, paletteOpen: false }),
+  openGallery: (filterType?: string) =>
+    set({
+      view: {
+        type: 'gallery',
+        filterType: typeof filterType === 'string' ? filterType : undefined
+      },
+      paletteOpen: false
+    }),
   setPaletteOpen: (paletteOpen, seedQuery) =>
     set((state) => ({
       paletteOpen,

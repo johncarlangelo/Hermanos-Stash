@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BarChart3, ChevronRight, House, Layers } from 'lucide-react'
+import { BarChart3, ChevronRight, FolderArchive, House, Layers } from 'lucide-react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
 import { StatusBar } from '../features/shell/StatusBar'
@@ -11,6 +11,7 @@ import { SettingsView } from '../features/shell/SettingsView'
 import { HistoryView } from '../features/shell/HistoryView'
 import { QueueView } from '../features/shell/QueueView'
 import { UsageDashboard } from '../features/shell/UsageDashboard'
+import { GalleryView } from '../features/gallery/GalleryView'
 import { DropRouter } from '../features/shell/DropRouter'
 import { QuickSwitch } from '../features/shell/QuickSwitch'
 import { Toaster } from '../components/ui/Toaster'
@@ -49,6 +50,8 @@ function Breadcrumb() {
     segments.push({ label: 'Queue', icon: <Layers size={12} /> })
   } else if (view.type === 'insights') {
     segments.push({ label: 'Insights', icon: <BarChart3 size={12} /> })
+  } else if (view.type === 'gallery') {
+    segments.push({ label: 'Asset Stash', icon: <FolderArchive size={12} /> })
   }
 
   return (
@@ -158,6 +161,7 @@ export default function App() {
               {view.type === 'settings' && <SettingsView />}
               {view.type === 'queue' && <QueueView />}
               {view.type === 'insights' && <UsageDashboard />}
+              {view.type === 'gallery' && <GalleryView initialFilter={view.filterType} />}
             </div>
           </main>
           <CommandPalette />

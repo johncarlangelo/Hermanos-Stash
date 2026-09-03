@@ -3,6 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { openDatabase } from './services/db'
 import {
+  AssetStashStore,
   FavoritesStore,
   HistoryStore,
   PrefsStore,
@@ -121,6 +122,7 @@ function initializeServices(): number {
     recents: new RecentsStore(db),
     history: new HistoryStore(db),
     prompts: new PromptsStore(db),
+    assets: new AssetStashStore(db),
     temp: tempManager,
     progress,
     writeScope: new WriteScopeGuard(() => tempManager!.rootPath)

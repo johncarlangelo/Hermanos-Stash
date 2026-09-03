@@ -155,6 +155,9 @@ export function DropZone({
     if (onFiles) {
       onFiles(multiple ? paths : paths.slice(0, 1))
     }
+    if (typeof window !== 'undefined' && window.stash?.assets?.addBatch && paths.length > 0) {
+      window.stash.assets.addBatch(paths).catch(() => {})
+    }
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,6 +173,9 @@ export function DropZone({
     }
     if (onFiles) {
       onFiles(multiple ? paths : paths.slice(0, 1))
+    }
+    if (typeof window !== 'undefined' && window.stash?.assets?.addBatch && paths.length > 0) {
+      window.stash.assets.addBatch(paths).catch(() => {})
     }
     e.target.value = ''
   }
@@ -195,6 +201,9 @@ export function DropZone({
         if (!result.cancelled && result.paths.length > 0) {
           setError(null)
           if (onFiles) onFiles(result.paths)
+          if (window.stash?.assets?.addBatch) {
+            window.stash.assets.addBatch(result.paths).catch(() => {})
+          }
         }
       } else {
         inputRef.current?.click()

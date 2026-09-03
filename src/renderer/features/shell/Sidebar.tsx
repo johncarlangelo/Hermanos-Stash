@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ChevronRight,
   Clock,
+  FolderArchive,
   House,
   Layers,
   Pin,
@@ -19,6 +20,12 @@ import { getIcon } from '../../components/icons'
 import { useLibrary } from '../../stores/library'
 import { usePins, PIN_LIMIT } from '../../stores/pins'
 import { useNav } from '../../stores/nav'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '../../components/ui/accordion'
 
 /**
  * ui-overhaul sidebar — Hermes-grade density:
@@ -88,6 +95,7 @@ export function Sidebar() {
   const openHistory = useNav((s) => s.openHistory)
   const openQueue = useNav((s) => s.openQueue)
   const openInsights = useNav((s) => s.openInsights)
+  const openGallery = useNav((s) => s.openGallery)
   const openSettings = useNav((s) => s.openSettings)
   const setPaletteOpen = useNav((s) => s.setPaletteOpen)
 
@@ -189,6 +197,12 @@ export function Sidebar() {
           label="Insights"
           onClick={() => openInsights()}
         />
+        <SidebarRow
+          active={view.type === 'gallery'}
+          icon={<FolderArchive size={13} />}
+          label="Asset Stash"
+          onClick={() => openGallery()}
+        />
       </nav>
 
       {/* Pinned dock */}
@@ -244,79 +258,113 @@ export function Sidebar() {
         </nav>
       )}
 
-      {/* Favorites */}
-      {favoriteTools.length > 0 && (
-        <nav aria-label="Favorites" className="mb-3">
-          <SectionLabel icon={<Star size={9} />}>Favorites</SectionLabel>
-          <ul className="space-y-px">
-            {favoriteTools.map((tool) => (
-              <li key={tool.id} className="group relative">
-                <SidebarRow
-                  active={view.type === 'tool' && view.toolId === tool.id}
-                  icon={<Star size={13} />}
-                  label={tool.name}
-                  onClick={() => openTool(tool.id)}
-                />
-                <button
-                  type="button"
-                  aria-label={`Unfavorite ${tool.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void toggleFavorite(tool.id)
-                  }}
-                  className="absolute top-1/2 right-1 -translate-y-1/2 cursor-pointer rounded-xs p-1 text-faint opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-dim"
-                >
-                  <Star size={11} fill="currentColor" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      {/* Accordion sections for Favorites, Recent, Categories */}
+      <Accordion
+        type="multiple"
+        defaultValue={['favorites', 'recent', 'categories']}
+        className="space-y-2 flex-1"
+      >
+        {favoriteTools.length > 0 && (
+          <AccordionItem value="favorites" className="border-0">
+            <AccordionTrigger className="group hover:bg-surface/50 rounded-sm py-1 px-2 hover:no-underline">
+              <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] text-faint uppercase select-none">
+                <Star size={9} className="text-faint/80" />
+                Favorites
+              </span>
+              <span className="font-mono text-[9.5px] text-faint ml-auto mr-1">
+                {favoriteTools.length}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-0.5 pb-1">
+              <ul className="space-y-px">
+                {favoriteTools.map((tool) => (
+                  <li key={tool.id} className="group relative">
+                    <SidebarRow
+                      active={view.type === 'tool' && view.toolId === tool.id}
+                      icon={<Star size={13} />}
+                      label={tool.name}
+                      onClick={() => openTool(tool.id)}
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Unfavorite ${tool.name}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void toggleFavorite(tool.id)
+                      }}
+                      className="absolute top-1/2 right-1 -translate-y-1/2 cursor-pointer rounded-xs p-1 text-faint opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-dim"
+                    >
+                      <Star size={11} fill="currentColor" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
-      {/* Recent */}
-      {recentTools.length > 0 && (
-        <nav aria-label="Recent tools" className="mb-3">
-          <SectionLabel>Recent</SectionLabel>
-          <ul className="space-y-px">
-            {recentTools.map((tool) => (
-              <li key={tool.id}>
-                <SidebarRow
-                  active={view.type === 'tool' && view.toolId === tool.id}
-                  icon={(() => {
-                    const Icon = getIcon(tool.icon)
-                    return <Icon size={13} />
-                  })()}
-                  label={tool.name}
-                  onClick={() => openTool(tool.id)}
-                />
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+        {recentTools.length > 0 && (
+          <AccordionItem value="recent" className="border-0">
+            <AccordionTrigger className="group hover:bg-surface/50 rounded-sm py-1 px-2 hover:no-underline">
+              <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] text-faint uppercase select-none">
+                <Clock size={9} className="text-faint/80" />
+                Recent
+              </span>
+              <span className="font-mono text-[9.5px] text-faint ml-auto mr-1">
+                {recentTools.length}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-0.5 pb-1">
+              <ul className="space-y-px">
+                {recentTools.map((tool) => (
+                  <li key={tool.id}>
+                    <SidebarRow
+                      active={view.type === 'tool' && view.toolId === tool.id}
+                      icon={(() => {
+                        const Icon = getIcon(tool.icon)
+                        return <Icon size={13} />
+                      })()}
+                      label={tool.name}
+                      onClick={() => openTool(tool.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
-      {/* Categories */}
-      <nav aria-label="Categories" className="flex-1">
-        <SectionLabel>Categories</SectionLabel>
-        <ul className="space-y-px">
-          {CATEGORIES.map((category) => {
-            const Icon = getIcon(category.icon)
-            const count = toolRegistry.byCategory(category.id).length
-            return (
-              <li key={category.id}>
-                <SidebarRow
-                  active={view.type === 'category' && view.category === category.id}
-                  icon={<Icon size={13} />}
-                  label={category.label}
-                  count={count > 0 ? count : undefined}
-                  onClick={() => openCategory(category.id as CategoryId)}
-                />
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
+        <AccordionItem value="categories" className="border-0">
+          <AccordionTrigger className="group hover:bg-surface/50 rounded-sm py-1 px-2 hover:no-underline">
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] text-faint uppercase select-none">
+              <Layers size={9} className="text-faint/80" />
+              Categories
+            </span>
+            <span className="font-mono text-[9.5px] text-faint ml-auto mr-1">
+              {CATEGORIES.length}
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-0.5 pb-1">
+            <ul className="space-y-px">
+              {CATEGORIES.map((category) => {
+                const Icon = getIcon(category.icon)
+                const count = toolRegistry.byCategory(category.id).length
+                return (
+                  <li key={category.id}>
+                    <SidebarRow
+                      active={view.type === 'category' && view.category === category.id}
+                      icon={<Icon size={13} />}
+                      label={category.label}
+                      count={count > 0 ? count : undefined}
+                      onClick={() => openCategory(category.id as CategoryId)}
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       {/* Footer */}
       <nav aria-label="Application" className="mt-3 border-t border-line pt-2">

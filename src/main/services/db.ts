@@ -11,7 +11,7 @@ import path from 'node:path'
  * - Migrations run in order; `PRAGMA user_version` tracks the applied level.
  */
 
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 4
 
 const MIGRATIONS: string[] = [
   // v1: initial schema
@@ -67,6 +67,26 @@ const MIGRATIONS: string[] = [
     updated_ms INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_queues_updated ON queues (updated_ms DESC);
+  `,
+  // v4: asset stash (lightweight local file references)
+  `
+  CREATE TABLE IF NOT EXISTS asset_stash (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_path TEXT UNIQUE NOT NULL,
+    file_name TEXT NOT NULL,
+    file_size INTEGER NOT NULL DEFAULT 0,
+    file_type TEXT NOT NULL,
+    mime_type TEXT,
+    source_tool_id TEXT,
+    favorite INTEGER NOT NULL DEFAULT 0,
+    tags_json TEXT NOT NULL DEFAULT '[]',
+    added_ms INTEGER NOT NULL,
+    last_accessed_ms INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_asset_stash_accessed ON asset_stash (last_accessed_ms DESC);
+  CREATE INDEX IF NOT EXISTS idx_asset_stash_added ON asset_stash (added_ms DESC);
+  CREATE INDEX IF NOT EXISTS idx_asset_stash_type ON asset_stash (file_type);
+  CREATE INDEX IF NOT EXISTS idx_asset_stash_favorite ON asset_stash (favorite);
   `
 ]
 

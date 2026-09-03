@@ -28,10 +28,12 @@ import type {
   PdfSplitFailure,
   PdfSplitResult,
   PdfSplitSuccess,
-  SocialResizeResult
+  SocialResizeResult,
+  AssetFilter
 } from '../../shared/ipc'
 import { serializeStashError, stashError, type StashError } from '../../shared/errors'
 import {
+  AssetStashStore,
   FavoritesStore,
   HistoryStore,
   PrefsStore,
@@ -110,6 +112,7 @@ export interface IpcServices {
   recents: RecentsStore
   history: HistoryStore
   prompts: PromptsStore
+  assets: AssetStashStore
   temp: TempWorkspaceManager
   progress: ProgressBus
   writeScope: WriteScopeGuard
@@ -1669,6 +1672,36 @@ export function registerIpc(services: IpcServices): void {
     })
   })
   handle(IPC.promptsDelete, (_e, id: unknown) => services.prompts.delete(assertNumber(id, 'id')))
+
+  // --- Asset Stash (ADR-033) ------------------------------------------------
+  handle(IPC.assetsList, (_e, filter: unknown) => {
+    const f = (typeof filter === 'object' && filter !== null ? filter : {}) as AssetFilter
+    return services.assets.list(f)
+  })
+  handle(IPC.assetsAdd, (_e, filePath: unknown, sourceToolId: unknown, tags: unknown) => {
+    return services.assets.add(
+      assertString(filePath, 'filePath'),
+      typeof sourceToolId === 'string' ? sourceToolId : undefined,
+      Array.isArray(tags) ? tags.filter((t): t is string => typeof t === 'string') : []
+    )
+  })
+  handle(IPC.assetsAddBatch, (_e, filePaths: unknown, sourceToolId: unknown) => {
+    const paths = Array.isArray(filePaths)
+      ? filePaths.filter((p): p is string => typeof p === 'string')
+      : []
+    return services.assets.addBatch(
+      paths,
+      typeof sourceToolId === 'string' ? sourceToolId : undefined
+    )
+  })
+  handle(IPC.assetsToggleFavorite, (_e, id: unknown) =>
+    services.assets.toggleFavorite(assertNumber(id, 'id'))
+  )
+  handle(IPC.assetsRemove, (_e, id: unknown) => services.assets.remove(assertNumber(id, 'id')))
+  handle(IPC.assetsCheckExistence, (_e, id: unknown) =>
+    services.assets.checkExistence(assertNumber(id, 'id'))
+  )
+  handle(IPC.assetsCleanupMissing, () => services.assets.cleanupMissing())
 
   // --- Progress / cancellation ----------------------------------------------
   handle(IPC.progressCancel, (_e, operationId: unknown) =>
