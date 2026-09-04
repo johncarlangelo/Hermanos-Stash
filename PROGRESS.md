@@ -17,7 +17,8 @@ Hermanos Stash now includes an expanded suite of 75 modular tools spanning text,
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
 in-memory archive inspector, batch queue chaining, and usage analytics.
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **84 test files / 742 tests passing (100%)**.
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **87 test files / 761 tests passing (100%)**.
+- **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

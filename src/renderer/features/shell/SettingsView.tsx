@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Download, FolderOpen, Trash2, Upload } from 'lucide-react'
+import {
+  Download,
+  FolderOpen,
+  Trash2,
+  Upload,
+  Sliders,
+  Palette,
+  Shield,
+  HardDrive
+} from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { FieldRow, Select } from '../../components/ui/Inputs'
-import { Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
+import { SuccessNote } from '../../components/ui/Feedback'
+import { Badge } from '../../components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { AccentPicker } from './AccentPicker'
 import { setDensityPreference, type Density } from '../../accent-runtime'
 import { DENSITY_PREF_KEY } from '../../accent-runtime'
-import { useWorkspace, WORKSPACE_WIDTH_KEY, type WorkspaceWidth } from '../../stores/workspace'
+import { useWorkspace, WORKSPACE_WIDTH_KEY } from '../../stores/workspace'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
 
@@ -22,8 +33,6 @@ const ZOOM_OPTIONS = [
 ]
 
 const ZOOM_PREF_KEY = 'ui.zoom'
-// Same key the accent-runtime module persists under; declared here only for
-// the initial load in this view.
 const ACCENT_PREF_KEY = 'ui.accent'
 
 /**
@@ -118,45 +127,42 @@ export function SettingsView() {
         savedZoom,
         savedAccent,
         savedDensity,
-        savedQueuePresets,
-        savedLastUsedQueue,
-        savedPins,
-        savedWorkspaceWidth,
-        favorites,
+        savedWidth,
+        pinnedTools,
+        queuePresets,
+        queueLastUsed,
         prompts
       ] = await Promise.all([
         window.stash.prefs.get<number>(ZOOM_PREF_KEY),
         window.stash.prefs.get<string>(ACCENT_PREF_KEY),
         window.stash.prefs.get<string>(DENSITY_PREF_KEY),
-        window.stash.prefs.get<unknown>('queue.presets'),
-        window.stash.prefs.get<unknown>('queue.lastUsed'),
-        window.stash.prefs.get<unknown>('pinnedTools'),
         window.stash.prefs.get<string>(WORKSPACE_WIDTH_KEY),
-        window.stash.favorites.list().catch(() => []),
-        window.stash.prompts.list().catch(() => [])
+        window.stash.prefs.get<string[]>('pinnedTools'),
+        window.stash.prefs.get<unknown[]>('queue.presets'),
+        window.stash.prefs.get<string>('queue.lastUsed'),
+        window.stash.prompts.list()
       ])
 
-      const profile = {
-        version: 1,
+      const profileData = {
+        stashProfileVersion: 1,
         exportedAt: new Date().toISOString(),
         prefs: {
-          zoom: savedZoom ?? zoom,
-          accent: savedAccent ?? accent,
-          density: savedDensity ?? density,
-          workspaceWidth: (savedWorkspaceWidth as WorkspaceWidth) ?? workspaceWidth,
-          pinnedTools: savedPins ?? []
+          zoom: savedZoom,
+          accent: savedAccent,
+          density: savedDensity,
+          workspaceWidth: savedWidth,
+          pinnedTools: pinnedTools ?? []
         },
         queue: {
-          presets: savedQueuePresets ?? [],
-          lastUsed: savedLastUsedQueue ?? null
+          presets: queuePresets ?? [],
+          lastUsed: queueLastUsed ?? null
         },
-        favorites: favorites ?? [],
         prompts: prompts ?? []
       }
 
       await window.stash.fs.writeTextFile({
         path: dialogResult.path,
-        content: JSON.stringify(profile, null, 2)
+        content: JSON.stringify(profileData, null, 2)
       })
       toastSuccess('Profile exported successfully')
     } catch (err) {
@@ -168,18 +174,36 @@ export function SettingsView() {
     try {
       const dialogResult = await window.stash.dialogs.openFile({
         title: 'Import Stash Profile',
-        filters: [{ name: 'Stash Profile', extensions: ['stash-profile', 'json'] }]
+        filters: [{ name: 'Stash Profile', extensions: ['stash-profile', 'json'] }],
+        multiSelections: false
       })
-      if (dialogResult.cancelled || !dialogResult.paths || dialogResult.paths.length === 0) return
+      if (dialogResult.cancelled || dialogResult.paths.length === 0) return
 
-      const fileResult = await window.stash.fs.readTextFile({ path: dialogResult.paths[0] })
-      const profile = JSON.parse(fileResult.content)
-
-      if (!profile || typeof profile !== 'object') {
-        throw new Error('Invalid profile file format')
+      const { content } = await window.stash.fs.readTextFile({ path: dialogResult.paths[0] })
+      let profile: {
+        stashProfileVersion?: number
+        prefs?: {
+          zoom?: number
+          accent?: string
+          density?: string
+          workspaceWidth?: string
+          pinnedTools?: string[]
+        }
+        queue?: {
+          presets?: unknown[]
+          lastUsed?: string | null
+        }
+        queuePresets?: unknown[]
+        prompts?: Array<{ title?: string; body?: string; tags?: string[] }>
       }
 
-      // Restore preferences
+      try {
+        profile = JSON.parse(content) as typeof profile
+      } catch {
+        toastError('Selected file is not valid JSON')
+        return
+      }
+
       if (profile.prefs) {
         if (typeof profile.prefs.zoom === 'number') {
           const clamped = clampZoomFactor(profile.prefs.zoom)
@@ -206,7 +230,6 @@ export function SettingsView() {
         }
       }
 
-      // Restore queue presets
       if (profile.queue) {
         if (Array.isArray(profile.queue.presets)) {
           await window.stash.prefs.set('queue.presets', profile.queue.presets)
@@ -218,7 +241,6 @@ export function SettingsView() {
         await window.stash.prefs.set('queue.presets', profile.queuePresets)
       }
 
-      // Restore prompt library
       if (Array.isArray(profile.prompts)) {
         for (const prompt of profile.prompts) {
           if (prompt && typeof prompt.title === 'string' && typeof prompt.body === 'string') {
@@ -238,178 +260,285 @@ export function SettingsView() {
   }
 
   return (
-    <div className="relative">
-      <div className="relative mx-auto w-full max-w-2xl space-y-6 px-8 py-8">
-        <header className="mb-2">
-          <SectionHeading>Settings</SectionHeading>
-          <p className="mt-1 text-[13px] text-dim">
-            Application preferences and local system info.
-          </p>
-        </header>
-
-        {clearedAt && (
-          <SuccessNote
-            message={`All recorded tool runs were removed from your local history at ${clearedAt}.`}
-          />
-        )}
-
-        <Panel className="px-4 py-4">
-          <SectionHeading>Application</SectionHeading>
-          <dl className="mt-3 space-y-2 text-[12.5px]">
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-faint">Version</dt>
-              <dd className="tnum font-mono text-dim">{info?.version ?? '…'}</dd>
+    <div className="mx-auto w-full max-w-4xl px-6 sm:px-8 py-8 space-y-7">
+      {/* Top Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-6">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-raised/80 shadow-[0_0_24px_-8px_var(--color-accent-glow)]">
+            <Sliders size={22} className="text-accent" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-ink">
+                Settings & Preferences
+              </h1>
+              <Badge
+                variant="outline"
+                className="border-accent/40 text-accent font-mono text-[10px]"
+              >
+                LOCAL SYSTEM
+              </Badge>
             </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0 text-faint">Data folder</dt>
-              <dd
-                className="min-w-0 truncate font-mono text-[11.5px] text-dim"
-                title={info?.dataFolder}
-              >
-                {info?.dataFolder ?? '…'}
-              </dd>
-            </div>
-          </dl>
-          <div className="mt-3">
-            <Button variant="secondary" size="sm" onClick={() => void revealData()}>
-              <FolderOpen size={13} aria-hidden />
-              Open data folder
-            </Button>
+            <p className="text-[13px] text-dim mt-0.5">
+              Workstation appearance, canvas layout, density scaling, and local backups.
+            </p>
           </div>
-        </Panel>
-
-        <Panel className="px-4 py-4">
-          <SectionHeading>Appearance</SectionHeading>
-          <p className="mt-2 text-[12px] text-dim">Accent color</p>
-          <AccentPicker current={accent} />
-          <p className="mt-2 text-[12px] text-dim">Density</p>
-          <div
-            role="radiogroup"
-            aria-label="Interface density"
-            className="mt-2 inline-flex rounded-md border border-line p-0.5"
-          >
-            {(['comfortable', 'compact'] as Density[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                role="radio"
-                aria-checked={density === option}
-                onClick={() => {
-                  setDensity(option)
-                  void setDensityPreference(option)
-                }}
-                className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] capitalize transition-colors duration-150 ${
-                  density === option
-                    ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
-                    : 'text-faint hover:text-dim'
-                }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] text-faint">
-            Compact fits more on screen. Applied immediately and remembered.
-          </p>
-
-          <p className="mt-3 text-[12px] text-dim">Workspace Canvas Width</p>
-          <div
-            role="radiogroup"
-            aria-label="Workspace canvas width"
-            className="mt-2 inline-flex rounded-md border border-line p-0.5"
-          >
-            {(
-              [
-                { id: 'wide', label: 'Wide / Expanded' },
-                { id: 'standard', label: 'Standard / Compact' }
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={workspaceWidth === option.id}
-                onClick={() => void setWorkspaceWidth(option.id)}
-                className={`cursor-pointer rounded-sm px-3 py-1 text-[12px] transition-colors duration-150 ${
-                  workspaceWidth === option.id
-                    ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
-                    : 'text-faint hover:text-dim'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] text-faint">
-            Wide utilizes full monitor width for spacious multi-column workstations. Applied
-            immediately and remembered.
-          </p>
-
-          <div className="mt-3 flex items-center gap-3">
-            <FieldRow label="Zoom" htmlFor="settings-zoom">
-              <Select
-                id="settings-zoom"
-                value={zoom}
-                onChange={(e) => void changeZoom(Number(e.target.value))}
-                className="w-24"
-              >
-                {ZOOM_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </FieldRow>
-            <p className="text-[11.5px] text-faint">Applied immediately and remembered.</p>
-          </div>
-        </Panel>
-
-        <Panel className="px-4 py-4">
-          <SectionHeading>Backup & Portability</SectionHeading>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-dim">
-            Export your settings, theme choices, queue presets, prompt library, and pinned tools
-            into a standalone{' '}
-            <code className="rounded bg-surface px-1 py-0.5 font-mono text-[11px] text-ink">
-              .stash-profile
-            </code>{' '}
-            file to backup or migrate between machines.
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <Button variant="secondary" size="sm" onClick={() => void exportProfile()}>
-              <Download size={13} aria-hidden />
-              Export Profile
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => void importProfile()}>
-              <Upload size={13} aria-hidden />
-              Import Profile
-            </Button>
-          </div>
-        </Panel>
-
-        <Panel className="px-4 py-4">
-          <SectionHeading>Privacy</SectionHeading>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-dim">
-            Stash keeps a lightweight activity history (tool used, file names, outcome) so you can
-            retrace recent work. File contents are never recorded, and clearing it below removes
-            every entry immediately and permanently.
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <Button
-              variant={confirmingClear ? 'primary' : 'danger'}
-              size="sm"
-              onClick={() => void clearHistory()}
-            >
-              <Trash2 size={13} aria-hidden />
-              {confirmingClear ? 'Confirm clear?' : 'Clear activity history'}
-            </Button>
-            {clearedAt && <SuccessNote message={`Cleared at ${clearedAt}`} />}
-          </div>
-        </Panel>
-
-        <p className="text-center text-[11px] text-faint">
-          Hermanos Stash runs entirely offline. Files you process never leave this machine.
-        </p>
+        </div>
       </div>
+
+      {clearedAt && (
+        <SuccessNote
+          message={`All recorded tool runs were removed from your local history at ${clearedAt}.`}
+        />
+      )}
+
+      {/* Main Settings Cards */}
+      <div className="space-y-6">
+        {/* Card 1: Appearance & Display */}
+        <Card className="border-line/70 bg-surface/60 backdrop-blur-md">
+          <CardHeader className="pb-4 border-b border-line/60">
+            <div className="flex items-center gap-2">
+              <Palette size={16} className="text-accent" />
+              <CardTitle className="text-sm font-semibold text-ink">Appearance & Canvas</CardTitle>
+            </div>
+            <CardDescription className="text-xs text-dim mt-0.5">
+              Customize the theme accent color, layout width, interface density, and display scaling
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-6">
+            {/* Accent color */}
+            <div>
+              <label className="text-xs font-medium text-ink block mb-2">Accent Color</label>
+              <AccentPicker current={accent} />
+            </div>
+
+            {/* Density */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-ink block">Interface Density</label>
+              <div
+                role="radiogroup"
+                aria-label="Interface density"
+                className="inline-flex rounded-lg border border-line bg-surface/80 p-0.5"
+              >
+                {(['comfortable', 'compact'] as Density[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={density === option}
+                    onClick={() => {
+                      setDensity(option)
+                      void setDensityPreference(option)
+                    }}
+                    className={`cursor-pointer rounded-md px-3 py-1.5 text-xs capitalize transition-all ${
+                      density === option
+                        ? 'bg-accent text-base shadow-sm font-semibold'
+                        : 'text-dim hover:text-ink hover:bg-raised/50'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-faint">
+                Compact tightens paddings and table rows to fit more content on screen.
+              </p>
+            </div>
+
+            {/* Workspace Canvas Width */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-ink block">Workspace Canvas Width</label>
+              <div
+                role="radiogroup"
+                aria-label="Workspace canvas width"
+                className="inline-flex rounded-lg border border-line bg-surface/80 p-0.5"
+              >
+                {(
+                  [
+                    { id: 'wide', label: 'Wide / Expanded' },
+                    { id: 'standard', label: 'Standard / Compact' }
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={workspaceWidth === option.id}
+                    onClick={() => void setWorkspaceWidth(option.id)}
+                    className={`cursor-pointer rounded-md px-3 py-1.5 text-xs transition-all ${
+                      workspaceWidth === option.id
+                        ? 'bg-accent text-base shadow-sm font-semibold'
+                        : 'text-dim hover:text-ink hover:bg-raised/50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-faint">
+                Wide utilizes monitor width for spacious multi-column workstations.
+              </p>
+            </div>
+
+            {/* Zoom Scaling */}
+            <div className="flex items-center gap-4 pt-1">
+              <FieldRow label="Display Zoom" htmlFor="settings-zoom">
+                <Select
+                  id="settings-zoom"
+                  value={zoom}
+                  onChange={(e) => void changeZoom(Number(e.target.value))}
+                  className="w-28 text-xs h-8"
+                >
+                  {ZOOM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </FieldRow>
+              <p className="text-[11.5px] text-faint">Scales the entire workstation interface.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 2: Application Info & Storage */}
+        <Card className="border-line/70 bg-surface/60 backdrop-blur-md">
+          <CardHeader className="pb-4 border-b border-line/60">
+            <div className="flex items-center gap-2">
+              <HardDrive size={16} className="text-accent" />
+              <CardTitle className="text-sm font-semibold text-ink">
+                Application & Data Storage
+              </CardTitle>
+            </div>
+            <CardDescription className="text-xs text-dim mt-0.5">
+              Local filesystem location and installed runtime version
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-4">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="rounded-lg border border-line/70 bg-surface/40 p-3">
+                <dt className="text-faint uppercase font-mono text-[10px] tracking-wider">
+                  Version
+                </dt>
+                <dd className="mt-1 font-mono text-ink font-medium text-sm">
+                  {info?.version ?? '0.1.0'}
+                </dd>
+              </div>
+              <div className="rounded-lg border border-line/70 bg-surface/40 p-3">
+                <dt className="text-faint uppercase font-mono text-[10px] tracking-wider">
+                  Storage Engine
+                </dt>
+                <dd className="mt-1 font-mono text-ink font-medium text-sm">Local SQLite 3</dd>
+              </div>
+            </dl>
+
+            <div className="rounded-lg border border-line/70 bg-surface/40 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-faint uppercase font-mono text-[10px] tracking-wider">
+                  Data Folder
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void revealData()}
+                  className="gap-1.5 text-xs cursor-pointer h-7"
+                >
+                  <FolderOpen size={12} aria-hidden />
+                  Open in Explorer
+                </Button>
+              </div>
+              <p className="font-mono text-xs text-dim break-all select-all">
+                {info?.dataFolder ?? '...'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 3: Backup & Portability */}
+        <Card className="border-line/70 bg-surface/60 backdrop-blur-md">
+          <CardHeader className="pb-4 border-b border-line/60">
+            <div className="flex items-center gap-2">
+              <Download size={16} className="text-accent" />
+              <CardTitle className="text-sm font-semibold text-ink">Backup & Portability</CardTitle>
+            </div>
+            <CardDescription className="text-xs text-dim mt-0.5">
+              Export and restore all preferences, queue presets, prompt snippets, and pinned dock
+              tools
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-4">
+            <p className="text-xs text-dim leading-relaxed">
+              Export your configuration into a standalone{' '}
+              <code className="rounded bg-raised px-1.5 py-0.5 font-mono text-[11px] text-accent border border-line">
+                .stash-profile
+              </code>{' '}
+              file to migrate or keep a safe backup of your local workstation setup.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void exportProfile()}
+                className="gap-1.5 text-xs cursor-pointer"
+              >
+                <Download size={13} aria-hidden />
+                Export Profile
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void importProfile()}
+                className="gap-1.5 text-xs cursor-pointer"
+              >
+                <Upload size={13} aria-hidden />
+                Import Profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 4: Privacy & Data Hygiene */}
+        <Card className="border-line/70 bg-surface/60 backdrop-blur-md">
+          <CardHeader className="pb-4 border-b border-line/60">
+            <div className="flex items-center gap-2">
+              <Shield size={16} className="text-accent" />
+              <CardTitle className="text-sm font-semibold text-ink">
+                Privacy & Data Hygiene
+              </CardTitle>
+            </div>
+            <CardDescription className="text-xs text-dim mt-0.5">
+              100% offline, zero cloud connections, complete data autonomy
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-4">
+            <p className="text-xs text-dim leading-relaxed">
+              Stash records activity metadata (tool names, operations, durations) so you can easily
+              review your history. File contents are never sent anywhere or stored in telemetry.
+              Clearing history below permanently removes all logs.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant={confirmingClear ? 'primary' : 'danger'}
+                size="sm"
+                onClick={() => void clearHistory()}
+                className="gap-1.5 text-xs cursor-pointer"
+              >
+                <Trash2 size={13} aria-hidden />
+                {confirmingClear ? 'Confirm Clear?' : 'Clear Activity History'}
+              </Button>
+              {clearedAt && (
+                <span className="text-xs text-ok font-mono">Cleared at {clearedAt}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="text-center text-xs text-faint font-mono pt-2">
+        Hermanos Stash · Local-First Desktop Workstation · Zero Cloud Dependency
+      </p>
     </div>
   )
 }
+
+export default SettingsView
