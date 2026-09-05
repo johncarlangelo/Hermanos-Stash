@@ -598,3 +598,5 @@ Wave F gates:
 - Do not treat the initial tool catalog as exhaustive. New tools can be added after the architecture is proven.
 - Do not expand MVP scope merely because additional utilities are easy to imagine.
 - Installer packaging (electron-builder) is intentionally deferred; the production build pipeline itself is proven.
+- **Future Final Milestone (Milestone 11)**: Scheduled extraction of Hermanos Stash's UI/UX design system (including the signature giant `HERMANOS` background watermark, dark workstation palette, shadcn sidebar, command palette, and Electron IPC engine) into a reusable boilerplate template for upcoming Hermanos desktop applications (ADR-034).
+

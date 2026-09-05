@@ -325,3 +325,26 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
   - [x] `audio-trimmer` (Audio Waveform Visualizer & Trimmer) — Web Audio peak extraction, interactive waveform scrubbing, WAV encoding.
   - [x] `audio-normalize` (Audio Loudness Normalizer) — Streaming target loudness normalization (-14 LUFS, Apple Music, EBU R128).
 
+## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
+
+**Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*
+
+- [ ] **Phase 1: Visual Identity & Brand System Template**
+  - [ ] Retain and package the signature giant `HERMANOS` background watermark backdrop (`Wordmark.tsx` + `.wordmark` CSS) as the persistent fixed backdrop behind all app views.
+  - [ ] Extract the core dark workstation palette (`#0c0d0e`, `#141618`, `#1a1d20`), gold/amber accents, and translucent surfaces into a self-contained theme module.
+  - [ ] Standardize the typography scale (Playfair Display 800 display, Inter UI, JetBrains Mono code) with Google Font asset bundlers.
+- [ ] **Phase 2: Shell & Navigation Architecture Boilerplate**
+  - [ ] Parameterize the responsive sidebar with collapsible shadcn-style accordions, badges, and view routing.
+  - [ ] Extract the global command palette (`Cmd/Ctrl+K`), quick switcher, and search primitives into plug-and-play components.
+  - [ ] Extract the notification & toast system, drawer drawers, and modal/dialog managers.
+- [ ] **Phase 3: Core Component Library (UI Kit)**
+  - [ ] Package standardized components: full-width `DropZone` (Archive Inspector style), `Panel`, `Button`, `IconButton`, `Slider`, `Toggle`, `FieldRow`, `Input`, `Select`, `Spinner`, `ProgressBar`, `FileListPanel`, `ResultActions`.
+- [ ] **Phase 4: Local-First Desktop Engine (Electron + Vite + React + TS)**
+  - [ ] Provide hardened main/preload IPC bridge boilerplate with structured error normalization.
+  - [ ] Provide persistent SQLite store service (key-value, recents, user preferences) ready out-of-the-box.
+  - [ ] Provide temp workspace management with automatic filesystem lifecycle cleanup.
+  - [ ] Provide progress event streaming and cancellation token hooks for background processors.
+- [ ] **Phase 5: Template CLI / Starter Repository**
+  - [ ] Scaffold a standalone starter template repo (`hermanos-desktop-starter` or `template/`) with clean configuration, zero domain tool coupling, and a rapid setup guide for spinning up new Hermanos apps.
+
+

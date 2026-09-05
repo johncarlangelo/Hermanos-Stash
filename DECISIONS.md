@@ -193,3 +193,10 @@
 **Decision:** The asset gallery / recent uploads shelf will store lightweight file path references and metadata in local SQLite, pointing directly to the original file paths on the user's PC without copying or duplicating file contents on disk.
 
 **Reason:** Preserves local-first principles and disk space efficiency: no redundant file bloat, zero cloud storage, instant access, and seamless cross-tool reuse (e.g. dragging or selecting a referenced local file directly into any Stash tool).
+
+## ADR-034 — Hermanos Desktop App Starter Template & UI/UX Design System Extraction (Future Planned Milestone)
+
+**Decision:** Hermanos Stash's signature UI/UX design language and local-first Electron engine will serve as the official boilerplate starter template for all future Hermanos desktop applications. Implementation is intentionally scheduled as a planned final milestone (Milestone 11) after the Hermanos Stash application build is fully reviewed and approved.
+
+**Reason:** The app's design system—including the iconic giant "HERMANOS" background watermark (`Wordmark.tsx`), dark workstation palette, typography hierarchy, collapsible shadcn-style navigation sidebar, command palette, unified dropzones, and hardened Electron IPC bridge—represents a reusable, cohesive, premium desktop aesthetic. Extracting it as a parameterized starter kit ensures upcoming applications can be launched with rapid setup, zero code duplication, and immediate brand continuity without interfering with Stash's ongoing engineering.
+
