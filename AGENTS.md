@@ -71,22 +71,44 @@ Before substantial implementation:
 4. Read `TOOL_SPEC.md`.
 5. Read `DECISIONS.md`.
 6. Read `PROGRESS.md` and `TASKS.md`.
-7. Consult relevant skills under `.opencode/skills/` (e.g. UI/UX intelligence, document/media processing, design system tokens).
-8. Follow `LOOP.md` and leverage specialized subagents under `.opencode/agents/`.
+7. Read `GREPLOOP.md`.
+8. Consult relevant skills under `.agents/skills/` (e.g. UI/UX intelligence, document/media processing, design system tokens, `greploop`).
+9. Follow `GREPLOOP.md` / `LOOP.md` and leverage specialized subagents under `.agents/agents/`.
 
 After implementation:
 
 - run the narrowest relevant tests first;
 - run the broader verification suite before declaring completion;
+- execute the inspection loop (`GREPLOOP.md`) until a clean 5/5 score is achieved;
 - update `TOOL_CATALOG.md` and `TOOL_SPEC.md` whenever tools are added or modified;
 - update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
 - never mark a task complete without evidence.
 
+## Inspection loop (greploop skill)
+
+Use when:
+- I finish a small feature, bugfix, or refactor
+- I'm about to call something "done" or open a PR
+
+Do:
+- Run /greploop on the current changes (or `/greploop <PR#>` for a specific pull request) following `GREPLOOP.md`
+- Let the reviewer panel score the diff out of 5
+- Apply every blocking and major finding
+- Re-review from a clean context, up to 5 iterations, until the score hits 5/5 with no blockers
+- Keep diffs SMALL - greploop only converges on chunks that fit one clean review window
+- Leverage the specialized subagents under `.agents/agents/` (`@verifier`, `@architecture-reviewer`, `@design-reviewer`, `@ui-reviewer`, `@ux-reviewer`)
+
+Don't:
+- Run greploop on a 1000-line change and expect 5/5
+- Skip the loop "because it looked clean" - let it score
+
 ## Skills and specialized subagents
 
-### Available Skills (`.opencode/skills/`)
-Leverage the installed project skills when implementing features or reviewing quality:
+### Available Skills (`.agents/skills/`)
+Leverage the installed project skills in the Antigravity workspace when implementing features or reviewing quality:
+- **Code Review & Quality Loops:**
+  - `greploop`: Automated iterative code and architecture inspection loop with orthogonal reviewer lenses.
 - **UI / UX & Frontend Intelligence:**
   - `taste-skill` / `gpt-tasteskill`: Anti-slop frontend engineering, layout variance, and polished micro-interactions.
   - `ui-ux-pro-max` / `ui-styling` / `design-system`: Searchable UI styles, color palettes, font pairings, and accessibility / UX guidelines.
@@ -100,7 +122,7 @@ Leverage the installed project skills when implementing features or reviewing qu
   - `webapp-testing`: End-to-end testing and component verification patterns.
   - `mcp-builder`, `skill-creator`: Integration and extension tooling.
 
-### Specialized Subagents (`.opencode/agents/`)
+### Specialized Subagents (`.agents/agents/`)
 Invoke specialized subagents for focused planning, building, and review tasks:
 - `@architecture-reviewer`: Reviews boundaries, IPC security, modularity, and scalability against `ARCHITECTURE.md`.
 - `@design-reviewer`: Evaluates visual hierarchy, typography, surfaces, and dark palette compliance against `DESIGN.md`.

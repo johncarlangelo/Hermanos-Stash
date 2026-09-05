@@ -22,7 +22,8 @@ Read:
 - `TASKS.md`
 - `PROGRESS.md`
 - `DECISIONS.md`
-- Relevant skills in `.opencode/skills/` (UI/UX, document/media processing, design systems)
+- `GREPLOOP.md`
+- Relevant skills in `.agents/skills/` (UI/UX, document/media processing, design systems, `greploop`)
 
 Inspect the current repository before making assumptions.
 
@@ -43,7 +44,7 @@ For non-trivial work:
 
 - identify affected modules;
 - identify relevant existing patterns;
-- consult relevant skills in `.opencode/skills/` (e.g. `ui-ux-pro-max`, `awesome-design-md`, `pdf`, `docx`, etc.);
+- consult relevant skills in `.agents/skills/` (e.g. `ui-ux-pro-max`, `awesome-design-md`, `pdf`, `docx`, `greploop`, etc.);
 - define acceptance criteria;
 - identify tests and verification needed.
 
@@ -57,7 +58,7 @@ For a new tool, consult `@tool-builder` and follow:
 
 `registry → input → processing → result → UI states → error handling → tests`
 
-Leverage the document/media/UI skills in `.opencode/skills/` rather than reinventing difficult formats or building generic UIs.
+Leverage the document/media/UI skills in `.agents/skills/` rather than reinventing difficult formats or building generic UIs.
 
 Do not build fake integrations.
 
@@ -65,23 +66,27 @@ Do not build fake integrations.
 
 Run:
 
-- type checking;
-- linting;
-- focused unit tests;
+- type checking (`npm run typecheck`);
+- linting (`npm run lint`);
+- formatting check (`npm run format:check`);
+- focused unit tests (`npm test`);
 - focused tool tests;
 - build checks where relevant.
 
 Fix failures before moving on.
 
-### 6. Review
+### 6. Review (Greploop)
 
-Use specialized subagents when useful:
-
-- `@architecture-reviewer`
-- `@design-reviewer`
-- `@ui-reviewer`
-- `@ux-reviewer`
-- `@verifier`
+Execute the inspection loop (`GREPLOOP.md` / `greploop` skill):
+- Capture small diff (<400 lines);
+- Score through the 3 orthogonal lenses (correctness, security, quality);
+- Use specialized subagents under `.agents/agents/`:
+  - `@architecture-reviewer`
+  - `@design-reviewer`
+  - `@ui-reviewer`
+  - `@ux-reviewer`
+  - `@verifier`
+- Fix blockers and major findings, re-running the loop until a clean 5/5 score is achieved.
 
 For visual work, inspect the actual running application rather than trusting source code alone.
 
