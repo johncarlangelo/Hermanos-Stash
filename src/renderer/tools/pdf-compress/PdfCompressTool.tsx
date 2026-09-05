@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { FileDown, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -120,23 +119,15 @@ export default function PdfCompressTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        accept={['.pdf']}
-        label={pdf ? `Replace ${fileNameOf(pdf.path)}` : 'Drop a PDF here'}
-        hint="One document at a time · click to browse"
-        dialogTitle="Choose a PDF document to optimize"
-        onFiles={(paths) => void loadFile(paths)}
-      />
-
-      {!pdf && (
-        <EmptyState
-          icon="file-text"
-          title="No document selected yet."
-          hint="Drop or browse for a .pdf above to rewrite its internal structure as compactly as possible — useful for documents exported with bloated object tables."
+      {!pdf ? (
+        <DropZone
+          accept={['.pdf']}
+          label="Drop a PDF here to optimize and compress"
+          hint="One document at a time · rebuilds cross-references and streams · click to browse"
+          dialogTitle="Choose a PDF document to optimize"
+          onFiles={(paths) => void loadFile(paths)}
         />
-      )}
-
-      {pdf && (
+      ) : (
         <Panel className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <SectionHeading>Document</SectionHeading>

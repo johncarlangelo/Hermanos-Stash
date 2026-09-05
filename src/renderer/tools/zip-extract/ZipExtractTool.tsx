@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
-import { FolderOutput, KeyRound, Lock, Unlock } from 'lucide-react'
+import { FolderOutput, KeyRound, Lock, Unlock, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import {
-  EmptyState,
-  ErrorNote,
-  Panel,
-  SectionHeading,
-  SuccessNote
-} from '../../components/ui/Feedback'
+import { IconButton } from '../../components/ui/IconButton'
+import { ErrorNote, Panel, SectionHeading, SuccessNote } from '../../components/ui/Feedback'
 import { FieldRow } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -111,123 +106,140 @@ export default function ZipExtractTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        accept={SUPPORTED_ARCHIVES}
-        label={zipPath ? `Replace ${fileNameOf(zipPath)}` : 'Drop an archive here'}
-        hint="Extract .zip, .rar, .7z, and .tar archives · password-protected archives supported · click to browse"
-        dialogTitle="Choose an archive to extract"
-        onFiles={(paths) => {
-          setZipPath(paths[0] ?? null)
-          setResult(null)
-          setError(null)
-          setPassword('')
-        }}
-      />
-
-      {!zipPath && (
-        <EmptyState
-          icon="folder"
-          title="No archive selected yet."
-          hint="Drop or browse for a .zip, .rar, .7z, or .tar archive above and choose where its contents should go. Password-protected archives and subfolders are extracted securely."
+      {!zipPath ? (
+        <DropZone
+          accept={SUPPORTED_ARCHIVES}
+          label="Drop an archive here to extract"
+          hint="Extract .zip, .rar, .7z, and .tar archives · password-protected archives supported · click to browse"
+          dialogTitle="Choose an archive to extract"
+          onFiles={(paths) => {
+            setZipPath(paths[0] ?? null)
+            setResult(null)
+            setError(null)
+            setPassword('')
+          }}
         />
-      )}
-
-      <Panel className="p-3.5">
-        <SectionHeading>Extraction</SectionHeading>
-        <p className="mt-1.5 text-[12px] leading-relaxed text-dim">
-          Contents are unpacked into the folder you choose, recreating any subfolders from the
-          archive.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <FieldRow label="Extract to">
-            <Button size="sm" onClick={() => void chooseDestination()}>
-              Choose folder…
-            </Button>
-          </FieldRow>
-          {destination && (
-            <span
-              className="min-w-0 max-w-56 truncate font-mono text-[11px] text-faint"
-              title={destination}
-            >
-              {destination}
-            </span>
-          )}
-        </div>
-
-        {/* Password input for encrypted archives */}
-        {isEncrypted && (
-          <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
-            <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-400">
-              <Lock size={13} />
-              Password Protected Archive
-            </div>
-            <p className="mt-1 text-[11.5px] text-dim">
-              This archive is encrypted. Enter the password below to decrypt and extract the files.
-            </p>
-            <div className="relative mt-2 max-w-xs">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Archive password…"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && canRun) void extract()
-                }}
-                className="h-8 w-full rounded border border-line bg-base px-2.5 pr-8 text-[12px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-faint hover:text-ink cursor-pointer"
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <Unlock size={13} /> : <KeyRound size={13} />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-3 border-t border-line pt-3">
-          <Button
-            variant="primary"
-            loading={extracting}
-            disabled={!canRun}
-            onClick={() => void extract()}
-          >
-            <FolderOutput size={13} /> Extract
-          </Button>
-        </div>
-      </Panel>
-
-      {error && <ErrorNote error={error} />}
-
-      {result && (
+      ) : (
         <>
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <SuccessNote
-                message={`Extracted ${result.extractedCount} file${
-                  result.extractedCount === 1 ? '' : 's'
-                } into ${result.topLevelCount} top-level item${result.topLevelCount === 1 ? '' : 's'}.`}
-              />
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface/80 px-3.5 py-2 text-[12px] text-dim">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-ink">{fileNameOf(zipPath)}</span>
             </div>
-            <RevealButton path={result.outputDir} />
-            <CopyPathButton path={result.outputDir} />
+            <IconButton
+              variant="ghost"
+              size="sm"
+              aria-label={`Close ${fileNameOf(zipPath)}`}
+              title="Close archive"
+              onClick={() => {
+                setZipPath(null)
+                setResult(null)
+                setError(null)
+                setPassword('')
+              }}
+            >
+              <X size={13} />
+            </IconButton>
           </div>
-          {result.skipped.length > 0 && (
-            <>
-              <SectionHeading>Skipped (unsafe paths)</SectionHeading>
-              <ul className="flex flex-col gap-1">
-                {result.skipped.map((name) => (
-                  <li
-                    key={name}
-                    className="truncate font-mono text-[11.5px] text-warn"
-                    title={name}
+
+          <Panel className="p-3.5">
+            <SectionHeading>Extraction</SectionHeading>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-dim">
+              Contents are unpacked into the folder you choose, recreating any subfolders from the
+              archive.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <FieldRow label="Extract to">
+                <Button size="sm" onClick={() => void chooseDestination()}>
+                  Choose folder…
+                </Button>
+              </FieldRow>
+              {destination && (
+                <span
+                  className="min-w-0 max-w-56 truncate font-mono text-[11px] text-faint"
+                  title={destination}
+                >
+                  {destination}
+                </span>
+              )}
+            </div>
+
+            {/* Password input for encrypted archives */}
+            {isEncrypted && (
+              <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-1.5 text-[12px] font-medium text-amber-400">
+                  <Lock size={13} />
+                  Password Protected Archive
+                </div>
+                <p className="mt-1 text-[11.5px] text-dim">
+                  This archive is encrypted. Enter the password below to decrypt and extract the
+                  files.
+                </p>
+                <div className="relative mt-2 max-w-xs">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Archive password…"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && canRun) void extract()
+                    }}
+                    className="h-8 w-full rounded border border-line bg-base px-2.5 pr-8 text-[12px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 text-faint hover:text-ink cursor-pointer"
+                    title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {name}
-                  </li>
-                ))}
-              </ul>
+                    {showPassword ? <Unlock size={13} /> : <KeyRound size={13} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 border-t border-line pt-3">
+              <Button
+                variant="primary"
+                loading={extracting}
+                disabled={!canRun}
+                onClick={() => void extract()}
+              >
+                <FolderOutput size={13} /> Extract
+              </Button>
+            </div>
+          </Panel>
+
+          {error && <ErrorNote error={error} />}
+
+          {result && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <SuccessNote
+                    message={`Extracted ${result.extractedCount} file${
+                      result.extractedCount === 1 ? '' : 's'
+                    } into ${result.topLevelCount} top-level item${result.topLevelCount === 1 ? '' : 's'}.`}
+                  />
+                </div>
+                <RevealButton path={result.outputDir} />
+                <CopyPathButton path={result.outputDir} />
+              </div>
+              {result.skipped.length > 0 && (
+                <>
+                  <SectionHeading>Skipped (unsafe paths)</SectionHeading>
+                  <ul className="flex flex-col gap-1">
+                    {result.skipped.map((name: string) => (
+                      <li
+                        key={name}
+                        className="truncate font-mono text-[11.5px] text-warn"
+                        title={name}
+                      >
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </>
           )}
         </>

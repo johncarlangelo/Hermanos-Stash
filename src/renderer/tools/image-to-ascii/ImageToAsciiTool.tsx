@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  Check,
-  Copy,
-  Download,
-  Image as ImageIcon,
-  Sparkles,
-  Terminal,
-  ZoomIn,
-  ZoomOut
-} from 'lucide-react'
+import { Check, Copy, Download, Image as ImageIcon, Sparkles, ZoomIn, ZoomOut } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -160,46 +151,31 @@ ${asciiResult.html}
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <Terminal size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">Image to ASCII Art Converter</h2>
-          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-amber-400 tracking-wider uppercase">
-            BETA
-          </span>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            ANSI & HTML Color Modes
-          </span>
-        </div>
-
-        {!imageSrc && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadDemo}
-            className="gap-1.5 cursor-pointer text-[11.5px]"
-          >
-            <Sparkles size={13} className="text-accent" />
-            Load Demo Graphic
-          </Button>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {!imageSrc ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             accept={['.png', '.jpg', '.jpeg', '.webp', '.avif', '.bmp', '.svg']}
             label="Drop an image here to convert to ASCII art"
-            hint="Supports PNG, JPEG, WebP, AVIF, SVG, and BMP"
-            className="max-w-md w-full"
+            hint="Supports PNG, JPEG, WebP, AVIF, SVG, and BMP · click to browse"
+            dialogTitle="Choose an image for ASCII conversion"
           />
+          <div className="flex justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadDemo}
+              className="gap-1.5 cursor-pointer text-[11.5px]"
+            >
+              <Sparkles size={13} className="text-accent" />
+              Load Demo Graphic
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           {/* Left Controls Panel */}
           <Panel className="lg:col-span-4 p-3.5 flex flex-col gap-3.5 overflow-y-auto">
             {/* Image Info & Reset */}

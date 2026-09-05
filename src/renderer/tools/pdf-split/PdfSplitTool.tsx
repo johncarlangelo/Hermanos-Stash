@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { FileOutput, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -139,23 +138,15 @@ export default function PdfSplitTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        accept={['.pdf']}
-        label={pdf ? `Replace ${fileNameOf(pdf.path)}` : 'Drop a PDF here'}
-        hint="One document at a time · click to browse"
-        dialogTitle="Choose a PDF document to split"
-        onFiles={(paths) => void loadFile(paths)}
-      />
-
-      {!pdf && (
-        <EmptyState
-          icon="file-text"
-          title="No document selected yet."
-          hint="Drop or browse for a .pdf above, describe which pages go into each output file — e.g. one range per chapter — and pick a folder. Each group becomes its own PDF."
+      {!pdf ? (
+        <DropZone
+          accept={['.pdf']}
+          label="Drop a PDF here to split"
+          hint="One document at a time · split into custom page ranges or single pages · click to browse"
+          dialogTitle="Choose a PDF document to split"
+          onFiles={(paths) => void loadFile(paths)}
         />
-      )}
-
-      {pdf && (
+      ) : (
         <Panel className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <SectionHeading>Document</SectionHeading>

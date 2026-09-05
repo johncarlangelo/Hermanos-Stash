@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, Gauge, Music, Pause, Play, Sparkles } from 'lucide-react'
+import { Download, Music, Pause, Play, Sparkles } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -133,43 +133,31 @@ export default function AudioNormalizeTool() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <Gauge size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">Audio Loudness & Volume Normalizer</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            EBU R128 · Streaming -14 LUFS · True Peak
-          </span>
-        </div>
-
-        {!audioBuffer && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadDemo}
-            className="gap-1.5 cursor-pointer text-[11.5px]"
-          >
-            <Sparkles size={13} className="text-accent" />
-            Load Quiet Sample Synth (-18 dB)
-          </Button>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {!audioBuffer ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             accept={['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac']}
             label="Drop an audio file here to normalize loudness"
-            hint="Supports MP3, WAV, OGG, FLAC, and AAC files"
-            className="max-w-md w-full"
+            hint="Supports MP3, WAV, OGG, FLAC, and AAC files · click to browse"
+            dialogTitle="Choose an audio file to normalize"
           />
+          <div className="flex justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadDemo}
+              className="gap-1.5 cursor-pointer text-[11.5px]"
+            >
+              <Sparkles size={13} className="text-accent" />
+              Load Quiet Sample Synth (-18 dB)
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           {/* Left Settings & Loudness Profiles */}
           <Panel className="lg:col-span-7 p-3.5 flex flex-col gap-3 overflow-y-auto">
             {/* Audio Info */}

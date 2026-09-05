@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, CheckCircle2, Copy, Download, FileText, ShieldCheck, XCircle } from 'lucide-react'
+import { Check, CheckCircle2, Copy, Download, FileText, XCircle } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -110,49 +110,37 @@ export default function ChecksumVerifierTool() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <ShieldCheck size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">File Checksum Signature Verifier</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            SHA-256 · SHA-512 · .sha256sum Verification
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-[11.5px]">
-          <span className="text-faint">Algorithm:</span>
-          {(['SHA-256', 'SHA-512', 'SHA-1'] as HashAlgorithm[]).map((algo) => (
-            <button
-              key={algo}
-              type="button"
-              onClick={() => setAlgorithm(algo)}
-              className={`px-2 py-0.5 rounded border font-mono cursor-pointer ${
-                algorithm === algo
-                  ? 'border-accent bg-accent/15 text-accent font-bold'
-                  : 'border-line bg-base text-dim hover:text-ink'
-              }`}
-            >
-              {algo}
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {items.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             multiple
             label="Drop files (or .sha256sum signature file) here to calculate and verify checksums"
-            hint="Supports single files, batch files, and .sha256/.md5 signature files"
-            className="max-w-md w-full"
+            hint="Supports single files, batch files, and .sha256/.md5 signature files · click to browse"
+            dialogTitle="Choose files to verify checksums"
           />
+          <div className="flex items-center justify-center gap-2 text-[11.5px]">
+            <span className="text-faint">Default algorithm:</span>
+            {(['SHA-256', 'SHA-512', 'SHA-1'] as HashAlgorithm[]).map((algo) => (
+              <button
+                key={algo}
+                type="button"
+                onClick={() => setAlgorithm(algo)}
+                className={`px-2.5 py-1 rounded border font-mono cursor-pointer transition-colors ${
+                  algorithm === algo
+                    ? 'border-accent bg-accent/15 text-accent font-bold'
+                    : 'border-line bg-surface/60 text-dim hover:text-ink'
+                }`}
+              >
+                {algo}
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-4 min-h-0">
           {/* Top Verification Bar & Manual Check */}
           <Panel className="p-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex-1 min-w-[280px] space-y-1">

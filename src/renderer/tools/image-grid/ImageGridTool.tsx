@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Download, Grid, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Download, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -147,44 +147,32 @@ export default function ImageGridTool() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <Grid size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">Contact Sheet & Collage Grid Builder</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            High-Resolution Photo Layouts
-          </span>
-        </div>
-
-        {items.length === 0 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadDemo}
-            className="gap-1.5 cursor-pointer text-[11.5px]"
-          >
-            <Sparkles size={13} className="text-accent" />
-            Load Sample Grid (6 Images)
-          </Button>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {items.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             multiple
             accept={['.png', '.jpg', '.jpeg', '.webp', '.avif']}
             label="Drop multiple images to assemble into a grid / contact sheet"
-            hint="Supports batch selection of PNG, JPG, and WebP files"
-            className="max-w-md w-full"
+            hint="Supports batch selection of PNG, JPG, and WebP files · click to browse"
+            dialogTitle="Choose images for grid"
           />
+          <div className="flex justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadDemo}
+              className="gap-1.5 cursor-pointer text-[11.5px]"
+            >
+              <Sparkles size={13} className="text-accent" />
+              Load Sample Grid (6 Images)
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           {/* Left Controls & Image List */}
           <Panel className="lg:col-span-4 p-3.5 flex flex-col gap-3 overflow-y-auto">
             {/* Header & Add More */}

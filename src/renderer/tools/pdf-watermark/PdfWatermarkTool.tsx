@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, FileText, ShieldAlert } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -56,31 +56,17 @@ export default function PdfWatermarkTool() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">PDF Watermarker & Stamp Applier</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            Diagonal & Tiled Vector Watermarks
-          </span>
-        </div>
-      </div>
-
-      {/* Main Split Layout */}
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {!fileBytes ? (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <DropZone
-            onRawFiles={handleFiles}
-            accept={['.pdf']}
-            label="Drop a PDF here to stamp watermarks"
-            hint="Supports confidential, draft, and custom text stamps"
-            className="max-w-md w-full"
-          />
-        </div>
+        <DropZone
+          onRawFiles={handleFiles}
+          accept={['.pdf']}
+          label="Drop a PDF here to stamp watermarks"
+          hint="Supports confidential, draft, and custom text stamps · click to browse"
+          dialogTitle="Choose a PDF to watermark"
+        />
       ) : (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           {/* Left Settings Panel */}
           <Panel className="lg:col-span-6 p-3.5 flex flex-col gap-3 overflow-y-auto">
             {/* File Info */}

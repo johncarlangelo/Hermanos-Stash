@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { RotateCw, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -132,23 +131,15 @@ export default function PdfRotateTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        accept={['.pdf']}
-        label={pdf ? `Replace ${fileNameOf(pdf.path)}` : 'Drop a PDF here'}
-        hint="One document at a time · click to browse"
-        dialogTitle="Choose a PDF document to rotate"
-        onFiles={(paths) => void loadFile(paths)}
-      />
-
-      {!pdf && (
-        <EmptyState
-          icon="file-text"
-          title="No document selected yet."
-          hint="Drop or browse for a .pdf above, pick which pages to turn and by how much — rotation stacks on top of any orientation the pages already have."
+      {!pdf ? (
+        <DropZone
+          accept={['.pdf']}
+          label="Drop a PDF here to rotate"
+          hint="One document at a time · rotate 90°, 180°, or 270° · click to browse"
+          dialogTitle="Choose a PDF document to rotate"
+          onFiles={(paths) => void loadFile(paths)}
         />
-      )}
-
-      {pdf && (
+      ) : (
         <Panel className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <SectionHeading>Document</SectionHeading>

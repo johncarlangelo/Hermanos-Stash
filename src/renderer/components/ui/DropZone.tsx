@@ -267,26 +267,26 @@ export function DropZone({
           }
         }}
         onDrop={handleDrop}
-        className={`flex w-full h-full flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 transition-all duration-150 ease-out ${
+        className={`flex w-full h-full min-h-[160px] flex-1 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-lg border-2 border-dashed px-6 py-10 transition-all duration-150 ease-out ${
           disabled ? 'cursor-not-allowed opacity-45' : ''
         } ${accepted ? 'accept-pulse' : ''} ${borderTone}`}
       >
         <UploadCloud
-          size={18}
-          strokeWidth={1.5}
+          size={28}
+          strokeWidth={1.6}
           className={`transition-colors duration-150 ${
             drag.active && drag.valid ? 'text-accent' : 'text-faint'
           }`}
           aria-hidden
         />
         <span
-          className={`text-[12.5px] transition-colors duration-150 ${
-            drag.active && drag.valid ? 'text-accent' : 'text-dim'
+          className={`text-[13.5px] font-medium transition-colors duration-150 ${
+            drag.active && drag.valid ? 'text-accent' : 'text-ink'
           }`}
         >
           {drag.active ? 'Release to add' : label}
         </span>
-        {hint && !drag.active && <span className="text-[11px] text-faint">{hint}</span>}
+        {hint && !drag.active && <span className="text-[12px] text-dim">{hint}</span>}
       </div>
       {error && (
         <p role="alert" className="mt-2 text-[12px] leading-snug text-danger">

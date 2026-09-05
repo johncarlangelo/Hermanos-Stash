@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FolderInput, PencilLine } from 'lucide-react'
+import { PencilLine, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
+import { IconButton } from '../../components/ui/IconButton'
+import { DropZone } from '../../components/ui/DropZone'
 import { EmptyState, ErrorNote, Panel, SectionHeading } from '../../components/ui/Feedback'
 import { FieldRow, Input, Select, Toggle } from '../../components/ui/Inputs'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -100,26 +102,30 @@ export default function BatchRenameTool() {
     preview.plan.length > 0 &&
     preview.conflicts.length === 0
 
+  const loadFolder = async (folderPath: string): Promise<void> => {
+    setDir(folderPath)
+    setEntries(null)
+    setResults(null)
+    setError(null)
+    setLoadingDir(true)
+    try {
+      const listing: ListDirResult = await window.stash.files.listDir(folderPath)
+      setEntries(listing.entries)
+    } catch (err) {
+      setError(normalizeError(err))
+      toastError(err)
+    } finally {
+      setLoadingDir(false)
+    }
+  }
+
   const chooseFolder = async (): Promise<void> => {
     try {
       const res = await window.stash.dialogs.chooseDirectory({
         title: 'Choose folder to rename files in'
       })
       if (!res.cancelled && res.path) {
-        setDir(res.path)
-        setEntries(null)
-        setResults(null)
-        setError(null)
-        setLoadingDir(true)
-        try {
-          const listing: ListDirResult = await window.stash.files.listDir(res.path)
-          setEntries(listing.entries)
-        } catch (err) {
-          setError(normalizeError(err))
-          toastError(err)
-        } finally {
-          setLoadingDir(false)
-        }
+        await loadFolder(res.path)
       }
     } catch (err) {
       toastError(err)
@@ -168,282 +174,306 @@ export default function BatchRenameTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Panel className="p-3.5">
-        <SectionHeading>Folder</SectionHeading>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Button size="sm" loading={loadingDir} onClick={() => void chooseFolder()}>
-            <FolderInput size={13} /> Choose folder…
-          </Button>
-          {dir && (
-            <span
-              className="min-w-0 max-w-72 truncate font-mono text-[11px] text-faint"
-              title={dir}
-            >
-              {dir}
-            </span>
-          )}
-        </div>
-      </Panel>
-
-      {!dir && (
-        <EmptyState
-          icon="folder"
-          title="No folder selected yet."
-          hint="Choose a folder above to list its files. Renames happen inside that folder only — every target is re-checked against your approval before anything moves."
+      {!dir ? (
+        <DropZone
+          label="Drop a folder here to batch rename files"
+          hint="Inspect files, preview rules, and safely rename contents in bulk · click to browse"
+          dialogTitle="Choose a folder to rename files in"
+          onFiles={(paths) => {
+            if (paths[0]) void loadFolder(paths[0])
+          }}
         />
-      )}
-
-      {dir && entries !== null && filesOnly.length === 0 && (
-        <EmptyState
-          icon="folder"
-          title={directories.length > 0 ? 'This folder has no files.' : 'This folder is empty.'}
-          hint={
-            directories.length > 0
-              ? `${directories.length} subfolder${directories.length === 1 ? '' : 's'} found — subfolders are never renamed here.`
-              : 'Add some files first, then come back to rename them.'
-          }
-        />
-      )}
-
-      {dir && entries !== null && filesOnly.length > 0 && (
+      ) : (
         <>
-          <Panel className="p-3.5">
-            <SectionHeading>Files</SectionHeading>
-            <p className="tnum mt-1 text-[11.5px] text-faint">
-              {filesOnly.length} file{filesOnly.length === 1 ? '' : 's'}
-              {directories.length > 0
-                ? ` · ${directories.length} subfolder${directories.length === 1 ? '' : 's'} excluded`
-                : ''}
-            </p>
-            <ul className="mt-2 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
-              {(entries ?? []).map((entry) => (
-                <li
-                  key={entry.name}
-                  className={`truncate font-mono text-[11.5px] ${
-                    entry.isDirectory ? 'text-faint/70 italic' : 'text-dim'
-                  }`}
-                  title={entry.isDirectory ? `${entry.name} (excluded)` : entry.name}
-                >
-                  {entry.name}
-                  {entry.isDirectory && ' · folder'}
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <Panel className="p-3.5">
-            <SectionHeading>Rename rules</SectionHeading>
-            <div className="mt-2 flex flex-col gap-1.5">
-              <FieldRow
-                label="Find"
-                htmlFor="rename-find"
-                hint="Text or regular expression to match inside each file name."
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface/80 px-3.5 py-2 text-[12px] text-dim">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-medium text-ink truncate">{fileNameOf(dir)}</span>
+              <span className="text-faint">·</span>
+              <span className="font-mono text-[11px] text-faint truncate" title={dir}>
+                {dir}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => void chooseFolder()}>
+                Change folder
+              </Button>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label="Close folder"
+                title="Close folder"
+                onClick={() => {
+                  setDir(null)
+                  setEntries(null)
+                  setResults(null)
+                  setError(null)
+                }}
               >
-                <Input
-                  id="rename-find"
-                  mono
-                  value={find}
-                  placeholder="old-name"
-                  invalid={preview.error !== undefined && useRegex}
-                  onChange={(e) => setFind(e.target.value)}
-                />
-              </FieldRow>
-              <FieldRow label="Replace" htmlFor="rename-replace">
-                <Input
-                  id="rename-replace"
-                  mono
-                  value={replace}
-                  placeholder="(leave blank to delete)"
-                  onChange={(e) => setReplace(e.target.value)}
-                />
-              </FieldRow>
-              <FieldRow label="Regex" htmlFor="rename-regex">
-                <Toggle checked={useRegex} onChange={setUseRegex} label="Use regular expressions" />
-                {preview.error !== undefined && (
-                  <span role="alert" className="min-w-0 flex-1 truncate text-[11.5px] text-danger">
-                    Invalid expression: {preview.error}
+                <X size={13} />
+              </IconButton>
+            </div>
+          </div>
+
+          {dir && entries !== null && filesOnly.length === 0 && (
+            <EmptyState
+              icon="folder"
+              title={directories.length > 0 ? 'This folder has no files.' : 'This folder is empty.'}
+              hint={
+                directories.length > 0
+                  ? `${directories.length} subfolder${directories.length === 1 ? '' : 's'} found — subfolders are never renamed here.`
+                  : 'Add some files first, then come back to rename them.'
+              }
+            />
+          )}
+
+          {dir && entries !== null && filesOnly.length > 0 && (
+            <>
+              <Panel className="p-3.5">
+                <SectionHeading>Files</SectionHeading>
+                <p className="tnum mt-1 text-[11.5px] text-faint">
+                  {filesOnly.length} file{filesOnly.length === 1 ? '' : 's'}
+                  {directories.length > 0
+                    ? ` · ${directories.length} subfolder${directories.length === 1 ? '' : 's'} excluded`
+                    : ''}
+                </p>
+                <ul className="mt-2 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                  {(entries ?? []).map((entry) => (
+                    <li
+                      key={entry.name}
+                      className={`truncate font-mono text-[11.5px] ${
+                        entry.isDirectory ? 'text-faint/70 italic' : 'text-dim'
+                      }`}
+                      title={entry.isDirectory ? `${entry.name} (excluded)` : entry.name}
+                    >
+                      {entry.name}
+                      {entry.isDirectory && ' · folder'}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+
+              <Panel className="p-3.5">
+                <SectionHeading>Rename rules</SectionHeading>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  <FieldRow
+                    label="Find"
+                    htmlFor="rename-find"
+                    hint="Text or regular expression to match inside each file name."
+                  >
+                    <Input
+                      id="rename-find"
+                      mono
+                      value={find}
+                      placeholder="old-name"
+                      invalid={preview.error !== undefined && useRegex}
+                      onChange={(e) => setFind(e.target.value)}
+                    />
+                  </FieldRow>
+                  <FieldRow label="Replace" htmlFor="rename-replace">
+                    <Input
+                      id="rename-replace"
+                      mono
+                      value={replace}
+                      placeholder="(leave blank to delete)"
+                      onChange={(e) => setReplace(e.target.value)}
+                    />
+                  </FieldRow>
+                  <FieldRow label="Regex" htmlFor="rename-regex">
+                    <Toggle
+                      checked={useRegex}
+                      onChange={setUseRegex}
+                      label="Use regular expressions"
+                    />
+                    {preview.error !== undefined && (
+                      <span
+                        role="alert"
+                        className="min-w-0 flex-1 truncate text-[11.5px] text-danger"
+                      >
+                        Invalid expression: {preview.error}
+                      </span>
+                    )}
+                  </FieldRow>
+                  <FieldRow label="Prefix" htmlFor="rename-prefix">
+                    <Input
+                      id="rename-prefix"
+                      mono
+                      value={prefix}
+                      placeholder="(optional)"
+                      onChange={(e) => setPrefix(e.target.value)}
+                    />
+                  </FieldRow>
+                  <FieldRow label="Suffix" htmlFor="rename-suffix">
+                    <Input
+                      id="rename-suffix"
+                      mono
+                      value={suffix}
+                      placeholder="(optional)"
+                      onChange={(e) => setSuffix(e.target.value)}
+                    />
+                  </FieldRow>
+                  <FieldRow label="Numbering" htmlFor="rename-numbering">
+                    <Select
+                      id="rename-numbering"
+                      value={numbering}
+                      onChange={(e) => setNumbering(e.target.value as NumberingMode)}
+                      className="w-36"
+                    >
+                      {NUMBERING_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                    {numbering !== 'none' && (
+                      <Input
+                        id="rename-sep"
+                        aria-label="Numbering separator"
+                        mono
+                        className="w-16"
+                        maxLength={4}
+                        value={sep}
+                        onChange={(e) => setSep(e.target.value)}
+                      />
+                    )}
+                  </FieldRow>
+                  <FieldRow label="Case" htmlFor="rename-case">
+                    <Select
+                      id="rename-case"
+                      value={caseMode}
+                      onChange={(e) => setCaseMode(e.target.value as CaseMode)}
+                      className="w-36"
+                    >
+                      {CASE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FieldRow>
+                  <FieldRow
+                    label="Extension"
+                    htmlFor="rename-ext-to"
+                    hint="Optionally rewrite file extensions, e.g. .jpeg → .webp. Leave blank to keep them."
+                  >
+                    <Input
+                      id="rename-ext-from"
+                      aria-label="Current extension filter"
+                      mono
+                      className="w-20"
+                      placeholder="from"
+                      invalid={extError !== null}
+                      value={extFrom}
+                      onChange={(e) => setExtFrom(e.target.value)}
+                    />
+                    <Input
+                      id="rename-ext-to"
+                      aria-label="New extension"
+                      mono
+                      className="w-20"
+                      placeholder="to"
+                      invalid={extError !== null}
+                      value={extTo}
+                      onChange={(e) => setExtTo(e.target.value)}
+                    />
+                  </FieldRow>
+                  {extError && (
+                    <p role="alert" className="pl-[5.75rem] text-[11.5px] leading-snug text-danger">
+                      {extError}
+                    </p>
+                  )}
+                </div>
+              </Panel>
+
+              {results ? (
+                <>
+                  <SectionHeading>Results</SectionHeading>
+                  <ul className="flex flex-col gap-1">
+                    {results.renamed.map((item) => (
+                      <li key={item.from} className="flex items-center gap-2">
+                        <p
+                          className="min-w-0 flex-1 truncate font-mono text-[12px] text-ok"
+                          title={`${fileNameOf(item.from)} → ${fileNameOf(item.to)}`}
+                        >
+                          {fileNameOf(item.from)} → {fileNameOf(item.to)}
+                        </p>
+                        <RevealButton path={item.to} />
+                      </li>
+                    ))}
+                    {results.skipped.map((item) => (
+                      <li key={item.from} className="flex items-center gap-2">
+                        <p
+                          className="min-w-0 flex-1 truncate font-mono text-[12px] text-danger"
+                          title={item.from}
+                        >
+                          {fileNameOf(item.from)} — not renamed ({item.reason})
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : preview.plan.length === 0 && !preview.error ? (
+                <p className="px-1 text-center text-[12px] text-faint">
+                  The current rules don't change any names yet — adjust a rule to build the preview.
+                </p>
+              ) : (
+                <Panel className="p-3.5">
+                  <SectionHeading>Preview</SectionHeading>
+                  <p className="tnum mt-1 text-[12px] text-dim" aria-live="polite">
+                    {preview.plan.length} of {filesOnly.length} files will be renamed
+                    {preview.conflicts.length > 0
+                      ? ` · ${preview.conflicts.length} conflict${preview.conflicts.length === 1 ? '' : 's'}`
+                      : ''}
+                  </p>
+                  <ul className="mt-2 flex max-h-56 flex-col gap-1 overflow-y-auto">
+                    {preview.plan.map((item) => {
+                      const conflict = preview.conflicts.includes(item.from)
+                      return (
+                        <li key={item.from} className="flex items-center gap-2">
+                          <p
+                            className={`min-w-0 flex-1 truncate font-mono text-[11.5px] ${
+                              conflict ? 'text-danger' : 'text-dim'
+                            }`}
+                            title={`${item.from} → ${item.to}`}
+                          >
+                            <span className="text-faint">{item.from}</span> →{' '}
+                            {conflict ? `${item.to} (duplicate target)` : item.to}
+                          </p>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </Panel>
+              )}
+
+              <div className="flex items-center gap-2">
+                {!results && (
+                  <Button
+                    variant={confirming ? 'danger' : 'primary'}
+                    loading={applying}
+                    disabled={!canApply && !confirming}
+                    onClick={() => void apply()}
+                  >
+                    {confirming ? (
+                      <>Apply {preview.plan.length} renames?</>
+                    ) : (
+                      <>
+                        <PencilLine size={13} /> Apply
+                      </>
+                    )}
+                  </Button>
+                )}
+                {!results && !canApply && !applying && (
+                  <span className="text-[11px] text-faint">
+                    {preview.conflicts.length > 0
+                      ? 'Resolve duplicate targets before applying.'
+                      : preview.error
+                        ? 'Fix the find pattern first.'
+                        : 'Adjust the rules until at least one file changes.'}
                   </span>
                 )}
-              </FieldRow>
-              <FieldRow label="Prefix" htmlFor="rename-prefix">
-                <Input
-                  id="rename-prefix"
-                  mono
-                  value={prefix}
-                  placeholder="(optional)"
-                  onChange={(e) => setPrefix(e.target.value)}
-                />
-              </FieldRow>
-              <FieldRow label="Suffix" htmlFor="rename-suffix">
-                <Input
-                  id="rename-suffix"
-                  mono
-                  value={suffix}
-                  placeholder="(optional)"
-                  onChange={(e) => setSuffix(e.target.value)}
-                />
-              </FieldRow>
-              <FieldRow label="Numbering" htmlFor="rename-numbering">
-                <Select
-                  id="rename-numbering"
-                  value={numbering}
-                  onChange={(e) => setNumbering(e.target.value as NumberingMode)}
-                  className="w-36"
-                >
-                  {NUMBERING_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-                {numbering !== 'none' && (
-                  <Input
-                    id="rename-sep"
-                    aria-label="Numbering separator"
-                    mono
-                    className="w-16"
-                    maxLength={4}
-                    value={sep}
-                    onChange={(e) => setSep(e.target.value)}
-                  />
-                )}
-              </FieldRow>
-              <FieldRow label="Case" htmlFor="rename-case">
-                <Select
-                  id="rename-case"
-                  value={caseMode}
-                  onChange={(e) => setCaseMode(e.target.value as CaseMode)}
-                  className="w-36"
-                >
-                  {CASE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-              </FieldRow>
-              <FieldRow
-                label="Extension"
-                htmlFor="rename-ext-to"
-                hint="Optionally rewrite file extensions, e.g. .jpeg → .webp. Leave blank to keep them."
-              >
-                <Input
-                  id="rename-ext-from"
-                  aria-label="Current extension filter"
-                  mono
-                  className="w-20"
-                  placeholder="from"
-                  invalid={extError !== null}
-                  value={extFrom}
-                  onChange={(e) => setExtFrom(e.target.value)}
-                />
-                <Input
-                  id="rename-ext-to"
-                  aria-label="New extension"
-                  mono
-                  className="w-20"
-                  placeholder="to"
-                  invalid={extError !== null}
-                  value={extTo}
-                  onChange={(e) => setExtTo(e.target.value)}
-                />
-              </FieldRow>
-              {extError && (
-                <p role="alert" className="pl-[5.75rem] text-[11.5px] leading-snug text-danger">
-                  {extError}
-                </p>
-              )}
-            </div>
-          </Panel>
-
-          {results ? (
-            <>
-              <SectionHeading>Results</SectionHeading>
-              <ul className="flex flex-col gap-1">
-                {results.renamed.map((item) => (
-                  <li key={item.from} className="flex items-center gap-2">
-                    <p
-                      className="min-w-0 flex-1 truncate font-mono text-[12px] text-ok"
-                      title={`${fileNameOf(item.from)} → ${fileNameOf(item.to)}`}
-                    >
-                      {fileNameOf(item.from)} → {fileNameOf(item.to)}
-                    </p>
-                    <RevealButton path={item.to} />
-                  </li>
-                ))}
-                {results.skipped.map((item) => (
-                  <li key={item.from} className="flex items-center gap-2">
-                    <p
-                      className="min-w-0 flex-1 truncate font-mono text-[12px] text-danger"
-                      title={item.from}
-                    >
-                      {fileNameOf(item.from)} — not renamed ({item.reason})
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              </div>
             </>
-          ) : preview.plan.length === 0 && !preview.error ? (
-            <p className="px-1 text-center text-[12px] text-faint">
-              The current rules don't change any names yet — adjust a rule to build the preview.
-            </p>
-          ) : (
-            <Panel className="p-3.5">
-              <SectionHeading>Preview</SectionHeading>
-              <p className="tnum mt-1 text-[12px] text-dim" aria-live="polite">
-                {preview.plan.length} of {filesOnly.length} files will be renamed
-                {preview.conflicts.length > 0
-                  ? ` · ${preview.conflicts.length} conflict${preview.conflicts.length === 1 ? '' : 's'}`
-                  : ''}
-              </p>
-              <ul className="mt-2 flex max-h-56 flex-col gap-1 overflow-y-auto">
-                {preview.plan.map((item) => {
-                  const conflict = preview.conflicts.includes(item.from)
-                  return (
-                    <li key={item.from} className="flex items-center gap-2">
-                      <p
-                        className={`min-w-0 flex-1 truncate font-mono text-[11.5px] ${
-                          conflict ? 'text-danger' : 'text-dim'
-                        }`}
-                        title={`${item.from} → ${item.to}`}
-                      >
-                        <span className="text-faint">{item.from}</span> →{' '}
-                        {conflict ? `${item.to} (duplicate target)` : item.to}
-                      </p>
-                    </li>
-                  )
-                })}
-              </ul>
-            </Panel>
           )}
-
-          <div className="flex items-center gap-2">
-            {!results && (
-              <Button
-                variant={confirming ? 'danger' : 'primary'}
-                loading={applying}
-                disabled={!canApply && !confirming}
-                onClick={() => void apply()}
-              >
-                {confirming ? (
-                  <>Apply {preview.plan.length} renames?</>
-                ) : (
-                  <>
-                    <PencilLine size={13} /> Apply
-                  </>
-                )}
-              </Button>
-            )}
-            {!results && !canApply && !applying && (
-              <span className="text-[11px] text-faint">
-                {preview.conflicts.length > 0
-                  ? 'Resolve duplicate targets before applying.'
-                  : preview.error
-                    ? 'Fix the find pattern first.'
-                    : 'Adjust the rules until at least one file changes.'}
-              </span>
-            )}
-          </div>
         </>
       )}
 

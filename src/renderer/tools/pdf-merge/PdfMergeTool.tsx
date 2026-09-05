@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { ArrowDown, ArrowUp, FileText, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -107,23 +106,25 @@ export default function PdfMergeTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        accept={['.pdf']}
-        label="Drop PDFs here"
-        hint="Order matters · drag or browse to add · merged top to bottom"
-        dialogTitle="Choose PDF documents to merge"
-        onFiles={addPaths}
-      />
-
       {paths.length === 0 ? (
-        <EmptyState
-          icon="file-text"
-          title="Nothing queued yet."
-          hint="Drop two or more PDFs above and combine them into one document. Pages are copied in the order shown below — reorder any entry before merging."
+        <DropZone
+          multiple
+          accept={['.pdf']}
+          label="Drop PDFs here to merge"
+          hint="Order matters · drag or browse to add · merged top to bottom"
+          dialogTitle="Choose PDF documents to merge"
+          onFiles={addPaths}
         />
       ) : (
         <>
+          <DropZone
+            multiple
+            accept={['.pdf']}
+            label="Drop more PDFs to add"
+            hint="Drag or browse to add additional PDF files"
+            dialogTitle="Choose additional PDF documents to merge"
+            onFiles={addPaths}
+          />
           <div className="flex items-center justify-between gap-2">
             <SectionHeading>Merge order · {paths.length}</SectionHeading>
             <Button size="sm" variant="ghost" onClick={clearAll}>

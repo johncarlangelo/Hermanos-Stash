@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { EmptyState, ErrorNote, Panel, SectionHeading, Spinner } from '../../components/ui/Feedback'
+import { ErrorNote, Panel, SectionHeading, Spinner } from '../../components/ui/Feedback'
 import { TagChip } from '../../components/ui/Inputs'
 import { DropZone } from '../../components/ui/DropZone'
 import { normalizeError, type StashError } from '../../../shared/errors'
@@ -69,22 +69,23 @@ export default function FileMetadataTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        label="Drop files here"
-        hint="Any file type · click to browse"
-        dialogTitle="Choose files to inspect"
-        onFiles={addPaths}
-      />
-
       {items.length === 0 ? (
-        <EmptyState
-          icon="folder"
-          title="Nothing inspected yet."
-          hint="Drop one or more files above to see size, timestamps, MIME type and full path. Files are read locally only — nothing is uploaded."
+        <DropZone
+          multiple
+          label="Drop files here to inspect metadata"
+          hint="Any file type · size, timestamps, MIME type and full path · click to browse"
+          dialogTitle="Choose files to inspect"
+          onFiles={addPaths}
         />
       ) : (
         <>
+          <DropZone
+            multiple
+            label="Drop more files to inspect"
+            hint="Click to browse or drop additional files"
+            dialogTitle="Choose additional files to inspect"
+            onFiles={addPaths}
+          />
           <div className="flex items-center justify-between gap-2">
             <SectionHeading>
               Inspected files · {readyCount}/{items.length}

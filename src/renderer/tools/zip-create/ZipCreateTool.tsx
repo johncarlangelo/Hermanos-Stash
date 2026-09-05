@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Archive } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -79,27 +78,30 @@ export default function ZipCreateTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        label="Drop files here"
-        hint="Any file type · click to browse · up to 512 MB total"
-        dialogTitle="Choose files to pack into an archive"
-        onFiles={addPaths}
-      />
-
       {items.length === 0 ? (
-        <EmptyState
-          icon="folder"
-          title="Nothing queued yet."
-          hint="Drop any mix of files above and pack them into a single .zip archive. Everything is compressed locally on this machine."
+        <DropZone
+          multiple
+          label="Drop files here to pack into a zip archive"
+          hint="Any mix of files · compressed locally into a single .zip · click to browse"
+          dialogTitle="Choose files to pack into an archive"
+          onFiles={addPaths}
         />
       ) : (
-        <FileListPanel
-          items={items}
-          onRemove={removePath}
-          onClearAll={clearAll}
-          heading="Files to pack"
-        />
+        <>
+          <DropZone
+            multiple
+            label="Drop more files to add to archive"
+            hint="Click to browse or drop additional files"
+            dialogTitle="Choose additional files to pack"
+            onFiles={addPaths}
+          />
+          <FileListPanel
+            items={items}
+            onRemove={removePath}
+            onClearAll={clearAll}
+            heading="Files to pack"
+          />
+        </>
       )}
 
       <Panel className="p-3.5">

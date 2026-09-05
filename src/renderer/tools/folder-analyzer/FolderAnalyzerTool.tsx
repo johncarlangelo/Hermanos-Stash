@@ -6,7 +6,6 @@ import {
   FileText,
   Film,
   Folder,
-  HardDrive,
   Image as ImageIcon,
   Music,
   Package,
@@ -91,43 +90,31 @@ export default function FolderAnalyzerTool() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <HardDrive size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">Disk Space & Folder Tree Analyzer</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            Category Breakdown · Largest Files
-          </span>
-        </div>
-
-        {rawFiles.length === 0 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadDemo}
-            className="gap-1.5 cursor-pointer text-[11.5px]"
-          >
-            <Sparkles size={13} className="text-accent" />
-            Load Sample Workspace (10 Files)
-          </Button>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {rawFiles.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             multiple
             label="Drop files or folder contents here to inspect storage breakdown"
-            hint="Analyzes file sizes and categorizes by media type completely offline"
-            className="max-w-md w-full"
+            hint="Analyzes file sizes and categorizes by media type completely offline · click to browse"
+            dialogTitle="Choose files to analyze"
           />
+          <div className="flex justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadDemo}
+              className="gap-1.5 cursor-pointer text-[11.5px]"
+            >
+              <Sparkles size={13} className="text-accent" />
+              Load Sample Workspace (10 Files)
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-4 min-h-0">
           {/* Summary Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-line bg-surface/70">
             <div className="flex items-center gap-6 text-[12px]">

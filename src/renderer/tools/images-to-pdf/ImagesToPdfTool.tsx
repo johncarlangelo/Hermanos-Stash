@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { ArrowDown, ArrowUp, FileText, Image as ImageIcon, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -105,23 +104,25 @@ export default function ImagesToPdfTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        accept={['.jpg', '.jpeg', '.png']}
-        label="Drop JPG or PNG images here"
-        hint="One page per image · drag or browse to add · pages follow the order below"
-        dialogTitle="Choose images to combine into a PDF"
-        onFiles={addPaths}
-      />
-
       {paths.length === 0 ? (
-        <EmptyState
-          icon="image"
-          title="Nothing queued yet."
-          hint="Drop one or more images above and they become the pages of a single PDF. Each page matches its image's pixel size at full bleed — reorder entries before building."
+        <DropZone
+          multiple
+          accept={['.jpg', '.jpeg', '.png']}
+          label="Drop JPG or PNG images here to convert to PDF"
+          hint="One page per image · drag or browse to add · pages follow the order below"
+          dialogTitle="Choose images to combine into a PDF"
+          onFiles={addPaths}
         />
       ) : (
         <>
+          <DropZone
+            multiple
+            accept={['.jpg', '.jpeg', '.png']}
+            label="Drop more images to add"
+            hint="Click to browse or drop additional JPG or PNG images"
+            dialogTitle="Choose additional images to add to PDF"
+            onFiles={addPaths}
+          />
           <div className="flex items-center justify-between gap-2">
             <SectionHeading>
               Page order · {paths.length} image{paths.length === 1 ? '' : 's'}

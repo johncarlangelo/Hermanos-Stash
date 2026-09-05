@@ -1,13 +1,7 @@
 import { useCallback, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import {
-  EmptyState,
-  ErrorNote,
-  Panel,
-  ProgressBar,
-  SectionHeading
-} from '../../components/ui/Feedback'
+import { ErrorNote, Panel, ProgressBar, SectionHeading } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { Slider } from '../../components/ui/Slider'
 import { FieldRow, Input, Select } from '../../components/ui/Inputs'
@@ -134,31 +128,35 @@ export default function ImageCompressTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        accept={[...ACCEPTED_EXTENSIONS]}
-        label="Drop images here"
-        hint="PNG · JPG · WebP · TIFF · AVIF — originals are never modified"
-        dialogTitle="Choose images to compress"
-        onFiles={handleAdd}
-      />
-
       {items.length === 0 ? (
-        <EmptyState
-          icon="image"
-          title="Nothing queued yet."
-          hint="Drop images above, tune quality and size limits, then compress into a folder you choose. Saved copies get a -min suffix."
+        <DropZone
+          multiple
+          accept={[...ACCEPTED_EXTENSIONS]}
+          label="Drop images here to compress and optimize"
+          hint="PNG · JPG · WebP · TIFF · AVIF — originals are never modified · click to browse"
+          dialogTitle="Choose images to compress"
+          onFiles={handleAdd}
         />
       ) : (
-        <FileListPanel
-          items={items}
-          onRemove={removePath}
-          onClearAll={clearAll}
-          detail={(item) => {
-            const size = sizes.get(item.path)
-            return size === undefined ? null : formatBytes(size)
-          }}
-        />
+        <>
+          <DropZone
+            multiple
+            accept={[...ACCEPTED_EXTENSIONS]}
+            label="Drop more images to add"
+            hint="Click to browse or drop additional images"
+            dialogTitle="Choose additional images to compress"
+            onFiles={handleAdd}
+          />
+          <FileListPanel
+            items={items}
+            onRemove={removePath}
+            onClearAll={clearAll}
+            detail={(item) => {
+              const size = sizes.get(item.path)
+              return size === undefined ? null : formatBytes(size)
+            }}
+          />
+        </>
       )}
 
       <Panel className="p-3.5">

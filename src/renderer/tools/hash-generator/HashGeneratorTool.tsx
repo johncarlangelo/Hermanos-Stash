@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Copy } from 'lucide-react'
+import { Copy, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { ErrorNote, Panel, SectionHeading } from '../../components/ui/Feedback'
@@ -183,15 +183,15 @@ function FileHash({ algorithm }: { algorithm: HashAlgorithm }) {
   const name = filePath?.split(/[\\/]/).pop() ?? null
 
   return (
-    <Panel className="p-3.5">
-      <SectionHeading>File</SectionHeading>
-      <div className="mt-2">
+    <div className="flex flex-col gap-4">
+      {!filePath ? (
         <DropZone
           accept={[]}
           multiple={false}
           disabled={busy}
+          label="Drop a file here to calculate hash"
           dialogTitle="Choose a file to hash"
-          hint="Any file type — streamed, never loaded whole into memory."
+          hint="Any file type — streamed, never loaded whole into memory · click to browse"
           onFiles={(paths) => {
             const path = paths[0]
             if (!path) return
@@ -199,42 +199,62 @@ function FileHash({ algorithm }: { algorithm: HashAlgorithm }) {
             void compute(path)
           }}
         />
-      </div>
-
-      {busy && (
-        <p role="status" aria-live="polite" className="mt-2.5 text-[12px] text-faint">
-          Hashing…
-        </p>
-      )}
-
-      {error && (
-        <div className="mt-2.5">
-          <ErrorNote error={error} />
-        </div>
-      )}
-
-      {result && filePath && name && (
-        <div className="mt-2.5 flex flex-col gap-1 rounded-md border border-line bg-base px-3 py-2.5">
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-0.5">
-            <span className="min-w-0 truncate text-[12.5px] font-medium text-ink" title={name}>
-              {name}
-            </span>
-            <span className="tnum text-[11.5px] text-faint">{formatBytes(result.sizeBytes)}</span>
+      ) : (
+        <Panel className="p-3.5">
+          <div className="flex items-center justify-between border-b border-line pb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <SectionHeading>File</SectionHeading>
+              <span className="truncate font-mono text-[12px] text-ink" title={name ?? ''}>
+                {name}
+              </span>
+            </div>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              aria-label="Remove selected file"
+              title="Remove file"
+              onClick={() => {
+                setFilePath(null)
+                setResult(null)
+                setError(null)
+              }}
+            >
+              <X size={13} />
+            </IconButton>
           </div>
-          <DigestRow
-            digest={formatDigest(result.hex)}
-            algorithmLabel={algorithm}
-            onCopy={() => void copy()}
-          />
-        </div>
-      )}
 
-      {!busy && !error && !result && (
-        <p className="py-3 text-center text-[12px] text-faint">
-          Drop a file above to compute a checksum.
-        </p>
+          {busy && (
+            <p role="status" aria-live="polite" className="mt-2.5 text-[12px] text-faint">
+              Hashing…
+            </p>
+          )}
+
+          {error && (
+            <div className="mt-2.5">
+              <ErrorNote error={error} />
+            </div>
+          )}
+
+          {result && name && (
+            <div className="mt-2.5 flex flex-col gap-1 rounded-md border border-line bg-base px-3 py-2.5">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-0.5">
+                <span className="min-w-0 truncate text-[12.5px] font-medium text-ink" title={name}>
+                  {name}
+                </span>
+                <span className="tnum text-[11.5px] text-faint">
+                  {formatBytes(result.sizeBytes)}
+                </span>
+              </div>
+              <DigestRow
+                digest={formatDigest(result.hex)}
+                algorithmLabel={algorithm}
+                onCopy={() => void copy()}
+              />
+            </div>
+          )}
+        </Panel>
       )}
-    </Panel>
+    </div>
   )
 }
 

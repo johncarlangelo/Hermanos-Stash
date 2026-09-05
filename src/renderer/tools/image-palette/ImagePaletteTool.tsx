@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, Download, Palette } from 'lucide-react'
+import { Check, Copy, Download } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
@@ -139,56 +139,44 @@ export default function ImagePaletteTool() {
   const generatedCode = generatePaletteCode(swatches, exportFormat)
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 text-[13px] text-ink overflow-hidden">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <Palette size={18} className="text-accent" />
-          <h2 className="font-semibold text-[14px]">Image Color Palette & Swatch Extractor</h2>
-          <span className="text-[11px] text-faint bg-base px-2 py-0.5 rounded border border-line">
-            K-Means · WCAG Contrast · CSS Variables
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11.5px] text-faint">Samples:</span>
-          <button
-            type="button"
-            onClick={() => loadDemo('sunset')}
-            className="px-2 py-0.5 rounded border border-line bg-base/60 text-[11px] text-dim hover:text-ink cursor-pointer"
-          >
-            Sunset
-          </button>
-          <button
-            type="button"
-            onClick={() => loadDemo('cyber')}
-            className="px-2 py-0.5 rounded border border-line bg-base/60 text-[11px] text-dim hover:text-ink cursor-pointer"
-          >
-            Cyberpunk
-          </button>
-          <button
-            type="button"
-            onClick={() => loadDemo('forest')}
-            className="px-2 py-0.5 rounded border border-line bg-base/60 text-[11px] text-dim hover:text-ink cursor-pointer"
-          >
-            Forest
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-4 text-[13px] text-ink">
       {/* Main Split Layout */}
       {!imageSrc ? (
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex flex-col gap-3">
           <DropZone
             onRawFiles={handleFiles}
             accept={['.png', '.jpg', '.jpeg', '.webp', '.avif', '.svg']}
             label="Drop an image here to extract its color palette"
-            hint="Supports PNG, JPG, WebP, AVIF, and SVG"
-            className="max-w-md w-full"
+            hint="Supports PNG, JPG, WebP, AVIF, and SVG · click to browse"
+            dialogTitle="Choose an image for palette extraction"
           />
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-[11.5px] text-faint">Or try a sample image:</span>
+            <button
+              type="button"
+              onClick={() => loadDemo('sunset')}
+              className="px-2.5 py-1 rounded border border-line bg-surface/60 text-[11.5px] text-dim hover:text-ink cursor-pointer transition-colors"
+            >
+              Sunset
+            </button>
+            <button
+              type="button"
+              onClick={() => loadDemo('cyber')}
+              className="px-2.5 py-1 rounded border border-line bg-surface/60 text-[11.5px] text-dim hover:text-ink cursor-pointer transition-colors"
+            >
+              Cyberpunk
+            </button>
+            <button
+              type="button"
+              onClick={() => loadDemo('forest')}
+              className="px-2.5 py-1 rounded border border-line bg-surface/60 text-[11.5px] text-dim hover:text-ink cursor-pointer transition-colors"
+            >
+              Forest
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           {/* Left Preview & Swatches */}
           <div className="lg:col-span-8 flex flex-col gap-3 overflow-y-auto pr-1">
             {/* Image strip & Slider */}

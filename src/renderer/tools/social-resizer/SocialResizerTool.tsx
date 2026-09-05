@@ -1,13 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import {
-  EmptyState,
-  ErrorNote,
-  Panel,
-  ProgressBar,
-  SectionHeading
-} from '../../components/ui/Feedback'
+import { ErrorNote, Panel, ProgressBar, SectionHeading } from '../../components/ui/Feedback'
 import { IconButton } from '../../components/ui/IconButton'
 import { DropZone } from '../../components/ui/DropZone'
 import { DEFAULT_SELECTED_PRESETS, PRESET_LIST } from '../../../shared/utils/social-presets'
@@ -111,23 +105,27 @@ export default function SocialResizerTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        multiple
-        accept={[...ACCEPTED_EXTENSIONS]}
-        label="Drop images here"
-        hint="PNG · JPG · WebP · GIF · TIFF · AVIF — one or many"
-        dialogTitle="Choose images to resize"
-        onFiles={addPaths}
-      />
-
       {items.length === 0 ? (
-        <EmptyState
-          icon="crop"
-          title="Nothing queued yet."
-          hint="Drop or browse for images above and tick the sizes you need — smart cropping keeps the subject in frame. Originals stay untouched."
+        <DropZone
+          multiple
+          accept={[...ACCEPTED_EXTENSIONS]}
+          label="Drop images here to generate social media sizes"
+          hint="PNG · JPG · WebP · GIF · TIFF · AVIF — smart subject-aware cropping · click to browse"
+          dialogTitle="Choose images to resize"
+          onFiles={addPaths}
         />
       ) : (
-        <FileListPanel items={items} onRemove={removePath} onClearAll={clearAll} />
+        <>
+          <DropZone
+            multiple
+            accept={[...ACCEPTED_EXTENSIONS]}
+            label="Drop more images to add"
+            hint="Click to browse or drop additional images"
+            dialogTitle="Choose additional images to resize"
+            onFiles={addPaths}
+          />
+          <FileListPanel items={items} onRemove={removePath} onClearAll={clearAll} />
+        </>
       )}
 
       <Panel className="p-3.5">

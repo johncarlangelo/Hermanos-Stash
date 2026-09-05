@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { ArrowDownUp, X } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import {
-  EmptyState,
   ErrorNote,
   Panel,
   ProgressBar,
@@ -134,25 +133,15 @@ export default function PdfReorderTool() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DropZone
-        accept={['.pdf']}
-        label={pdf ? `Replace ${fileNameOf(pdf.path)}` : 'Drop a PDF here'}
-        hint="One document at a time · click to browse"
-        dialogTitle="Choose a PDF document to rearrange"
-        onFiles={(paths) => void loadFile(paths)}
-      />
-
-      {!pdf && (
-        <EmptyState
-          icon="file-text"
-          title="No document selected yet."
-          hint={
-            'Write the new page order as a sequence — e.g. "3, 1-2" puts page 3 first. The output contains exactly the pages you list, in exactly the order you list them.'
-          }
+      {!pdf ? (
+        <DropZone
+          accept={['.pdf']}
+          label="Drop a PDF here to reorder pages"
+          hint="One document at a time · resequence, reverse, or duplicate pages · click to browse"
+          dialogTitle="Choose a PDF document to rearrange"
+          onFiles={(paths) => void loadFile(paths)}
         />
-      )}
-
-      {pdf && (
+      ) : (
         <Panel className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <SectionHeading>Document</SectionHeading>
