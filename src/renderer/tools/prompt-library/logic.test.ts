@@ -86,3 +86,28 @@ describe('parseLibraryImport', () => {
     expect(parseLibraryImport('"just a string"').ok).toBe(false)
   })
 })
+
+describe('PROMPT_PRESETS catalog integrity', () => {
+  it('contains over 20 unique presets with valid categories and metadata', async () => {
+    const { PROMPT_PRESETS, PRESET_CATEGORIES } = await import('./presets')
+    expect(PROMPT_PRESETS.length).toBeGreaterThanOrEqual(20)
+
+    const validCategoryIds = new Set(PRESET_CATEGORIES.map((c) => c.id))
+    const seenIds = new Set<string>()
+
+    for (const preset of PROMPT_PRESETS) {
+      expect(seenIds.has(preset.id)).toBe(false)
+      seenIds.add(preset.id)
+
+      expect(preset.title.trim().length).toBeGreaterThan(3)
+      expect(preset.description.trim().length).toBeGreaterThan(10)
+      expect(preset.body.trim().length).toBeGreaterThan(20)
+      expect(validCategoryIds.has(preset.category)).toBe(true)
+      expect(preset.tags.length).toBeGreaterThan(0)
+
+      // Variables extracted should be non-empty and properly formatted
+      const vars = extractVariables(preset.body)
+      expect(vars.length).toBeGreaterThan(0)
+    }
+  })
+})

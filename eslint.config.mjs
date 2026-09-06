@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default tseslint.config(
-  { ignores: ['out/**', 'release/**', 'node_modules/**', '.opencode/**'] },
+  { ignores: ['out/**', 'release/**', 'node_modules/**', '.opencode/**', '.agents/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
