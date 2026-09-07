@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ChevronRight,
   Clock,
+  Columns2,
   FolderArchive,
   House,
   Layers,
@@ -20,6 +21,7 @@ import { getIcon } from '../../components/icons'
 import { useLibrary } from '../../stores/library'
 import { usePins, PIN_LIMIT } from '../../stores/pins'
 import { useNav } from '../../stores/nav'
+import { useWorkspace } from '../../stores/workspace'
 import {
   Accordion,
   AccordionContent,
@@ -133,6 +135,19 @@ export function Sidebar() {
 
   const toolCount = toolRegistry.count()
 
+  const splitMode = useWorkspace((s) => s.splitMode)
+  const toggleSplitMode = useWorkspace((s) => s.toggleSplitMode)
+
+  const handleOpenSplit = () => {
+    if (view.type === 'tool') {
+      toggleSplitMode()
+    } else {
+      const primary = recents[0]?.toolId ?? 'json-format'
+      useWorkspace.getState().setSplitMode(true)
+      openTool(primary)
+    }
+  }
+
   return (
     <aside className="glass flex h-full w-56 shrink-0 flex-col overflow-y-auto border-r border-line/60 px-2 pb-2">
       {/* Draggable spacer above the brand (frameless window title area). */}
@@ -178,6 +193,12 @@ export function Sidebar() {
           icon={<House size={13} />}
           label="Home"
           onClick={goHome}
+        />
+        <SidebarRow
+          active={view.type === 'tool' && splitMode}
+          icon={<Columns2 size={13} />}
+          label="Dual Workspace"
+          onClick={handleOpenSplit}
         />
         <SidebarRow
           active={view.type === 'queue'}

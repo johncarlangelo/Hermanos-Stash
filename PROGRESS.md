@@ -2,22 +2,21 @@
 
 ## Current milestone
 
-**Milestone 8: 22-Tool Suite Workstation Expansion (75 Total Tools) complete.**
-Hermanos Stash now includes an expanded suite of 75 modular tools spanning text, ASCII, images, audio, documents, and developer utilities:
-- **ASCII & Terminal Studio**: ASCII Banner Generator (`ascii-banner`), Image to ASCII Art Converter (`image-to-ascii`), and ASCII/Unicode Table Generator (`ascii-table`).
-- **Text & Data Suite**: XML ⇄ JSON Converter & Formatter (`xml-json`) and Text Statistics & Readability Analyzer (`text-analyzer`).
-- **Developer & Security Studio**: cURL Multi-Language Code Generator (`curl-converter`), JSON Schema Validator & Generator (`json-schema`), Chmod Unix Permission Calculator (`chmod-calculator`), Cryptographic Keypair Generator (`keypair-generator`), and SemVer Calculator (`semver-calculator`).
-- **Image & Design Suite**: Image Color Palette Extractor (`image-palette`), Image Slicer & Grid Splitter (`image-slicer`), Image Grid & Contact Sheet Builder (`image-grid`), and Gradient & Mesh Studio (`gradient-studio`).
-- **Documents & PDF Processing**: PDF Page Numberer & Bates Stamper (`pdf-numberer`), PDF Watermarker & Stamp Applier (`pdf-watermark`), and Markdown → PDF Exporter (`markdown-to-pdf`).
-- **Files, Storage & Audio Utilities**: Duplicate File Finder (`duplicate-finder`), Folder Storage Analyzer (`folder-analyzer`), File Checksum Verifier (`checksum-verifier`), Audio Waveform Trimmer (`audio-trimmer`), and Audio Loudness Normalizer (`audio-normalize`).
+**Dual-Tool Split-Screen Workspace (Milestone 10.5) complete.**
+Hermanos Stash now includes an interactive side-by-side dual tool workstation mode, enabling power users to run any two tools from the 75-tool catalog concurrently inside a single unified window:
+- **Interactive Splitter**: Resizable divider with visual grab handle, clamped between 25% and 75% width, with double-click reset to 50/50 and keyboard arrow accessibility. Ratio persisted in local SQLite preferences (`ui.splitRatio`).
+- **In-Pane Quick Switcher**: `ToolQuickPicker` modal dialog based on Radix Dialog allowing instant category filtering and search across all 75+ tools to swap tools into either pane.
+- **Pane Management**: Compact pane titlebars with Swap Panes (`⇄`), Maximize/Focus Pane (`⤢`), and Close Split (`✕`).
+- **Flexible Entry Points**: Frameless window titlebar button, contextual `ToolPage` action cluster button, and global `Ctrl + \` / `Cmd + \` shortcut.
+- **Embedded Layout**: `ToolPage` embedded mode omitting redundant hero headers while providing isolated, independent scrolling per pane.
 
 ## Status
 
 75 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
-in-memory archive inspector, batch queue chaining, and usage analytics.
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **87 test files / 761 tests passing (100%)**.
+in-memory archive inspector, batch queue chaining, usage analytics, and dual-tool split-screen workspace.
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **87 test files / 767 tests passing (100%)**.
 - **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
 
 ### Milestone 7 — shadcn/ui platform (this phase)

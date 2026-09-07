@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { House, Star } from 'lucide-react'
+import { Columns2, House, Star } from 'lucide-react'
 import { CATEGORIES, getCategory } from '../../../shared/constants/categories'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { CategoryId, ToolDefinition } from '../../../shared/types/tool'
@@ -8,6 +8,7 @@ import { EmptyState, SectionHeading } from '../../components/ui/Feedback'
 import { CoachMarks } from './CoachMarks'
 import { useLibrary } from '../../stores/library'
 import { useNav } from '../../stores/nav'
+import { useWorkspace } from '../../stores/workspace'
 
 function ToolCard({ tool }: { tool: ToolDefinition }) {
   const openTool = useNav((s) => s.openTool)
@@ -268,9 +269,24 @@ export function HomeView() {
             </p>
           </div>
         )}
-        <p className="tnum shrink-0 font-mono text-[10px] tracking-wide text-faint">
-          {visibleTools.length} / {toolRegistry.count()} tools
-        </p>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              const primary = recents[0]?.toolId ?? 'json-format'
+              useWorkspace.getState().setSplitMode(true)
+              useNav.getState().openTool(primary)
+            }}
+            className="flex cursor-pointer items-center gap-1.5 rounded border border-line bg-surface/80 px-2.5 py-1 text-[11.5px] font-medium text-dim hover:border-accent/50 hover:bg-surface hover:text-ink transition-all shadow-xs"
+            title="Launch side-by-side Dual Tool Workspace (Ctrl+\)"
+          >
+            <Columns2 size={12} className="text-accent" />
+            <span>Dual Workspace</span>
+          </button>
+          <p className="tnum font-mono text-[10px] tracking-wide text-faint">
+            {visibleTools.length} / {toolRegistry.count()} tools
+          </p>
+        </div>
       </div>
 
       {!routeCategory && favoriteTools.length === 0 && (

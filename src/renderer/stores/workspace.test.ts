@@ -32,4 +32,45 @@ describe('useWorkspace Store', () => {
     expect(useWorkspace.getState().width).toBe('standard')
     expect(prefsSet).toHaveBeenCalledWith(WORKSPACE_WIDTH_KEY, 'standard')
   })
+
+  it('toggles split mode and sets default secondary tool', () => {
+    useWorkspace.setState({ splitMode: false, secondaryToolId: null })
+    useWorkspace.getState().toggleSplitMode('json-formatter')
+    expect(useWorkspace.getState().splitMode).toBe(true)
+    expect(useWorkspace.getState().secondaryToolId).toBe('json-formatter')
+
+    useWorkspace.getState().toggleSplitMode()
+    expect(useWorkspace.getState().splitMode).toBe(false)
+  })
+
+  it('sets secondary tool id directly', () => {
+    useWorkspace.getState().setSecondaryToolId('regex-tester')
+    expect(useWorkspace.getState().secondaryToolId).toBe('regex-tester')
+  })
+
+  it('clamps split ratio between 0.25 and 0.75', async () => {
+    prefsSet.mockResolvedValue(undefined)
+    await useWorkspace.getState().setSplitRatio(0.1)
+    expect(useWorkspace.getState().splitRatio).toBe(0.25)
+
+    await useWorkspace.getState().setSplitRatio(0.9)
+    expect(useWorkspace.getState().splitRatio).toBe(0.75)
+
+    await useWorkspace.getState().setSplitRatio(0.6)
+    expect(useWorkspace.getState().splitRatio).toBe(0.6)
+  })
+
+  it('swaps panes correctly', () => {
+    useWorkspace.setState({ secondaryToolId: 'hash-generator' })
+    const oldSecondary = useWorkspace.getState().swapPanes('base64-text')
+    expect(oldSecondary).toBe('hash-generator')
+    expect(useWorkspace.getState().secondaryToolId).toBe('base64-text')
+  })
+
+  it('sets active pane', () => {
+    useWorkspace.getState().setActivePane('secondary')
+    expect(useWorkspace.getState().activePane).toBe('secondary')
+    useWorkspace.getState().setActivePane('primary')
+    expect(useWorkspace.getState().activePane).toBe('primary')
+  })
 })

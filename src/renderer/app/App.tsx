@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { BarChart3, ChevronRight, FolderArchive, House, Layers } from 'lucide-react'
+import { useCallback, useEffect } from 'react'
+import { BarChart3, ChevronRight, Columns2, FolderArchive, House, Layers } from 'lucide-react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 import { Sidebar } from '../features/shell/Sidebar'
 import { StatusBar } from '../features/shell/StatusBar'
@@ -7,6 +7,7 @@ import { Wordmark } from '../components/Wordmark'
 import { CommandPalette } from '../features/shell/CommandPalette'
 import { HomeView } from '../features/shell/HomeView'
 import { ToolPage } from '../features/shell/ToolPage'
+import { DualToolWorkspace } from '../features/shell/DualToolWorkspace'
 import { SettingsView } from '../features/shell/SettingsView'
 import { HistoryView } from '../features/shell/HistoryView'
 import { QueueView } from '../features/shell/QueueView'
@@ -82,6 +83,7 @@ function Breadcrumb() {
 
 export default function App() {
   const view = useNav((s) => s.view)
+  const splitMode = useWorkspace((s) => s.splitMode)
   const loadLibrary = useLibrary((s) => s.load)
   const loadWorkspace = useWorkspace((s) => s.load)
 
@@ -90,7 +92,19 @@ export default function App() {
     void loadWorkspace()
   }, [loadLibrary, loadWorkspace])
 
-  // Global shortcuts: Esc returns Home; Ctrl/Cmd+1..5 open favorites.
+  const handleToggleSplit = useCallback(() => {
+    const nav = useNav.getState()
+    if (nav.view.type === 'tool') {
+      useWorkspace.getState().toggleSplitMode()
+    } else {
+      const { recents } = useLibrary.getState()
+      const primary = recents[0]?.toolId ?? 'json-format'
+      useWorkspace.getState().setSplitMode(true)
+      nav.openTool(primary)
+    }
+  }, [])
+
+  // Global shortcuts: Esc returns Home; Ctrl/Cmd+1..5 open favorites; Ctrl/Cmd+\ toggles split screen.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
@@ -98,6 +112,12 @@ export default function App() {
         target &&
         (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
       if (typing) return
+
+      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+        e.preventDefault()
+        handleToggleSplit()
+        return
+      }
 
       if ((e.ctrlKey || e.metaKey) && /^[1-5]$/.test(e.key)) {
         const { favorites, loaded } = useLibrary.getState()
@@ -122,7 +142,7 @@ export default function App() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [])
+  }, [handleToggleSplit])
 
   return (
     <TooltipPrimitive.Provider delayDuration={120} skipDelayDuration={300}>
@@ -136,7 +156,7 @@ export default function App() {
             controls overlay via env(titlebar-area-*) so it adapts when zoom
             resizes the overlay; fallbacks match the 110% default. */}
             <header
-              className="app-drag flex shrink-0 items-center border-b border-line bg-shell"
+              className="app-drag flex shrink-0 items-center justify-between border-b border-line bg-shell"
               style={{
                 height: 'env(titlebar-area-height, 44px)',
                 paddingRight: 'calc(100% - env(titlebar-area-width, calc(100% - 154px)))',
@@ -146,15 +166,44 @@ export default function App() {
               <div className="app-no-drag min-w-0">
                 <Breadcrumb />
               </div>
+              <div className="app-no-drag flex items-center pr-2">
+                <button
+                  type="button"
+                  onClick={handleToggleSplit}
+                  aria-label={splitMode ? 'Close split screen' : 'Split screen workspace'}
+                  title={
+                    splitMode
+                      ? 'Close split screen (Ctrl+\\)'
+                      : 'Open split screen dual tool (Ctrl+\\)'
+                  }
+                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-medium transition-all ${
+                    splitMode
+                      ? 'border-accent/60 bg-accent-soft text-accent shadow-[0_0_12px_-3px_var(--color-accent-glow)]'
+                      : 'border-line bg-surface/60 text-dim hover:border-line-strong hover:bg-surface hover:text-ink'
+                  }`}
+                >
+                  <Columns2 size={12} />
+                  <span>{splitMode ? 'Split Active' : 'Split View'}</span>
+                </button>
+              </div>
             </header>
             <div
-              key={JSON.stringify(view)}
-              className="view-enter relative min-w-0 flex-1 overflow-y-auto"
+              key={view.type === 'tool' && splitMode ? 'split-tool-mode' : JSON.stringify(view)}
+              className={`view-enter relative min-w-0 flex-1 ${
+                view.type === 'tool' && splitMode
+                  ? 'overflow-hidden h-full flex flex-col'
+                  : 'overflow-y-auto'
+              }`}
               data-view={view.type}
             >
               {view.type === 'home' && <HomeView />}
               {view.type === 'category' && <HomeView />}
-              {view.type === 'tool' && <ToolPage toolId={view.toolId} />}
+              {view.type === 'tool' &&
+                (splitMode ? (
+                  <DualToolWorkspace primaryToolId={view.toolId} />
+                ) : (
+                  <ToolPage toolId={view.toolId} />
+                ))}
               {view.type === 'history' && (
                 <HistoryView key={view.toolId ?? 'all'} seedToolId={view.toolId} />
               )}

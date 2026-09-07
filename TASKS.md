@@ -325,6 +325,16 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
   - [x] `audio-trimmer` (Audio Waveform Visualizer & Trimmer) — Web Audio peak extraction, interactive waveform scrubbing, WAV encoding.
   - [x] `audio-normalize` (Audio Loudness Normalizer) — Streaming target loudness normalization (-14 LUFS, Apple Music, EBU R128).
 
+## Milestone 10.5 — Dual-Tool Split-Screen Workspace
+
+**Goal:** Allow users to run any two tools from the 75-tool catalog side-by-side inside the single application window with interactive resizing and in-pane quick tool switching.
+
+- [x] **Workspace Store Extension (`src/renderer/stores/workspace.ts`, `workspace.test.ts`)**: `splitMode`, `secondaryToolId`, `splitRatio` (clamped 0.25–0.75, persisted to local SQLite prefs under `ui.splitRatio`), `activePane`, `swapPanes`, `setSplitRatio` (8/8 vitest tests pass).
+- [x] **Tool Quick Picker Modal (`src/renderer/features/shell/ToolQuickPicker.tsx`)**: searchable and categorizable tool selection dialog based on Radix Dialog for switching tools in either pane.
+- [x] **Tool Page Embedded Layout Support (`src/renderer/features/shell/ToolPage.tsx`)**: added `embedded?: boolean` prop to omit hero headers in split view, and added split view toggle button (`Columns2`) to the tool hero action cluster.
+- [x] **Dual Tool Workspace Container (`src/renderer/features/shell/DualToolWorkspace.tsx`)**: draggable resizer divider with visual grab handle, double-click reset to 50/50, keyboard arrow accessibility (`role="separator"`), compact pane titlebars with quick switcher, swap panes (`⇄`), maximize pane (`⤢`), and close split (`✕`).
+- [x] **App Integration & Shortcuts (`src/renderer/app/App.tsx`)**: added persistent titlebar split screen button in the frameless window header, global `Ctrl + \` / `Cmd + \` keyboard shortcut, and independent pane scrolling.
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*
