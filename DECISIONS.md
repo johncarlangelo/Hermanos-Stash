@@ -206,4 +206,10 @@
 
 **Reason:** Power users frequently compare or cross-reference data across tools (e.g. text diff alongside JSON formatter, regex tester alongside prompt library, hash generator alongside base64 text, or markdown preview alongside image converters). Running two tools side-by-side within the single application shell provides desktop workstation productivity without window-juggling or multiple OS instances. The embedded mode saves vertical space while maintaining full tool functionality and isolated React state.
 
+## ADR-036 — Tool #76: ID & Passport Photo Studio (`id-photo-maker`)
+
+**Decision:** Tool #76 adds `id-photo-maker` as an automated portrait sizing, biometric framing, and print-sheet generator. (1) Standard ID sizing: exact physical dimension mapping for 1x1 inch (25.4mm / 72pt), 2x2 inch (50.8mm / 144pt), and 35x45mm passport ratios. (2) Interactive framing: zoom/pan sliders, biometric head & eye-line guides, optional background replacement (White, Off-White, Sky Blue, Red), and optional formal bottom white nametag banner (`SURNAME, FIRST NAME, M.I.`) required by Civil Service and government bodies. (3) Print package engine: automatically computes grid coordinates on Letter, A4, and 4x6" photo card paper for 8 pcs 1x1, 4 pcs 2x2, 6 pcs Passport, and Combo Packs (e.g. 2 pcs 2x2 + 8 pcs 1x1) with hairline scissor cutting guides. (4) Multi-format export: print-ready vector PDF via `pdf-lib` (100% exact real-world scale), Microsoft Word (`.docx`) OpenXML package via `jszip` with table cells in EMUs/DXA, high-res 300 DPI PNG, and direct browser printing via `window.print()`.
+
+**Reason:** Users frequently need 1x1, 2x2, or passport photos for university, civil service, PRC, visa, and employment applications. The traditional manual method—pasting photos into Microsoft Word, eyeballing dimensions with a ruler, and dealing with page margin shifts—is frustrating and error-prone. This tool guarantees 100% physical print accuracy, provides zero-cloud privacy (local-first, Principle 1), and requires zero new external libraries (Principle 12).
+
 

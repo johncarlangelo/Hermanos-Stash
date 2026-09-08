@@ -1078,6 +1078,33 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'id-photo-maker',
+    name: 'ID & Passport Photo Studio',
+    category: 'images',
+    description:
+      'Scale, crop, and tile portrait photos onto printable 1x1, 2x2, and passport sheets with cutting guides ready for Word and PDF export.',
+    tags: [
+      'id',
+      'photo',
+      '1x1',
+      '2x2',
+      'passport',
+      'print',
+      'sheet',
+      'portrait',
+      'crop',
+      'word',
+      'docx',
+      'pdf'
+    ],
+    icon: 'id-card',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
   }
 ]
 
@@ -1162,6 +1189,7 @@ const FolderAnalyzerTool = lazy(() => import('./folder-analyzer/FolderAnalyzerTo
 const ChecksumVerifierTool = lazy(() => import('./checksum-verifier/ChecksumVerifierTool'))
 const AudioTrimmerTool = lazy(() => import('./audio-trimmer/AudioTrimmerTool'))
 const AudioNormalizeTool = lazy(() => import('./audio-normalize/AudioNormalizeTool'))
+const IdPhotoMakerTool = lazy(() => import('./id-photo-maker/IdPhotoMakerTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -1238,5 +1266,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'folder-analyzer': FolderAnalyzerTool,
   'checksum-verifier': ChecksumVerifierTool,
   'audio-trimmer': AudioTrimmerTool,
-  'audio-normalize': AudioNormalizeTool
+  'audio-normalize': AudioNormalizeTool,
+  'id-photo-maker': IdPhotoMakerTool
 }

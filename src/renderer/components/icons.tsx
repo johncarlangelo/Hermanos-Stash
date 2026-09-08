@@ -18,6 +18,7 @@ import {
   Grid,
   HardDrive,
   Hash,
+  IdCard,
   Image,
   Key,
   Layers,
@@ -87,7 +88,8 @@ const ICONS: Record<string, LucideIcon> = {
   'bar-chart': BarChart2,
   'git-compare': GitCompare,
   split: Split,
-  layers: Layers
+  layers: Layers,
+  'id-card': IdCard
 }
 
 /** Resolve a Lucide icon by name with a neutral fallback. */

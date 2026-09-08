@@ -2,21 +2,22 @@
 
 ## Current milestone
 
-**Dual-Tool Split-Screen Workspace (Milestone 10.5) complete.**
-Hermanos Stash now includes an interactive side-by-side dual tool workstation mode, enabling power users to run any two tools from the 75-tool catalog concurrently inside a single unified window:
-- **Interactive Splitter**: Resizable divider with visual grab handle, clamped between 25% and 75% width, with double-click reset to 50/50 and keyboard arrow accessibility. Ratio persisted in local SQLite preferences (`ui.splitRatio`).
-- **In-Pane Quick Switcher**: `ToolQuickPicker` modal dialog based on Radix Dialog allowing instant category filtering and search across all 75+ tools to swap tools into either pane.
-- **Pane Management**: Compact pane titlebars with Swap Panes (`⇄`), Maximize/Focus Pane (`⤢`), and Close Split (`✕`).
-- **Flexible Entry Points**: Frameless window titlebar button, contextual `ToolPage` action cluster button, and global `Ctrl + \` / `Cmd + \` shortcut.
-- **Embedded Layout**: `ToolPage` embedded mode omitting redundant hero headers while providing isolated, independent scrolling per pane.
+**ID & Passport Photo Studio (`id-photo-maker`, Tool #76) complete.**
+Hermanos Stash now includes a dedicated studio tool for generating 100% physically accurate ID, visa, and passport photo prints for government, visa, school, and corporate applications:
+- **Exact Standard Dimensions**: 1x1 inch (25.4mm), 2x2 inch (50.8mm), 35x45mm Passport / Visa, and 1.5x1.5 inch.
+- **Biometric Framing Guide**: Interactive zoom, pan, background color replacement (white, off-white, light blue, soft gray), and an overlaid biometric head/eye oval to ensure compliance with official photo guidelines.
+- **Bottom Nametag Strip**: Support for custom nametags (e.g. `SURNAME, FIRSTNAME M.I.`) required for Philippine government/board exam applications (PRC, CSC, etc.).
+- **Printable Sheet Layout Engine**: Multi-item layouts for Letter, A4, and 4x6" photo paper, with automatic grid packing, customizable margins, spacing, and optional scissor cutting guide borders.
+- **Package Presets**: 8x 1x1", 4x 2x2", 6x Passport, Job Application Combo (4x 2x2 + 4x 1x1), Student Combo (2x 2x2 + 8x 1x1), and Passport Combo (4x Passport + 4x 1x1).
+- **Multi-Format Export & Print**: 100% physical scale vector PDF (via `pdf-lib`), native Microsoft Word (`.docx` table via `jszip`), 300 DPI high-resolution PNG, and Direct Browser Print.
 
 ## Status
 
-75 tools registered across every category on a verified platform: secure Electron
+76 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
-in-memory archive inspector, batch queue chaining, usage analytics, and dual-tool split-screen workspace.
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **87 test files / 767 tests passing (100%)**.
+in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, and ID Photo Studio.
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **88 test files / 774 tests passing (100%)**.
 - **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
 
 ### Milestone 7 — shadcn/ui platform (this phase)

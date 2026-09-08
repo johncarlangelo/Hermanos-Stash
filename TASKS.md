@@ -335,6 +335,17 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Dual Tool Workspace Container (`src/renderer/features/shell/DualToolWorkspace.tsx`)**: draggable resizer divider with visual grab handle, double-click reset to 50/50, keyboard arrow accessibility (`role="separator"`), compact pane titlebars with quick switcher, swap panes (`⇄`), maximize pane (`⤢`), and close split (`✕`).
 - [x] **App Integration & Shortcuts (`src/renderer/app/App.tsx`)**: added persistent titlebar split screen button in the frameless window header, global `Ctrl + \` / `Cmd + \` keyboard shortcut, and independent pane scrolling.
 
+## Tool #76 — ID & Passport Photo Studio (`id-photo-maker`)
+
+**Goal:** Provide an automated 1x1, 2x2, and passport photo scaler, biometric portrait framer, and printable sheet maker with cutting guides and multi-format export (PDF, Word DOCX, 300 DPI PNG, Direct Print).
+
+- [x] **Pure Sizing & Sheet Packing Engine (`src/renderer/tools/id-photo-maker/logic.ts`, `logic.test.ts`)**: Exact millimeter/inch dimension definitions for 1x1, 2x2, Passport (35x45mm), and 1.5x1.5. Row-based packing layout engine for Letter, A4, and 4x6" photo paper (7/7 vitest tests pass).
+- [x] **Print-Ready PDF Generation**: Vector point mapping (`72 pt/in`) via `pdf-lib` guaranteeing 100% physical scale ruler accuracy with optional hairline scissor cutting borders.
+- [x] **Word Document (.docx) Generation**: OpenXML `.docx` generator via `jszip` embedding photo tables with exact EMUs and DXA cell widths.
+- [x] **High-Res Canvas Rendering**: 300 DPI raster canvas export for photo kiosks and live interactive document page preview.
+- [x] **Tool View & Biometric Framing (`src/renderer/tools/id-photo-maker/IdPhotoMakerTool.tsx`)**: interactive zoom/pan controls, biometric head & eye-line guides, solid background color fills (White, Off-White, Sky Blue, Red), formal bottom white nametag banner, package presets (8 1x1, 4 2x2, Combo A/B/C), sample studio photo loader, and multi-format export buttons.
+- [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `images` category with Lucide `IdCard` icon (total 76 tools).
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*
