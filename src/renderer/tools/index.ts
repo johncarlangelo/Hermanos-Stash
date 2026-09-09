@@ -1105,6 +1105,34 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: true,
       producesFiles: true
     }
+  },
+  {
+    id: 'token-counter',
+    name: 'Token & Context Studio',
+    category: 'future',
+    description:
+      'Offline BPE token counter, context window visualizer, and local LLM API cost estimator.',
+    tags: [
+      'token',
+      'tokens',
+      'counter',
+      'bpe',
+      'context',
+      'cost',
+      'openai',
+      'claude',
+      'llama',
+      'gemini',
+      'llm',
+      'prompt'
+    ],
+    icon: 'cpu',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      acceptsFiles: true,
+      producesText: true
+    }
   }
 ]
 
@@ -1190,6 +1218,7 @@ const ChecksumVerifierTool = lazy(() => import('./checksum-verifier/ChecksumVeri
 const AudioTrimmerTool = lazy(() => import('./audio-trimmer/AudioTrimmerTool'))
 const AudioNormalizeTool = lazy(() => import('./audio-normalize/AudioNormalizeTool'))
 const IdPhotoMakerTool = lazy(() => import('./id-photo-maker/IdPhotoMakerTool'))
+const TokenCounterTool = lazy(() => import('./token-counter/TokenCounterTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -1267,5 +1296,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'checksum-verifier': ChecksumVerifierTool,
   'audio-trimmer': AudioTrimmerTool,
   'audio-normalize': AudioNormalizeTool,
-  'id-photo-maker': IdPhotoMakerTool
+  'id-photo-maker': IdPhotoMakerTool,
+  'token-counter': TokenCounterTool
 }

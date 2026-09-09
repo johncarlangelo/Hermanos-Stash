@@ -346,6 +346,18 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Tool View & Biometric Framing (`src/renderer/tools/id-photo-maker/IdPhotoMakerTool.tsx`)**: interactive zoom/pan controls, biometric head & eye-line guides, solid background color fills (White, Off-White, Sky Blue, Red), formal bottom white nametag banner, package presets (8 1x1, 4 2x2, Combo A/B/C), sample studio photo loader, and multi-format export buttons.
 - [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `images` category with Lucide `IdCard` icon (total 76 tools).
 
+## Tool #77 — Token & Context Studio (`token-counter`)
+
+**Goal:** Provide an offline BPE token counter, multi-model context window visualizer, and local API cost estimator for AI developers and writers without external APIs or cloud dependencies.
+
+- [x] **BPE Pre-Tokenizer & Subsegmentation Engine (`src/renderer/tools/token-counter/logic.ts`, `logic.test.ts`)**: Standard regex matching cl100k/o200k pre-tokenizer pattern, subsegmentation for compound words, multi-digit numbers, whitespace, and CJK ideographs (17/17 vitest tests pass).
+- [x] **Multi-Model Profiles & Estimation Ratios**: Calibrated token and pricing models for GPT-4o, GPT-4o mini, Claude 3.5 Sonnet, Claude 3.5 Haiku, Llama 3.1 70B, Gemini 1.5 Pro, and Gemini 1.5 Flash.
+- [x] **Interactive Token Visualizer**: Color-coded token chunks rendered with 6 rotating dark-mode pastel tints, hover details showing token index, character spans, and escaped whitespace representations.
+- [x] **Context Window Utilization Gauge**: Visual progress bar showing percentage fill against model context limits (128k, 200k, 1M, 2M) with status indicators (safe/warning/exceeded) and headroom calculations.
+- [x] **Cost Projection Calculator**: Real-time calculation of prompt input cost, configurable completion token output cost, total per-request cost, and 1k request batch projections.
+- [x] **Tool View & Universal Input (`src/renderer/tools/token-counter/TokenCounterTool.tsx`)**: Code/prompt textarea with live character/word/line counters, sample presets (System Prompt, React Component, JSON Schema, Markdown, Numbers), and file drag & drop loader.
+- [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `future` category with Lucide `Cpu` icon (total 77 tools).
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*

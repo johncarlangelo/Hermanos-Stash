@@ -8,6 +8,7 @@ import {
   Clock,
   Code,
   Copy,
+  Cpu,
   Crop,
   FileCheck,
   FileCode,
@@ -89,7 +90,8 @@ const ICONS: Record<string, LucideIcon> = {
   'git-compare': GitCompare,
   split: Split,
   layers: Layers,
-  'id-card': IdCard
+  'id-card': IdCard,
+  cpu: Cpu
 }
 
 /** Resolve a Lucide icon by name with a neutral fallback. */

@@ -2,22 +2,22 @@
 
 ## Current milestone
 
-**ID & Passport Photo Studio (`id-photo-maker`, Tool #76) complete.**
-Hermanos Stash now includes a dedicated studio tool for generating 100% physically accurate ID, visa, and passport photo prints for government, visa, school, and corporate applications:
-- **Exact Standard Dimensions**: 1x1 inch (25.4mm), 2x2 inch (50.8mm), 35x45mm Passport / Visa, and 1.5x1.5 inch.
-- **Biometric Framing Guide**: Interactive zoom, pan, background color replacement (white, off-white, light blue, soft gray), and an overlaid biometric head/eye oval to ensure compliance with official photo guidelines.
-- **Bottom Nametag Strip**: Support for custom nametags (e.g. `SURNAME, FIRSTNAME M.I.`) required for Philippine government/board exam applications (PRC, CSC, etc.).
-- **Printable Sheet Layout Engine**: Multi-item layouts for Letter, A4, and 4x6" photo paper, with automatic grid packing, customizable margins, spacing, and optional scissor cutting guide borders.
-- **Package Presets**: 8x 1x1", 4x 2x2", 6x Passport, Job Application Combo (4x 2x2 + 4x 1x1), Student Combo (2x 2x2 + 8x 1x1), and Passport Combo (4x Passport + 4x 1x1).
-- **Multi-Format Export & Print**: 100% physical scale vector PDF (via `pdf-lib`), native Microsoft Word (`.docx` table via `jszip`), 300 DPI high-resolution PNG, and Direct Browser Print.
+**Token & Context Studio (`token-counter`, Tool #77) complete.**
+Hermanos Stash now includes an offline BPE tokenization, context window visualization, and local LLM API cost projection workstation in the `future` (Experiments & AI-adjacent) category:
+- **Offline BPE Segmentation**: Pre-tokenization regex matching cl100k/o200k patterns with subword segmentation for words, numbers, whitespace, and CJK characters with zero external API calls.
+- **Multi-Model Profiles**: Exact token counting and pricing models for OpenAI (GPT-4o, GPT-4o mini, GPT-3.5), Anthropic (Claude 3.5 Sonnet, Claude 3.5 Haiku), Meta (Llama 3.1 70B), and Google (Gemini 1.5 Pro, Flash).
+- **Interactive Visualizer**: Color-coded token chunks rendered with 6 rotating pastel dark-mode tints, showing real-time hover details (token index, character spans, and whitespace symbol toggles).
+- **Context Window Utilization Gauge**: Visual progress bar showing percentage fill against model context limits (128k, 200k, 1M, 2M) with safe/warning/exceeded status and headroom calculations.
+- **API Cost Projection**: Real-time prompt input cost and user-projected completion token cost at official published per-million rates.
+- **Universal Input**: Code/prompt editor with live character/word/line counters, 5 sample presets, and file drag & drop loader.
 
 ## Status
 
-76 tools registered across every category on a verified platform: secure Electron
+77 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
-in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, and ID Photo Studio.
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **88 test files / 774 tests passing (100%)**.
+in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, ID Photo Studio, and Token & Context Studio.
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **89 test files / 791 tests passing (100%)**.
 - **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
 
 ### Milestone 7 — shadcn/ui platform (this phase)

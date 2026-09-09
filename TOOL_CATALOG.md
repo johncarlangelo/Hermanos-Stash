@@ -1,6 +1,6 @@
 # Hermanos Stash — Tool Catalog
 
-This is a living catalog tracking shipped tools and workstation capabilities. Currently **75 tools** are implemented and registered across 8 categories.
+This is a living catalog tracking shipped tools and workstation capabilities. Currently **77 tools** are implemented and registered across 8 categories.
 
 ## Files & Storage (`files`)
 
@@ -101,6 +101,7 @@ This is a living catalog tracking shipped tools and workstation capabilities. Cu
 
 - [x] **Prompt Library** (`prompt-library`) — Manage local reusable prompt templates with `{{variable}}` substitution.
 - [x] **Brand Bible Creator** (`brand-bible`) — Design exportable brand style guides with color palettes, typography, and rules.
+- [x] **Token & Context Studio** (`token-counter`) — Offline BPE token counting, multi-model context window visualization (GPT-4o, Claude 3.5, Llama 3.1, Gemini), color-coded token chunk visualizer, and local API cost estimation.
 
 ## Product-level Platform Utilities
 
