@@ -2,14 +2,14 @@
 
 # HERMANOS STASH
 
-**One window. Fifty tools. Zero cloud.**
+**One window. 77 tools. Zero cloud.**
 
 A local-first desktop toolbox for files, documents, images, video, audio,
 text, developer work and reusable AI prompts — everything processed on your
 machine, nothing sent anywhere.
 
-![Tools](https://img.shields.io/badge/tools-50-d9a35c)
-![Tests](https://img.shields.io/badge/tests-553_passing-85bb90)
+![Tools](https://img.shields.io/badge/tools-77-d9a35c)
+![Tests](https://img.shields.io/badge/tests-791_passing-85bb90)
 ![License](https://img.shields.io/badge/license-MIT-9aa2b1)
 ![Electron](https://img.shields.io/badge/Electron-43-2b2f3a)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3b82f6)
