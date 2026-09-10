@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   BarChart2,
+  Bot,
   Braces,
   Check,
   ChevronRight,
@@ -91,7 +92,8 @@ const ICONS: Record<string, LucideIcon> = {
   split: Split,
   layers: Layers,
   'id-card': IdCard,
-  cpu: Cpu
+  cpu: Cpu,
+  bot: Bot
 }
 
 /** Resolve a Lucide icon by name with a neutral fallback. */

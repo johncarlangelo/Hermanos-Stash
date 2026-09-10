@@ -2,22 +2,21 @@
 
 ## Current milestone
 
-**Token & Context Studio (`token-counter`, Tool #77) complete.**
-Hermanos Stash now includes an offline BPE tokenization, context window visualization, and local LLM API cost projection workstation in the `future` (Experiments & AI-adjacent) category:
-- **Offline BPE Segmentation**: Pre-tokenization regex matching cl100k/o200k patterns with subword segmentation for words, numbers, whitespace, and CJK characters with zero external API calls.
-- **Multi-Model Profiles**: Exact token counting and pricing models for OpenAI (GPT-4o, GPT-4o mini, GPT-3.5), Anthropic (Claude 3.5 Sonnet, Claude 3.5 Haiku), Meta (Llama 3.1 70B), and Google (Gemini 1.5 Pro, Flash).
-- **Interactive Visualizer**: Color-coded token chunks rendered with 6 rotating pastel dark-mode tints, showing real-time hover details (token index, character spans, and whitespace symbol toggles).
-- **Context Window Utilization Gauge**: Visual progress bar showing percentage fill against model context limits (128k, 200k, 1M, 2M) with safe/warning/exceeded status and headroom calculations.
-- **API Cost Projection**: Real-time prompt input cost and user-projected completion token cost at official published per-million rates.
-- **Universal Input**: Code/prompt editor with live character/word/line counters, 5 sample presets, and file drag & drop loader.
+**Local LLM Playground & Benchmark (`local-llm-playground`, Tool #78) [BETA] complete.**
+Hermanos Stash now includes an offline-capable local LLM chat and performance benchmark workstation in the `future` (Experiments & AI-adjacent) category, officially tested as a **BETA** tool:
+- **Local Daemon Integration**: Connects via HTTP REST streams to localhost daemons—Ollama (`http://localhost:11434`), LM Studio / vLLM (`http://localhost:1234`), and custom endpoints with zero external network requests.
+- **Real-Time Hardware Benchmarking**: Real-time generation speed gauge (**tok/s**), Time-to-First-Token (**TTFT**), prompt evaluation speed, and duration telemetry.
+- **Offline Simulation Sandbox**: Bundled realistic streaming simulation for `llama-3.2-3b-sim`, `deepseek-r1-7b-sim`, and `phi-4-14b-sim` with authentic token speeds (~70-90 tok/s).
+- **Interactive Workstation UI**: Full chat thread, live streaming cursor, stop inference via AbortController, quick prompt starters, system prompt presets, and hyperparameter sliders (temperature, top-p, max tokens).
+- **Explicit Beta Designation**: Tagged with `'beta'` and branded with a prominent **BETA** badge in the tool header, catalog, and documentation.
 
 ## Status
 
-77 tools registered across every category on a verified platform: secure Electron
+78 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
-in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, ID Photo Studio, and Token & Context Studio.
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **89 test files / 791 tests passing (100%)**.
+in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, ID Photo Studio, Token & Context Studio, and Local LLM Playground [BETA].
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **90 test files / 803 tests passing (100%)**.
 - **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
 
 ### Milestone 7 — shadcn/ui platform (this phase)

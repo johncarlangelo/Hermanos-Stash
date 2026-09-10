@@ -358,6 +358,16 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Tool View & Universal Input (`src/renderer/tools/token-counter/TokenCounterTool.tsx`)**: Code/prompt textarea with live character/word/line counters, sample presets (System Prompt, React Component, JSON Schema, Markdown, Numbers), and file drag & drop loader.
 - [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `future` category with Lucide `Cpu` icon (total 77 tools).
 
+## Tool #78 — Local LLM Playground & Benchmark [BETA] (`local-llm-playground`)
+
+**Goal:** Provide a local-first interface to interact with, test prompts on, and benchmark local AI models (Ollama, LM Studio) on local CPU/GPU with real-time tokens/sec telemetry, TTFT metrics, and offline simulation fallback. Currently tested as a Beta tool.
+
+- [x] **Local Client Protocol & Parser (`src/renderer/tools/local-llm-playground/logic.ts`, `logic.test.ts`)**: Ollama and OpenAI-compatible endpoint detection, NDJSON streaming parser, and nanosecond/millisecond hardware telemetry calculators (12/12 vitest tests pass).
+- [x] **Real-Time Benchmark Telemetry**: Calculates exact tokens per second (tok/s), Time-to-First-Token (TTFT), prompt evaluation duration, and total latency.
+- [x] **Offline Simulation Sandbox**: Bundled realistic streaming simulation for `llama-3.2-3b-sim`, `deepseek-r1-7b-sim`, and `phi-4-14b-sim` with authentic token speeds (~70-90 tok/s).
+- [x] **Tool View & BETA Branding (`src/renderer/tools/local-llm-playground/LocalLlmPlaygroundTool.tsx`)**: Full chat & prompt playground, streaming cursor, stop generation via AbortController, quick starter prompts, system prompt presets, and hyperparameter sliders (temperature, top-p, max tokens).
+- [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `future` category with Lucide `Bot` icon and `'beta'` tag (total 78 tools).
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*

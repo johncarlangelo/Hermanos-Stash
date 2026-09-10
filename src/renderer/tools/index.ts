@@ -1133,6 +1133,32 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       acceptsFiles: true,
       producesText: true
     }
+  },
+  {
+    id: 'local-llm-playground',
+    name: 'Local LLM Playground & Benchmark',
+    category: 'future',
+    description:
+      '[BETA] Chat, test prompts, and benchmark local Ollama and LM Studio models on your hardware with real-time tokens/sec telemetry.',
+    tags: [
+      'beta',
+      'llm',
+      'ollama',
+      'local-ai',
+      'benchmark',
+      'playground',
+      'tokens',
+      'chat',
+      'offline',
+      'lm-studio',
+      'model'
+    ],
+    icon: 'bot',
+    version: '1.0.0',
+    capabilities: {
+      acceptsText: true,
+      producesText: true
+    }
   }
 ]
 
@@ -1219,6 +1245,7 @@ const AudioTrimmerTool = lazy(() => import('./audio-trimmer/AudioTrimmerTool'))
 const AudioNormalizeTool = lazy(() => import('./audio-normalize/AudioNormalizeTool'))
 const IdPhotoMakerTool = lazy(() => import('./id-photo-maker/IdPhotoMakerTool'))
 const TokenCounterTool = lazy(() => import('./token-counter/TokenCounterTool'))
+const LocalLlmPlaygroundTool = lazy(() => import('./local-llm-playground/LocalLlmPlaygroundTool'))
 
 export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'json-format': JsonFormatTool,
@@ -1297,5 +1324,6 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'audio-trimmer': AudioTrimmerTool,
   'audio-normalize': AudioNormalizeTool,
   'id-photo-maker': IdPhotoMakerTool,
-  'token-counter': TokenCounterTool
+  'token-counter': TokenCounterTool,
+  'local-llm-playground': LocalLlmPlaygroundTool
 }
