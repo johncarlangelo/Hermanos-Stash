@@ -61,6 +61,29 @@ Every tool should have:
 
 Do not couple individual tools directly to unrelated UI screens.
 
+### Beta Flagging Standard
+
+When flagging a tool as **BETA** (e.g. experimental, active testing, newly prototyped):
+1. **Use `isBeta: true` property on `ToolDefinition`** in `src/renderer/tools/index.ts`:
+   ```ts
+   {
+     id: 'ascii-banner',
+     name: 'ASCII Art & Retro Banner Generator',
+     // ...
+     isBeta: true
+   }
+   ```
+2. **Do NOT put `'beta'` in the `tags` array.** Tags are reserved for domain search keywords.
+3. **Do NOT prepend `[BETA]` to `name` or `description`.**
+4. **Shell integration:** The platform shell automatically renders the canonical Stash amber `BETA` pill on tool cards in `HomeView`, tool headers in `ToolPage`, and search items in `CommandPalette`.
+5. **Tool-internal header pill (if rendered):** Match the canonical pill style used by `AsciiBannerTool.tsx` and `SvgCreatorTool.tsx`:
+   ```tsx
+   <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-amber-400 tracking-wider uppercase">
+     BETA
+   </span>
+   ```
+   Do not introduce custom icons (e.g. Sparkles) or arbitrary non-standard badge styles.
+
 ## Agent behavior
 
 Before substantial implementation:

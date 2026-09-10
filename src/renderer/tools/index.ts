@@ -1139,9 +1139,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: 'Local LLM Playground & Benchmark',
     category: 'future',
     description:
-      '[BETA] Chat, test prompts, and benchmark local Ollama and LM Studio models on your hardware with real-time tokens/sec telemetry.',
+      'Chat, test prompts, and benchmark local Ollama and LM Studio models on your hardware with real-time tokens/sec telemetry.',
     tags: [
-      'beta',
       'llm',
       'ollama',
       'local-ai',
@@ -1158,7 +1157,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     capabilities: {
       acceptsText: true,
       producesText: true
-    }
+    },
+    isBeta: true
   }
 ]
 

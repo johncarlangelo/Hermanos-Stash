@@ -15,6 +15,7 @@ Every tool requires:
 - `tags`: array of searchable keywords for discovery in `Ctrl+K` command palette
 - `icon`: Lucide icon name matching registered icons in `src/renderer/components/icons.ts`
 - `version`: semantic version string (e.g. `1.0.0`)
+- `isBeta`: (optional boolean) flags the tool as active beta / preview. Use this field (`isBeta: true`) instead of adding `'beta'` into `tags` or title; the shell and catalog render the amber `BETA` pill automatically.
 
 IDs must remain stable after release because they are used in favorites, recents, queue presets, and activity history.
 
@@ -116,7 +117,7 @@ Tools must compose shared design system components from `src/renderer/components
 
 Every time a new tool is added:
 
-- [ ] **1. Define stable ID & Metadata**: declare category, tags, Lucide icon, and capabilities in `src/renderer/tools/index.ts`.
+- [ ] **1. Define stable ID & Metadata**: declare category, tags, Lucide icon, capabilities, and `isBeta: true` (if experimental/beta) in `src/renderer/tools/index.ts`.
 - [ ] **2. Implement Processing / IPC**: create main process worker in `src/main/processing/` (if native/heavy) and register IPC channels in `src/shared/ipc.ts`, `src/main/ipc/register.ts`, and `src/preload/index.ts`.
 - [ ] **3. Pure Logic & Tests**: place pure calculation/formatting helpers and unit tests in `src/renderer/tools/<tool-id>/logic.ts` and `logic.test.ts`.
 - [ ] **4. Build UI Component**: create `<ToolName>Tool.tsx` using design system components and dark palette.

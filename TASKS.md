@@ -366,7 +366,7 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Real-Time Benchmark Telemetry**: Calculates exact tokens per second (tok/s), Time-to-First-Token (TTFT), prompt evaluation duration, and total latency.
 - [x] **Offline Simulation Sandbox**: Bundled realistic streaming simulation for `llama-3.2-3b-sim`, `deepseek-r1-7b-sim`, and `phi-4-14b-sim` with authentic token speeds (~70-90 tok/s).
 - [x] **Tool View & BETA Branding (`src/renderer/tools/local-llm-playground/LocalLlmPlaygroundTool.tsx`)**: Full chat & prompt playground, streaming cursor, stop generation via AbortController, quick starter prompts, system prompt presets, and hyperparameter sliders (temperature, top-p, max tokens).
-- [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `future` category with Lucide `Bot` icon and `'beta'` tag (total 78 tools).
+- [x] **Registry & Documentation (`src/renderer/tools/index.ts`, `TOOL_CATALOG.md`, `DECISIONS.md`, `PROGRESS.md`)**: Registered under `future` category with Lucide `Bot` icon and `isBeta: true` flag matching `ascii-banner` (total 78 tools).
 
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 

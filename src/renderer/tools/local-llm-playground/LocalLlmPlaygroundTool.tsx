@@ -8,7 +8,6 @@ import {
   Play,
   RotateCcw,
   Sliders,
-  Sparkles,
   Square,
   Terminal,
   Trash2,
@@ -323,15 +322,15 @@ export default function LocalLlmPlaygroundTool() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
-      {/* Top Workstation Header Bar with BETA branding */}
+      {/* Top Workstation Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold tracking-tight text-ink">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold tracking-tight text-ink">
               Local LLM Playground & Benchmark
-            </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold tracking-wider text-amber-300 border border-amber-500/30 uppercase shadow-xs">
-              <Sparkles className="h-3 w-3 text-amber-400" /> BETA
+            </h2>
+            <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-amber-400 tracking-wider uppercase">
+              BETA
             </span>
           </div>
           <p className="mt-1 text-xs text-faint">

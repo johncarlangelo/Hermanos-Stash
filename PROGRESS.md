@@ -8,7 +8,7 @@ Hermanos Stash now includes an offline-capable local LLM chat and performance be
 - **Real-Time Hardware Benchmarking**: Real-time generation speed gauge (**tok/s**), Time-to-First-Token (**TTFT**), prompt evaluation speed, and duration telemetry.
 - **Offline Simulation Sandbox**: Bundled realistic streaming simulation for `llama-3.2-3b-sim`, `deepseek-r1-7b-sim`, and `phi-4-14b-sim` with authentic token speeds (~70-90 tok/s).
 - **Interactive Workstation UI**: Full chat thread, live streaming cursor, stop inference via AbortController, quick prompt starters, system prompt presets, and hyperparameter sliders (temperature, top-p, max tokens).
-- **Explicit Beta Designation**: Tagged with `'beta'` and branded with a prominent **BETA** badge in the tool header, catalog, and documentation.
+- **Explicit Beta Designation**: Configured with `isBeta: true` on `ToolDefinition` (matching `ascii-banner` standard) to render the platform amber BETA pill across Home cards, ToolPage header, and Command Palette.
 
 ## Status
 
