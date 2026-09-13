@@ -84,6 +84,24 @@ When flagging a tool as **BETA** (e.g. experimental, active testing, newly proto
    ```
    Do not introduce custom icons (e.g. Sparkles) or arbitrary non-standard badge styles.
 
+### Feature Semantic Versioning (Queue Workflow View [BETA])
+
+The **Queue Workflow View** (`src/renderer/features/workflow/`) is an advanced, rapidly evolving visual orchestrator within the desktop suite. Because it undergoes continuous iteration and user testing independent of the overall desktop app release cycle (`package.json`), it maintains its own dedicated semantic versioning track:
+
+1. **Canonical Version Source**:
+   - Defined in [`version.ts`](file:///d:/Comsci%20things/Hermanos%20Stash/src/renderer/features/workflow/version.ts) as `export const QUEUE_WORKFLOW_VERSION = '0.1.0'`.
+   - Rendered across workflow view headers (`WorkflowToolbar.tsx`, `QueueView.tsx`) alongside the canonical amber `BETA` pill.
+2. **Mandatory Incrementation on Every Push**:
+   Every pull request or commit that modifies files under `src/renderer/features/workflow/` or affects Queue Workflow behavior MUST increment `QUEUE_WORKFLOW_VERSION` according to strict Semantic Versioning:
+   - **PATCH (`0.1.x` → `0.1.x+1`)**: Bug fixes, UI/UX polish, CSS styling/animation tweaks, performance optimizations, or edge-case handling.
+   - **MINOR (`0.x.0` → `0.x+1.0`, resetting patch to 0)**: New workflow capabilities, node types, built-in recipes/templates, wiring validations, or non-breaking serialization formats.
+   - **MAJOR (`x.0.0` → `x+1.0.0`, resetting minor and patch to 0)**: Incompatible graph schema changes, complete canvas engine rewrites, or formal graduation out of BETA to stable 1.0.0.
+3. **Pre-Commit Workflow**:
+   - Update `QUEUE_WORKFLOW_VERSION` in `version.ts`.
+   - Update the version test in `src/renderer/features/workflow/workflow.test.ts`.
+   - Verify tests and linting (`npm test`, `npm run lint`).
+   - Stage and commit with the appropriate Conventional Commit scope (e.g. `fix(queue): ...` for patch, `feat(queue): ...` for minor).
+
 ## Agent behavior
 
 Before substantial implementation:

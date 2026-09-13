@@ -235,6 +235,19 @@
 8. **Bidirectional Linear Interoperability:** Maintains 100% backward compatibility with linear queue presets via `stepsToWorkflowGraph` and `workflowGraphToSteps`, allowing users to switch between the Workflow Canvas and Linear Queue views without loss of state.
 
 **Reason:** Power users need an intuitive, visual mental model to orchestrate complex multi-step data pipelines—such as compressing images, converting them to PDF, stamping watermarks, and calculating file hashes—without manually managing intermediate files or remembering step order. A visual node graph with drag-and-drop wiring makes the data flow tangible, eliminates manual friction, and elevates Hermanos Stash to a professional-grade desktop utility workstation while adhering strictly to local-first principles and design system consistency.
+ 
+## ADR-040 — Independent Feature Semantic Versioning for Queue Workflow View [BETA]
+ 
+**Decision:** Establish an independent semantic versioning track (`QUEUE_WORKFLOW_VERSION` in `src/renderer/features/workflow/version.ts`, starting at `0.1.0`) specifically for the Queue Workflow feature, decoupled from the core application `package.json` version.
+1. **Scope:** Governs all files and subsystems under `src/renderer/features/workflow/` and workflow integrations in `QueueView.tsx`.
+2. **Incrementation Protocol:**
+   - **PATCH (`0.1.x` → `0.1.x+1`)**: Any bug fix, UI/UX refinement, visual adjustment, or non-breaking patch.
+   - **MINOR (`0.x.0` → `0.x+1.0`)**: Any additive feature, new workflow node type, recipe preset, or export capability.
+   - **MAJOR (`x.0.0` → `x+1.0.0`)**: Any breaking change to the `.stashflow.json` schema or graduation out of BETA.
+3. **UI Transparency:** The active version is clearly displayed alongside the amber `BETA` pill in the workflow toolbar and queue headers, giving users and developers immediate clarity on the workflow engine's build state.
+ 
+**Reason:** The Visual Workflow View is a major capability leap involving complex graphical state management, DAG topological execution, drag-and-drop routing, and template serialization. Iterating on UI/UX fixes and bug fixes happens at high frequency. Tracking an independent feature version provides fine-grained provenance without falsely bumping the version of the entire 78-tool desktop suite.
+
 
 
 

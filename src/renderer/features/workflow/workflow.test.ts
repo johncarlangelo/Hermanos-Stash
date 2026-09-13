@@ -5,6 +5,7 @@ import { autoLayoutGraph, calculateBoundingBox, snapToGrid } from './layout'
 import { topologicalSort, validateEdge, runWorkflowPipeline } from './execution'
 import { BUILT_IN_WORKFLOW_TEMPLATES } from './presets'
 import type { WorkflowGraph } from './types'
+import { QUEUE_WORKFLOW_VERSION } from './version'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -186,5 +187,12 @@ describe('Workflow Pipeline Execution Engine', () => {
     const result = await runWorkflowPipeline(graph, [], '')
     expect(result.success).toBe(true)
     expect(result.finalOutputFiles).toHaveLength(0)
+  })
+
+  describe('Workflow Feature Versioning', () => {
+    it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
+      expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.1.0')
+    })
   })
 })
