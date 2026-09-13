@@ -222,6 +222,21 @@
 
 **Reason:** Local LLMs running on personal hardware are a cornerstone of local-first privacy and autonomous computing. AI developers and power users need a fast, zero-friction desktop client to benchmark generation speed across quantizations, compare model outputs, and test system prompts without spinning up heavyweight web browser frontends. Adding this tool directly inside Hermanos Stash satisfies Principle 1 (local-first) while honoring scope discipline by clearly delineating its active Beta evaluation status.
 
+## ADR-039 — Queue Workflow View & Visual Pipeline Orchestrator
+
+**Decision:** Transform the Queue Tools feature into a full-screen, interactive workflow canvas view (using visual node-graph workflow patterns inspired by n8n, MIT App Inventor, and Node-RED as design reference) for composing, connecting, executing, and saving multi-tool pipelines across all 78 local utilities.
+1. **Bespoke Native SVG + React Canvas Engine:** Built directly using React and SVG without external canvas libraries (e.g. `@xyflow/react`) to eliminate React 19 peer-dependency conflicts and heavy bundle overhead. Employs GPU-accelerated CSS transforms (`translate(${pan.x}px, ${pan.y}px) scale(${zoom})`), 60fps pointer dragging, grid snapping (20px), wheel/trackpad zooming (30% to 200%), and smooth cubic Bézier vector wires (`M x1 y1 C cx1 cy1, cx2 cy2, x2 y2`).
+2. **Full-Screen Workstation Layout with Responsive Shell Integration:** On navigating to the Queue view, the main navigation sidebar automatically collapses (`sidebarCollapsed: true`) to maximize canvas acreage, with an explicit expand/collapse toggle (`PanelLeft` / `PanelLeftClose`) and global `Ctrl+B` shortcut. Outer scrollbars are suppressed (`overflow-hidden h-full flex flex-col`) for seamless native canvas interaction.
+3. **Empty Canvas by Default:** The canvas starts cleanly with zero auto-inserted nodes, providing an intentional empty state with instant quick actions to open the tool palette or browse recipes.
+4. **Smooth In/Out Animated Drawers & Modals:** Both the 78-Tool Palette drawer and the Browse Recipes drawer implement smooth slide-and-fade in/out animations with backdrop overlays for closing on outside click.
+5. **Direct Node Input & Strict Validation:** Node cards provide direct interactive input controls: native OS file selection (`window.stash.dialogs.openFile`), drag-and-drop file attachment onto the card, and text payload input. When executing, the pipeline strictly validates that every tool requiring input either has attached files/text or is connected to an upstream output. Execution is strictly blocked with clear error guidance if inputs are missing, and no synthetic sample data is used.
+6. **DAG Topological Execution Engine:** Validates the workflow graph for cycles, computes execution order via Kahn's algorithm, and orchestrates sequential/branching pipeline execution passing real intermediate file artifacts and text payloads between tools with live visual node state indicators (`idle`, `running`, `success`, `error`) and animated cable flow pulses (`wireDash` keyframes).
+7. **Workflow Templates & Preset System:** Users can save custom workflows directly to local SQLite storage (`workflow.userTemplates`), load curated workstation recipes (Photo ID Studio, Media Transcoder, Document Security, API Payload Validator), and import/export `.stashflow.json` workflow files for easy sharing and backup.
+8. **Bidirectional Linear Interoperability:** Maintains 100% backward compatibility with linear queue presets via `stepsToWorkflowGraph` and `workflowGraphToSteps`, allowing users to switch between the Workflow Canvas and Linear Queue views without loss of state.
+
+**Reason:** Power users need an intuitive, visual mental model to orchestrate complex multi-step data pipelines—such as compressing images, converting them to PDF, stamping watermarks, and calculating file hashes—without manually managing intermediate files or remembering step order. A visual node graph with drag-and-drop wiring makes the data flow tangible, eliminates manual friction, and elevates Hermanos Stash to a professional-grade desktop utility workstation while adhering strictly to local-first principles and design system consistency.
+
+
 
 
 

@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+import type { WorkflowGraph } from '../features/workflow/types'
+
 export interface QueueStep {
   toolId: string
   params: Record<string, unknown>
@@ -9,6 +11,7 @@ export interface QueuePreset {
   id: string
   name: string
   steps: QueueStep[]
+  graph?: WorkflowGraph
   createdAt: number
   updatedAt: number
 }

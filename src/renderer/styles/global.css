@@ -265,6 +265,12 @@
   animation: indeterminate 1.15s var(--ease-out-soft) infinite;
 }
 
+@keyframes wireDash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
 /*
  * ui-overhaul microinteractions — motion that reports state.
  */

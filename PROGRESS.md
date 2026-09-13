@@ -2,22 +2,25 @@
 
 ## Current milestone
 
-**Local LLM Playground & Benchmark (`local-llm-playground`, Tool #78) [BETA] complete.**
-Hermanos Stash now includes an offline-capable local LLM chat and performance benchmark workstation in the `future` (Experiments & AI-adjacent) category, officially tested as a **BETA** tool:
-- **Local Daemon Integration**: Connects via HTTP REST streams to localhost daemons—Ollama (`http://localhost:11434`), LM Studio / vLLM (`http://localhost:1234`), and custom endpoints with zero external network requests.
-- **Real-Time Hardware Benchmarking**: Real-time generation speed gauge (**tok/s**), Time-to-First-Token (**TTFT**), prompt evaluation speed, and duration telemetry.
-- **Offline Simulation Sandbox**: Bundled realistic streaming simulation for `llama-3.2-3b-sim`, `deepseek-r1-7b-sim`, and `phi-4-14b-sim` with authentic token speeds (~70-90 tok/s).
-- **Interactive Workstation UI**: Full chat thread, live streaming cursor, stop inference via AbortController, quick prompt starters, system prompt presets, and hyperparameter sliders (temperature, top-p, max tokens).
-- **Explicit Beta Designation**: Configured with `isBeta: true` on `ToolDefinition` (matching `ascii-banner` standard) to render the platform amber BETA pill across Home cards, ToolPage header, and Command Palette.
+**Queue Workflow View & Visual Pipeline Orchestrator complete.**
+Hermanos Stash now includes an interactive, full-screen workflow canvas view for the Queue feature (using node-graph workflow patterns inspired by n8n, MIT App Inventor, and Node-RED as design reference):
+- **Bespoke Native Canvas Engine**: Zero-dependency React + SVG architecture with GPU hardware transforms (`translate` + `scale`), 60fps panning, trackpad/wheel zooming (30% to 200%), and 20px grid snapping. Starts with a clean empty canvas.
+- **Searchable Drag-and-Drop Tool Palette**: Floating palette covering all 78 tools across all categories with instant filtering, drag-to-canvas or click-to-add support, and smooth in/out opening & closing animations with backdrop overlay.
+- **Visual Nodes & Typed Ports**: Layered charcoal cards with Lucide icons, category badges, duplicate/delete actions, direct native OS file selection (`window.stash.dialogs.openFile`), drag-and-drop file attachment, and typed connection ports (Files in Cyan, Text/Data in Purple).
+- **Animated Vector Wires**: Pure SVG cubic Bézier cables with glow filters, live `wireDash` pulse animations during execution, and midpoint delete buttons.
+- **DAG Topological Execution Engine & Input Validation**: Cycle detection, Kahn's algorithm topological sorting, and asynchronous pipeline execution passing real file artifacts and text payloads across tools. Strictly validates that tools have required inputs before running (no fake/sample data).
+- **Workflow Templates & Recipes**: Save custom workflows to local SQLite (`workflow.userTemplates`), 1-click loading of curated workstation recipes with smooth in/out modal animations, and `.stashflow.json` import/export.
+- **Responsive Full-Screen Workspace**: Automatic sidebar collapse on entering the Queue view to maximize canvas acreage, with an explicit expand/collapse toggle and global `Ctrl+B` shortcut.
 
 ## Status
 
 78 tools registered across every category on a verified platform: secure Electron
 shell, design-token system, registry-driven shell with command palette, SQLite
 persistence, WebCrypto, Web Audio, PDF.js & pdf-lib vector stamping, Tesseract OCR,
-in-memory archive inspector, batch queue chaining, usage analytics, dual-tool split-screen workspace, ID Photo Studio, Token & Context Studio, and Local LLM Playground [BETA].
-- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **90 test files / 803 tests passing (100%)**.
+in-memory archive inspector, batch queue chaining, visual workflow editor, usage analytics, dual-tool split-screen workspace, ID Photo Studio, Token & Context Studio, and Local LLM Playground [BETA].
+- **Verification**: 0 typecheck errors, 0 ESLint errors/warnings, Prettier 100% compliant, **91 test files / 812 tests passing (100%)**.
 - **UI & Layout Audit**: Unified spacing, container standards (`max-w-6xl 2xl:max-w-7xl px-6 sm:px-8 py-8 space-y-7`), and workstation headers across `QueueView`, `QueueRunner`, `QueueBuilder`, `HistoryView`, and `SettingsView`. Fixed layout trapping in Queue Runner and nested scrollbar conflicts in Queue Builder.
+
 
 ### Milestone 7 — shadcn/ui platform (this phase)
 

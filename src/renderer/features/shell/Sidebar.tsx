@@ -9,6 +9,7 @@ import {
   FolderArchive,
   House,
   Layers,
+  PanelLeftClose,
   Pin,
   Search,
   Settings,
@@ -53,12 +54,14 @@ function SidebarRow({
   icon,
   label,
   count,
+  isBeta,
   onClick
 }: {
   active: boolean
   icon: React.ReactNode
   label: string
   count?: number
+  isBeta?: boolean
   onClick: () => void
 }) {
   return (
@@ -80,7 +83,14 @@ function SidebarRow({
       >
         {icon}
       </span>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span className="min-w-0 flex-1 truncate flex items-center gap-1.5">
+        <span className="truncate">{label}</span>
+        {isBeta && (
+          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 font-mono text-[8.5px] font-semibold text-amber-400 tracking-wider uppercase shrink-0">
+            BETA
+          </span>
+        )}
+      </span>
       {count !== undefined && (
         <span className="tnum shrink-0 font-mono text-[10px] text-faint">{count}</span>
       )}
@@ -148,30 +158,50 @@ export function Sidebar() {
     }
   }
 
+  const sidebarCollapsed = useWorkspace((s) => s.sidebarCollapsed)
+  const setSidebarCollapsed = useWorkspace((s) => s.setSidebarCollapsed)
+
   return (
-    <aside className="glass flex h-full w-56 shrink-0 flex-col overflow-y-auto border-r border-line/60 px-2 pb-2">
+    <aside
+      className={`glass flex h-full shrink-0 flex-col overflow-y-auto border-r border-line/60 transition-all duration-200 ease-in-out ${
+        sidebarCollapsed
+          ? 'w-0 border-r-0 p-0 overflow-hidden opacity-0 pointer-events-none'
+          : 'w-56 px-2 pb-2 opacity-100'
+      }`}
+    >
       {/* Draggable spacer above the brand (frameless window title area). */}
       <div className="app-drag h-5 shrink-1" aria-hidden />
 
-      {/* Brand — clicking it navigates home. */}
-      <button
-        type="button"
-        onClick={goHome}
-        aria-label="Go to workspace home"
-        className="mb-3 flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1 text-left transition-colors duration-150 hover:bg-surface/60"
-      >
-        <div className="brand-glow flex h-6 w-6 items-center justify-center rounded-sm border border-accent/40 bg-raised">
-          <span className="font-mono text-[12px] font-semibold text-accent">S</span>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[12.5px] leading-tight font-semibold tracking-[0.08em] text-ink">
-            STASH
-          </p>
-          <p className="font-mono text-[9.5px] leading-tight tracking-wide text-faint">
-            {toolCount} tools · local
-          </p>
-        </div>
-      </button>
+      {/* Brand & Collapse row */}
+      <div className="mb-3 flex items-center justify-between gap-1">
+        <button
+          type="button"
+          onClick={goHome}
+          aria-label="Go to workspace home"
+          className="flex flex-1 cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1 text-left transition-colors duration-150 hover:bg-surface/60 min-w-0"
+        >
+          <div className="brand-glow flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-accent/40 bg-raised">
+            <span className="font-mono text-[12px] font-semibold text-accent">S</span>
+          </div>
+          <div className="min-w-0 truncate">
+            <p className="text-[12.5px] leading-tight font-semibold tracking-[0.08em] text-ink">
+              STASH
+            </p>
+            <p className="font-mono text-[9.5px] leading-tight tracking-wide text-faint truncate">
+              {toolCount} tools · local
+            </p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(true)}
+          className="cursor-pointer rounded p-1 text-faint transition-colors hover:bg-surface hover:text-ink shrink-0"
+          title="Collapse sidebar (Ctrl+B)"
+          aria-label="Collapse sidebar"
+        >
+          <PanelLeftClose size={13} />
+        </button>
+      </div>
 
       {/* Search trigger */}
       <button
@@ -204,6 +234,7 @@ export function Sidebar() {
           active={view.type === 'queue'}
           icon={<Layers size={13} />}
           label="Queue"
+          isBeta={true}
           onClick={() => openQueue()}
         />
         <SidebarRow
@@ -241,6 +272,7 @@ export function Sidebar() {
                     active={view.type === 'tool' && view.toolId === id}
                     icon={<Icon size={13} />}
                     label={tool.name}
+                    isBeta={tool.isBeta}
                     onClick={() => openTool(id)}
                   />
                   {/* Reorder + unpin on hover/keyboard focus */}
@@ -304,6 +336,7 @@ export function Sidebar() {
                       active={view.type === 'tool' && view.toolId === tool.id}
                       icon={<Star size={13} />}
                       label={tool.name}
+                      isBeta={tool.isBeta}
                       onClick={() => openTool(tool.id)}
                     />
                     <button
@@ -346,6 +379,7 @@ export function Sidebar() {
                         return <Icon size={13} />
                       })()}
                       label={tool.name}
+                      isBeta={tool.isBeta}
                       onClick={() => openTool(tool.id)}
                     />
                   </li>

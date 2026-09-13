@@ -20,6 +20,9 @@ export interface WorkspaceState {
   setSplitRatio: (ratio: number) => Promise<void>
   setActivePane: (pane: 'primary' | 'secondary') => void
   swapPanes: (currentPrimaryToolId: string) => string | null
+  sidebarCollapsed: boolean
+  setSidebarCollapsed: (collapsed: boolean) => void
+  toggleSidebar: () => void
 }
 
 export const DEFAULT_SECONDARY_TOOL = 'text-diff'
@@ -31,6 +34,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   secondaryToolId: null,
   splitRatio: 0.5,
   activePane: 'primary',
+  sidebarCollapsed: false,
+  setSidebarCollapsed: (collapsed: boolean) => set({ sidebarCollapsed: collapsed }),
+  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
   load: async () => {
     try {
