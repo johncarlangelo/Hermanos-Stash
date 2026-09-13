@@ -4,4 +4,4 @@
  * Tracks independent semantic versioning for the Queue Workflow canvas engine,
  * node graph models, and pipeline orchestrator.
  */
-export const QUEUE_WORKFLOW_VERSION = '0.1.1'
+export const QUEUE_WORKFLOW_VERSION = '0.1.2'

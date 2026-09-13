@@ -572,6 +572,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
   return (
     <div
       ref={canvasRef}
+      data-dropzone="workflow-canvas"
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}

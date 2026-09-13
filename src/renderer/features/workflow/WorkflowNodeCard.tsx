@@ -88,6 +88,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   return (
     <div
       id={`node-${node.id}`}
+      data-dropzone="workflow-node"
       style={{
         transform: `translate(${node.position.x}px, ${node.position.y}px)`,
         width: 270

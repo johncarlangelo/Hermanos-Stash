@@ -22,8 +22,17 @@ export function DropRouter() {
   const [activeIndex, setActiveIndex] = useState(0)
   const depth = useRef(0)
   const openTool = useNav((s) => s.openTool)
+  const view = useNav((s) => s.view)
+  const isHome = view.type === 'home'
 
   useEffect(() => {
+    if (!isHome) {
+      setDragging(false)
+      depth.current = 0
+      setMatches(null)
+      return
+    }
+
     const isOverOwnDropZone = (target: EventTarget | null): boolean =>
       target instanceof Element && target.closest('[data-dropzone]') !== null
 
@@ -82,8 +91,10 @@ export function DropRouter() {
       window.removeEventListener('dragover', onDragOver)
       window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
+      depth.current = 0
+      setDragging(false)
     }
-  }, [])
+  }, [isHome])
 
   const choose = (tool: ToolDefinition) => {
     setMatches(null)
@@ -103,6 +114,8 @@ export function DropRouter() {
       choose(matches[activeIndex])
     }
   }
+
+  if (!isHome) return null
 
   return (
     <>
