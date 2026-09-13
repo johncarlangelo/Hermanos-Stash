@@ -238,13 +238,14 @@
  
 ## ADR-040 — Independent Feature Semantic Versioning for Queue Workflow View [BETA]
  
-**Decision:** Establish an independent semantic versioning track (`QUEUE_WORKFLOW_VERSION` in `src/renderer/features/workflow/version.ts`, starting at `0.1.0`) specifically for the Queue Workflow feature, decoupled from the core application `package.json` version.
-1. **Scope:** Governs all files and subsystems under `src/renderer/features/workflow/` and workflow integrations in `QueueView.tsx`.
-2. **Incrementation Protocol:**
-   - **PATCH (`0.1.x` → `0.1.x+1`)**: Any bug fix, UI/UX refinement, visual adjustment, or non-breaking patch.
+**Decision:** Establish an independent semantic versioning track (`QUEUE_WORKFLOW_VERSION` in `src/renderer/features/workflow/version.ts`, starting at `0.1.0`) strictly and exclusively for the Queue Workflow feature, completely decoupled from the core desktop application (`package.json`).
+1. **Strict Feature Exclusivity:** Governs only files under `src/renderer/features/workflow/` and queue workflow view integrations. It does NOT affect or apply to any other tools or the overall application version.
+2. **Incrementation Protocol (Workflow Only):**
+   - **PATCH (`0.1.x` → `0.1.x+1`)**: Any bug fix, UI/UX refinement, visual adjustment, or non-breaking patch within the workflow view.
    - **MINOR (`0.x.0` → `0.x+1.0`)**: Any additive feature, new workflow node type, recipe preset, or export capability.
    - **MAJOR (`x.0.0` → `x+1.0.0`)**: Any breaking change to the `.stashflow.json` schema or graduation out of BETA.
-3. **UI Transparency:** The active version is clearly displayed alongside the amber `BETA` pill in the workflow toolbar and queue headers, giving users and developers immediate clarity on the workflow engine's build state.
+3. **UI Transparency:** The active version is displayed alongside the amber `BETA` pill in the workflow toolbar and queue headers during the testing phase.
+4. **Temporary Testing Lifecycle & Planned Retirement:** This versioning track is an interim harness while the feature undergoes active iteration and user testing. Once all capabilities are fully tested and stabilized, this feature version tag and rule will be cleanly retired and removed.
  
 **Reason:** The Visual Workflow View is a major capability leap involving complex graphical state management, DAG topological execution, drag-and-drop routing, and template serialization. Iterating on UI/UX fixes and bug fixes happens at high frequency. Tracking an independent feature version provides fine-grained provenance without falsely bumping the version of the entire 78-tool desktop suite.
 
