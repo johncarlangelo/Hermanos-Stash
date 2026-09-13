@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo } from 'react'
 import type { PortType, WorkflowEdge, WorkflowNode } from './types'
 import { NODE_HEIGHT, NODE_WIDTH } from './layout'
 
@@ -25,7 +25,6 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
   draggingWire,
   isRunning
 }: WorkflowEdgeRendererProps) {
-  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const nodeMap = new Map<string, WorkflowNode>(nodes.map((n) => [n.id, n]))
 
   // Helper to calculate port anchor coordinate on canvas
@@ -38,7 +37,7 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
   }
 
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible z-0">
+    <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible z-10">
       <defs>
         {/* Glow filter for active cables */}
         <filter id="wire-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -66,7 +65,6 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
         const isFiles = edge.fromPort === 'files'
         const color = isFiles ? '#06b6d4' : '#a855f7' // Cyan for files, Purple for text
         const isSelected = selectedEdgeId === edge.id
-        const isHovered = hoveredEdgeId === edge.id
 
         // Midpoint for delete handle
         const midX = (start.x + end.x) / 2
@@ -75,77 +73,124 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
         const sourceNodeRunning = fromNode.status === 'running' || toNode.status === 'running'
 
         return (
-          <g key={edge.id} className="pointer-events-auto cursor-pointer">
-            {/* Wider transparent hit-stroke for easy hover/click */}
+          <g
+            key={edge.id}
+            className="group pointer-events-auto cursor-pointer"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {/* Wide transparent hit-stroke for selection & double-click disconnect */}
             <path
               d={pathData}
               fill="none"
               stroke="transparent"
-              strokeWidth={22}
+              strokeWidth={32}
+              style={{ pointerEvents: 'stroke' }}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation()
                 onSelectEdge(edge.id)
               }}
-              onMouseEnter={() => setHoveredEdgeId(edge.id)}
-              onMouseLeave={() => setHoveredEdgeId(null)}
-            />
+              onDoubleClick={(e) => {
+                e.stopPropagation()
+                onDeleteEdge(edge.id)
+              }}
+            >
+              <title>Connection cable — Click to select, Double-click to disconnect</title>
+            </path>
 
-            {/* Glowing background shadow */}
-            {(isSelected || isHovered || sourceNodeRunning) && (
-              <path
-                d={pathData}
-                fill="none"
-                stroke={color}
-                strokeWidth={isSelected ? 6 : 4}
-                strokeOpacity={0.4}
-                filter="url(#wire-glow)"
-              />
-            )}
+            {/* Glowing background shadow on group hover, running, or selected */}
+            <path
+              d={pathData}
+              fill="none"
+              stroke={isSelected ? '#ef4444' : color}
+              strokeWidth={isSelected ? 6 : 4}
+              strokeOpacity={isSelected ? 0.6 : 0.3}
+              filter="url(#wire-glow)"
+              className={`transition-opacity duration-150 ${
+                isSelected || sourceNodeRunning ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}
+            />
 
             {/* Main cable wire */}
             <path
               d={pathData}
               fill="none"
-              stroke={color}
+              stroke={isSelected ? '#ef4444' : color}
               strokeWidth={isSelected ? 3 : 2}
               strokeOpacity={isSelected ? 1 : 0.85}
               strokeLinecap="round"
             />
 
+            {/* Selected dashed warning overlay */}
+            {isSelected && (
+              <path
+                d={pathData}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+                strokeOpacity={0.8}
+              />
+            )}
+
             {/* Animated flowing data pulse if running */}
-            {(sourceNodeRunning || isRunning) && (
+            {(sourceNodeRunning || isRunning) && !isSelected && (
               <path
                 d={pathData}
                 fill="none"
                 stroke="#ffffff"
                 strokeWidth={2.5}
                 strokeDasharray="6 10"
-                className="animate-[dash_1s_linear_infinite]"
                 style={{
                   animation: 'wireDash 1.2s linear infinite'
                 }}
               />
             )}
 
-            {/* Hover disconnect button */}
-            {isHovered && (
-              <g
-                transform={`translate(${midX}, ${midY})`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDeleteEdge(edge.id)
-                }}
-                className="cursor-pointer transition-transform hover:scale-110"
-              >
-                <circle r={10} fill="#1e2124" stroke="#ef4444" strokeWidth={1.5} />
-                <path
-                  d="M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5"
-                  stroke="#ef4444"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                />
-              </g>
-            )}
+            {/* Permanent Midpoint Disconnect Badge with stable hit-target (no jitter) */}
+            <g
+              transform={`translate(${midX}, ${midY})`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDeleteEdge(edge.id)
+              }}
+              style={{ pointerEvents: 'all' }}
+            >
+              <title>Click to disconnect these two tools</title>
+              {/* Invisible stable shield circle preventing mouseleave flutter */}
+              <circle r={16} fill="transparent" />
+
+              {/* Outer hover halo */}
+              <circle
+                r={14}
+                fill="#ef4444"
+                className={`transition-opacity duration-150 ${
+                  isSelected ? 'opacity-30' : 'opacity-0 group-hover:opacity-20'
+                }`}
+              />
+
+              {/* Badge circle */}
+              <circle
+                r={10}
+                className={`transition-all duration-150 ${
+                  isSelected
+                    ? 'fill-[#2b1517] stroke-red-500 stroke-2'
+                    : 'fill-[#141618] stroke-[#4b5563] stroke-[1.25] group-hover:fill-[#2b1517] group-hover:stroke-red-500 group-hover:stroke-2'
+                }`}
+              />
+
+              {/* X icon mark */}
+              <path
+                d="M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5"
+                strokeLinecap="round"
+                className={`transition-colors duration-150 ${
+                  isSelected
+                    ? 'stroke-red-500 stroke-2'
+                    : 'stroke-[#9ca3af] stroke-[1.75] group-hover:stroke-red-500 group-hover:stroke-2'
+                }`}
+              />
+            </g>
           </g>
         )
       })}

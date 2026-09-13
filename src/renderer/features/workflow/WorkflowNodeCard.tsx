@@ -103,7 +103,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         }
       }}
       onDrop={handleDropFiles}
-      className={`absolute select-none rounded-xl border transition-shadow duration-150 backdrop-blur-md ${
+      className={`absolute pointer-events-auto select-none rounded-xl border transition-shadow duration-150 backdrop-blur-md ${
         selected
           ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
           : status === 'running'

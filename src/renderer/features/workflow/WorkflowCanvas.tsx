@@ -627,8 +627,8 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           isRunning={isRunning}
         />
 
-        {/* Node Cards Layer */}
-        <div className="pointer-events-auto">
+        {/* Node Cards Layer (cards themselves have pointer-events-auto) */}
+        <div className="pointer-events-none">
           {graph.nodes.map((node) => {
             const incomingEdges = graph.edges.filter((e) => e.toNodeId === node.id)
             const hasIncomingFileEdge = incomingEdges.some((e) => e.fromPort === 'files')
