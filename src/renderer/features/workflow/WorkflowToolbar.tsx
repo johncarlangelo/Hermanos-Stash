@@ -6,6 +6,7 @@ import {
   Network,
   Play,
   Plus,
+  RefreshCw,
   Save,
   Trash2,
   Workflow
@@ -102,7 +103,11 @@ export function WorkflowToolbar({
           }`}
           title="Run entire workflow pipeline"
         >
-          <Play size={13} className={isRunning ? 'animate-pulse' : 'fill-current'} />
+          {isRunning ? (
+            <RefreshCw size={12} className="animate-spin text-amber-300" />
+          ) : (
+            <Play size={13} className="fill-current" />
+          )}
           {isRunning ? 'Running…' : 'Run Pipeline'}
         </button>
 

@@ -1,5 +1,5 @@
 import React, { memo } from 'react'
-import { AlertCircle, CheckCircle2, Copy, Loader2, Plus, Sliders, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Copy, Plus, RefreshCw, Sliders, X } from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
 import { getCategory } from '../../../shared/constants/categories'
@@ -104,16 +104,26 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         }
       }}
       onDrop={handleDropFiles}
-      className={`absolute pointer-events-auto select-none rounded-xl border transition-shadow duration-150 backdrop-blur-md ${
+      className={`absolute pointer-events-auto select-none rounded-xl border transition-all duration-150 backdrop-blur-md ${
         selected
           ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
           : status === 'running'
-            ? 'border-accent/80 shadow-[0_0_20px_-6px_var(--color-accent-glow)] bg-surface/90 z-10'
+            ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent/60'
             : status === 'error'
               ? 'border-danger/80 shadow-[0_0_20px_-6px_rgba(239,68,68,0.4)] bg-surface/90 z-10'
               : 'border-line/70 hover:border-line-strong shadow-md bg-surface/80 z-10'
       }`}
     >
+      {/* n8n-style rotating double-arrow execution badge */}
+      {status === 'running' && (
+        <div
+          title="Executing node..."
+          className="absolute -top-2.5 -right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-shell border border-accent shadow-[0_0_14px_var(--color-accent-glow)] z-30 ring-2 ring-shell"
+        >
+          <RefreshCw size={11} className="text-accent animate-spin" />
+        </div>
+      )}
+
       {/* Node Header */}
       <div
         onPointerDown={(e) => onStartDrag(node.id, e)}
@@ -134,7 +144,13 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         </div>
 
         {/* Quick Node Actions */}
-        <div className="flex items-center gap-0.5 shrink-0 ml-1">
+        <div className="flex items-center gap-1 shrink-0 ml-1">
+          {status === 'running' && (
+            <span className="flex items-center gap-1 rounded-full bg-accent/15 border border-accent/35 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-accent">
+              <RefreshCw size={9} className="animate-spin" />
+              RUNNING
+            </span>
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -323,7 +339,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         )}
         {status === 'running' && (
           <span className="flex items-center gap-1.5 text-accent font-medium font-mono text-[10px]">
-            <Loader2 size={11} className="animate-spin" /> Processing…
+            <RefreshCw size={11} className="animate-spin" /> Running…
           </span>
         )}
         {status === 'success' && (
