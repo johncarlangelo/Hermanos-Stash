@@ -1,5 +1,5 @@
 import React, { memo } from 'react'
-import { AlertCircle, CheckCircle2, Copy, Plus, RefreshCw, Sliders, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Copy, Plus, RefreshCw, Settings2, Sliders, X } from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
 import { getCategory } from '../../../shared/constants/categories'
@@ -13,6 +13,8 @@ interface WorkflowNodeCardProps {
   onSelect: (nodeId: string) => void
   onDelete: (nodeId: string) => void
   onDuplicate: (nodeId: string) => void
+  onOpenDetails?: (nodeId: string) => void
+  onContextMenu?: (nodeId: string, e: React.MouseEvent) => void
   onUpdateInputs?: (nodeId: string, updates: { inputFiles?: string[]; inputText?: string }) => void
   onStartWire: (
     nodeId: string,
@@ -32,6 +34,8 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   onSelect,
   onDelete,
   onDuplicate,
+  onOpenDetails,
+  onContextMenu,
   onUpdateInputs,
   onStartWire,
   onEndWire,
@@ -97,6 +101,15 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         e.stopPropagation()
         onSelect(node.id)
       }}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        onOpenDetails?.(node.id)
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onContextMenu?.(node.id, e)
+      }}
       onDragOver={(e) => {
         if (acceptsFiles && !hasIncomingFileEdge) {
           e.preventDefault()
@@ -151,6 +164,17 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
               RUNNING
             </span>
           )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpenDetails?.(node.id)
+            }}
+            title="Configure & inspect node (Double-click)"
+            className="cursor-pointer rounded p-1 text-faint hover:text-accent hover:bg-surface transition-colors"
+          >
+            <Settings2 size={11} />
+          </button>
           <button
             type="button"
             onClick={(e) => {

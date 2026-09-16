@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FolderArchive, Plus, Workflow } from 'lucide-react'
+import { Copy, FolderArchive, Plus, Settings2, Trash2, Workflow } from 'lucide-react'
 import type {
   PortType,
   WorkflowEdge,
@@ -63,9 +63,13 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     currentPos: { x: number; y: number }
   } | null>(null)
 
-  // Selection
+  // Selection & Inspector
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
+  const [inspectingNodeId, setInspectingNodeId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(
+    null
+  )
 
   // Drawers & Modals
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false)
@@ -122,6 +126,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
 
   // Pan handlers
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
+    setContextMenu(null)
     if (e.target !== e.currentTarget && (e.target as HTMLElement).id !== 'canvas-grid-bg') return
     isPanningRef.current = true
     panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
@@ -243,27 +248,30 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     setSelectedNodeId((curr) => (curr === nodeId ? null : curr))
   }, [])
 
-  const handleDuplicateNode = (nodeId: string) => {
-    const original = graph.nodes.find((n) => n.id === nodeId)
-    if (!original) return
+  const handleDuplicateNode = useCallback((nodeId: string) => {
+    const newId = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+    setGraph((prev) => {
+      const original = prev.nodes.find((n) => n.id === nodeId)
+      if (!original) return prev
 
-    const duplicate: WorkflowNode = {
-      ...original,
-      id: `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      position: {
-        x: snapToGrid(original.position.x + 40),
-        y: snapToGrid(original.position.y + 40)
-      },
-      status: 'idle',
-      outputFiles: undefined
-    }
+      const duplicate: WorkflowNode = {
+        ...original,
+        id: newId,
+        position: {
+          x: snapToGrid(original.position.x + 40),
+          y: snapToGrid(original.position.y + 40)
+        },
+        status: 'idle',
+        outputFiles: undefined
+      }
 
-    setGraph((prev) => ({
-      ...prev,
-      nodes: [...prev.nodes, duplicate]
-    }))
-    setSelectedNodeId(duplicate.id)
-  }
+      return {
+        ...prev,
+        nodes: [...prev.nodes, duplicate]
+      }
+    })
+    setSelectedNodeId(newId)
+  }, [])
 
   const handleStartNodeDrag = (nodeId: string, e: React.PointerEvent) => {
     e.stopPropagation()
@@ -562,12 +570,32 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           e.preventDefault()
           handleDeleteEdge(selectedEdgeId)
         }
+      } else if (e.key === 'Enter' && selectedNodeId) {
+        e.preventDefault()
+        setInspectingNodeId(selectedNodeId)
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedNodeId) {
+        e.preventDefault()
+        handleDuplicateNode(selectedNodeId)
+      } else if (e.key === 'Escape') {
+        if (contextMenu) {
+          setContextMenu(null)
+        } else if (inspectingNodeId) {
+          setInspectingNodeId(null)
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedNodeId, selectedEdgeId, handleDeleteNode, handleDeleteEdge])
+  }, [
+    selectedNodeId,
+    selectedEdgeId,
+    contextMenu,
+    inspectingNodeId,
+    handleDeleteNode,
+    handleDeleteEdge,
+    handleDuplicateNode
+  ])
 
   return (
     <div
@@ -643,6 +671,11 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                 hasIncomingFileEdge={hasIncomingFileEdge}
                 hasIncomingTextEdge={hasIncomingTextEdge}
                 onSelect={setSelectedNodeId}
+                onOpenDetails={(id) => setInspectingNodeId(id)}
+                onContextMenu={(id, e) => {
+                  setContextMenu({ x: e.clientX, y: e.clientY, nodeId: id })
+                  setSelectedNodeId(id)
+                }}
                 onDelete={handleDeleteNode}
                 onDuplicate={handleDuplicateNode}
                 onUpdateInputs={handleUpdateNodeInputs}
@@ -714,6 +747,57 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
               <FolderArchive size={13} /> Browse Recipes
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Node Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 min-w-[175px] rounded-lg border border-line-strong bg-overlay/95 p-1 shadow-2xl backdrop-blur-md select-none"
+          style={{
+            left: Math.min(contextMenu.x, window.innerWidth - 185),
+            top: Math.min(contextMenu.y, window.innerHeight - 155)
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setInspectingNodeId(contextMenu.nodeId)
+              setContextMenu(null)
+            }}
+            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface hover:text-accent transition-colors"
+          >
+            <Settings2 size={13} className="text-accent" />
+            <span>Configure & Details</span>
+            <span className="ml-auto font-mono text-[9px] text-faint">↵</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              handleDuplicateNode(contextMenu.nodeId)
+              setContextMenu(null)
+            }}
+            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+          >
+            <Copy size={13} className="text-dim" />
+            <span>Duplicate Node</span>
+            <span className="ml-auto font-mono text-[9px] text-faint">Ctrl+D</span>
+          </button>
+          <div className="my-1 h-px bg-line/60" />
+          <button
+            type="button"
+            onClick={() => {
+              handleDeleteNode(contextMenu.nodeId)
+              setContextMenu(null)
+            }}
+            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 transition-colors"
+          >
+            <Trash2 size={13} />
+            <span>Delete Node</span>
+            <span className="ml-auto font-mono text-[9px] text-faint">Del</span>
+          </button>
         </div>
       )}
     </div>
