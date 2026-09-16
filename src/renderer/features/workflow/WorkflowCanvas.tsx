@@ -391,6 +391,12 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
 
   const handleClearCanvas = () => {
     if (graph.nodes.length === 0) return
+    if (graph.nodes.length > 1) {
+      const confirmed = window.confirm(
+        `Are you sure you want to clear the canvas? This will remove all ${graph.nodes.length} nodes and their connections.`
+      )
+      if (!confirmed) return
+    }
     setGraph({ nodes: [], edges: [] })
     setSelectedNodeId(null)
     setSelectedEdgeId(null)

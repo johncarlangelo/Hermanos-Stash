@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import React, { memo, useState } from 'react'
 import { AlertCircle, CheckCircle2, Copy, Plus, RefreshCw, Settings2, Sliders, X } from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
@@ -51,6 +51,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   const producesText = tool?.capabilities.producesText ?? false
 
   const status = node.status || 'idle'
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const handlePickFiles = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -61,7 +62,8 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
           multiSelections: true
         })
         if (!res.cancelled && res.paths.length > 0) {
-          onUpdateInputs?.(node.id, { inputFiles: res.paths })
+          const combined = Array.from(new Set([...(node.inputFiles || []), ...res.paths]))
+          onUpdateInputs?.(node.id, { inputFiles: combined })
         }
       } catch (err) {
         console.warn('Failed to open file picker', err)
@@ -72,6 +74,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   const handleDropFiles = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    setIsDragOver(false)
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
@@ -85,7 +88,8 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
       .filter(Boolean)
 
     if (paths.length > 0) {
-      onUpdateInputs?.(node.id, { inputFiles: paths })
+      const combined = Array.from(new Set([...(node.inputFiles || []), ...paths]))
+      onUpdateInputs?.(node.id, { inputFiles: combined })
     }
   }
 
@@ -114,17 +118,25 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         if (acceptsFiles && !hasIncomingFileEdge) {
           e.preventDefault()
           e.stopPropagation()
+          if (!isDragOver) setIsDragOver(true)
         }
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragOver(false)
       }}
       onDrop={handleDropFiles}
       className={`absolute pointer-events-auto select-none rounded-xl border transition-all duration-150 backdrop-blur-md ${
-        selected
-          ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
-          : status === 'running'
-            ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent/60'
-            : status === 'error'
-              ? 'border-danger/80 shadow-[0_0_20px_-6px_rgba(239,68,68,0.4)] bg-surface/90 z-10'
-              : 'border-line/70 hover:border-line-strong shadow-md bg-surface/80 z-10'
+        isDragOver
+          ? 'border-accent shadow-[0_0_24px_var(--color-accent-glow)] bg-accent/15 z-30 ring-2 ring-accent'
+          : selected
+            ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
+            : status === 'running'
+              ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent/60'
+              : status === 'error'
+                ? 'border-danger/80 shadow-[0_0_20px_-6px_rgba(239,68,68,0.4)] bg-surface/90 z-10'
+                : 'border-line/70 hover:border-line-strong shadow-md bg-surface/80 z-10'
       }`}
     >
       {/* n8n-style rotating double-arrow execution badge */}
@@ -379,9 +391,17 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
 
         {/* Output Pill */}
         {node.outputFiles && node.outputFiles.length > 0 && (
-          <span className="rounded bg-line/60 px-1.5 py-0.2 font-mono text-[9px] text-dim">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpenDetails?.(node.id)
+            }}
+            title="Click to inspect output files in Node Details"
+            className="cursor-pointer rounded bg-line/60 hover:bg-accent/20 hover:text-accent border border-transparent hover:border-accent/40 px-1.5 py-0.5 font-mono text-[9px] text-dim transition-colors"
+          >
             {node.outputFiles.length} {node.outputFiles.length === 1 ? 'file' : 'files'}
-          </span>
+          </button>
         )}
       </div>
     </div>
