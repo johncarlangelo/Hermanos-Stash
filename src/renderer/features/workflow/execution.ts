@@ -106,7 +106,7 @@ export function topologicalSort(graph: WorkflowGraph): {
 /**
  * Executes a single tool in simulation / batch runner mode.
  */
-async function executeStep(
+export async function executeStep(
   toolId: string,
   files: string[],
   text: string,

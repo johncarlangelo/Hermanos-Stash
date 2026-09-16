@@ -23,6 +23,7 @@ import { WorkflowToolDrawer } from './WorkflowToolDrawer'
 import { WorkflowTemplateModal } from './WorkflowTemplateModal'
 import { WorkflowTemplatesDrawer } from './WorkflowTemplatesDrawer'
 import { WorkflowOutputDrawer } from './WorkflowOutputDrawer'
+import { WorkflowNodeDetailDrawer } from './WorkflowNodeDetailDrawer'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { toastError, toastSuccess } from '../../stores/toasts'
 
@@ -459,6 +460,20 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     []
   )
 
+  const handleUpdateNodeLabel = useCallback((nodeId: string, customLabel: string) => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, customLabel } : n))
+    }))
+  }, [])
+
+  const handleUpdateNodeParams = useCallback((nodeId: string, params: Record<string, unknown>) => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, params } : n))
+    }))
+  }, [])
+
   // Execution Pipeline
   const handleRunPipeline = async () => {
     if (graph.nodes.length === 0 || isRunning) return
@@ -718,6 +733,18 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         open={outputDrawerOpen}
         onClose={() => setOutputDrawerOpen(false)}
         result={executionResult}
+      />
+
+      {/* Node Detail & Parameters Drawer (n8n style) */}
+      <WorkflowNodeDetailDrawer
+        open={inspectingNodeId !== null}
+        nodeId={inspectingNodeId}
+        graph={graph}
+        onClose={() => setInspectingNodeId(null)}
+        onUpdateLabel={handleUpdateNodeLabel}
+        onUpdateParams={handleUpdateNodeParams}
+        onUpdateInputs={handleUpdateNodeInputs}
+        onDisconnectEdge={handleDeleteEdge}
       />
 
       {/* Empty Canvas Guidance */}

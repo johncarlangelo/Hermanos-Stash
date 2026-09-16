@@ -249,6 +249,28 @@
  
 **Reason:** The Visual Workflow View is a major capability leap involving complex graphical state management, DAG topological execution, drag-and-drop routing, and template serialization. Iterating on UI/UX fixes and bug fixes happens at high frequency. Tracking an independent feature version provides fine-grained provenance without falsely bumping the version of the entire 78-tool desktop suite.
 
+## ADR-041 — Node Detailed View & Inspector Architecture (n8n-style) with Planned Incompatible Wiring Validation
+
+**Decision:**
+1. **Node Inspector & Parameters Drawer (`WorkflowNodeDetailDrawer.tsx`):**
+   - Provide an in-depth slide-over inspector for workflow nodes without full-screen backdrops, preserving canvas visibility.
+   - Support inline node title renaming with instant synchronization to canvas cards.
+   - Expose rich dynamic parameter configurations tailored to tool category (e.g. image compression quality & formats; PDF page ranges & watermarks; text case formatting & indentation).
+   - Direct file and text payload manager with drag-and-drop dropzone, file list with individual removals, and multi-line payload editors.
+   - Comprehensive wiring topology overview showing upstream source nodes and downstream target nodes with 1-click disconnect actions.
+   - Isolated single-step test runner (`executeStep`) executing only the targeted node with live execution timing, output files preview, and output text previews.
+2. **Multiple Ergonomic Interaction Triggers:**
+   - Double-clicking any node on the canvas.
+   - Dedicated `Settings2` configure button in the node header actions.
+   - Right-click context menu ("Configure & Details", "Duplicate Node", "Delete Node").
+   - Keyboard shortcut: `Enter` on a selected node opens inspector; `Ctrl+D` duplicates; `Escape` closes context menu / inspector.
+3. **Upcoming Planned Candidate — Incompatible Wire Connection Validation:**
+   - Tools can still be freely dropped anywhere on the canvas regardless of category.
+   - When dragging cables, connections between incompatible port types (e.g. text output into file-only input, or tools lacking input/output capabilities) will be intercepted, rejected, and highlighted with immediate user guidance toasts.
+
+**Reason:** Enables fine-grained per-step customization and parameter tuning akin to leading automation platforms (n8n, Node-RED) while maintaining a clutter-free canvas and zero-latency local execution.
+
+
 
 
 
