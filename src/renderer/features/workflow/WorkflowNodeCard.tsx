@@ -4,6 +4,7 @@ import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
 import { getCategory } from '../../../shared/constants/categories'
 import type { PortType, WorkflowNode } from './types'
+import { NODE_WIDTH } from './layout'
 
 interface WorkflowNodeCardProps {
   node: WorkflowNode
@@ -99,7 +100,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
       data-dropzone="workflow-node"
       style={{
         transform: `translate(${node.position.x}px, ${node.position.y}px)`,
-        width: 270
+        width: NODE_WIDTH
       }}
       onClick={(e) => {
         e.stopPropagation()

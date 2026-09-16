@@ -59,12 +59,11 @@ export function WorkflowNodeDetailDrawer({
   const Icon = tool ? getIcon(tool.icon) : Sliders
 
   // Local state for label editing
-  const [labelDraft, setLabelDraft] = useState('')
+  const nodeLabel = node?.customLabel || tool?.name || node?.toolId || ''
+  const [labelDraft, setLabelDraft] = useState(nodeLabel)
   useEffect(() => {
-    if (node) {
-      setLabelDraft(node.customLabel || tool?.name || node.toolId)
-    }
-  }, [node, tool])
+    setLabelDraft(nodeLabel)
+  }, [node?.id, nodeLabel])
 
   // Single step isolated testing state
   const [isTestingStep, setIsTestingStep] = useState(false)
@@ -166,14 +165,34 @@ export function WorkflowNodeDetailDrawer({
 
   // Isolated step test runner
   const handleTestStep = async () => {
+    const effectiveFiles = node.inputFiles || []
+    const effectiveText = node.inputText || ''
+
+    if (acceptsFiles && effectiveFiles.length === 0) {
+      setTestResult({
+        success: false,
+        durationMs: 0,
+        outputFiles: [],
+        error: `"${node.customLabel || tool.name}" requires input file(s) to run. Please attach files above.`
+      })
+      return
+    }
+
+    if (acceptsText && !acceptsFiles && !effectiveText.trim()) {
+      setTestResult({
+        success: false,
+        durationMs: 0,
+        outputFiles: [],
+        error: `"${node.customLabel || tool.name}" requires text input to run. Please enter a text payload above.`
+      })
+      return
+    }
+
     setIsTestingStep(true)
     setTestResult(null)
     const startTime = Date.now()
 
     try {
-      const effectiveFiles = node.inputFiles || []
-      const effectiveText = node.inputText || ''
-
       const { outputFiles, outputText } = await executeStep(
         node.toolId,
         effectiveFiles,

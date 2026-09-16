@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 .pnp/
 .pnp.js
@@ -93,3 +93,4 @@ tmp/
 temp/
 scratch/
 .scratch/
+.playwright-mcp/

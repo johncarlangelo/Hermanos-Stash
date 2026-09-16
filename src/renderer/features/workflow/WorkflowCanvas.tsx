@@ -181,6 +181,22 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     }
   }
 
+  // Window-level safety reset to prevent stuck dragging/panning states if pointerup fires outside canvas
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      if (isPanningRef.current || draggingNodeRef.current || draggingWire) {
+        isPanningRef.current = false
+        draggingNodeRef.current = null
+        if (draggingWire) {
+          setDraggingWire(null)
+        }
+      }
+    }
+
+    window.addEventListener('pointerup', handleGlobalPointerUp)
+    return () => window.removeEventListener('pointerup', handleGlobalPointerUp)
+  }, [draggingWire])
+
   // Zoom handlers
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()

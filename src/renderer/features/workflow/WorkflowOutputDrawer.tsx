@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Copy, FileCheck, X } from 'lucide-react'
+import { CheckCircle2, Clock, Copy, FileCheck, FolderOpen, X } from 'lucide-react'
 import type { WorkflowExecutionResult } from './types'
 import { toastSuccess } from '../../stores/toasts'
 
@@ -14,6 +14,16 @@ export function WorkflowOutputDrawer({ open, onClose, result }: WorkflowOutputDr
   const handleCopyPath = (path: string) => {
     void navigator.clipboard.writeText(path)
     toastSuccess('File path copied to clipboard')
+  }
+
+  const handleRevealPath = async (path: string) => {
+    if (window.stash?.shell?.revealPath) {
+      try {
+        await window.stash.shell.revealPath(path)
+      } catch (err) {
+        console.warn('Failed to reveal path', err)
+      }
+    }
   }
 
   const handleCopyText = (text: string) => {
@@ -77,14 +87,24 @@ export function WorkflowOutputDrawer({ open, onClose, result }: WorkflowOutputDr
                       {file}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyPath(file)}
-                    className="cursor-pointer rounded p-1 text-faint hover:text-ink hover:bg-base"
-                    title="Copy path"
-                  >
-                    <Copy size={12} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void handleRevealPath(file)}
+                      className="cursor-pointer rounded p-1 text-faint hover:text-ink hover:bg-base"
+                      title="Reveal in Explorer"
+                    >
+                      <FolderOpen size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPath(file)}
+                      className="cursor-pointer rounded p-1 text-faint hover:text-ink hover:bg-base"
+                      title="Copy path"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
