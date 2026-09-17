@@ -335,7 +335,9 @@ export function WorkflowNodeDetailDrawer({
   return (
     <>
       <div
-        className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl ${
+        data-drawer="workflow-node-detail-drawer"
+        onWheel={(e) => e.stopPropagation()}
+        className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl overscroll-contain ${
           isClosing
             ? 'anim-drawer-out pointer-events-none'
             : 'anim-drawer-in pointer-events-auto'

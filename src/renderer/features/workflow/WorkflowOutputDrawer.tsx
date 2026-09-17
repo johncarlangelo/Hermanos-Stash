@@ -32,7 +32,11 @@ export function WorkflowOutputDrawer({ open, onClose, result }: WorkflowOutputDr
   }
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-30 flex max-h-72 flex-col rounded-xl border border-line/80 bg-shell/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-200">
+    <div
+      data-drawer="workflow-output-drawer"
+      onWheel={(e) => e.stopPropagation()}
+      className="absolute bottom-4 left-4 right-4 z-30 flex max-h-72 flex-col rounded-xl border border-line/80 bg-shell/95 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-200 overscroll-contain"
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-line px-4 py-2.5 bg-surface/60 rounded-t-xl">
         <div className="flex items-center gap-2.5">

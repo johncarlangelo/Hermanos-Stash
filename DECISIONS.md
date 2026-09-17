@@ -270,6 +270,40 @@
 
 **Reason:** Enables fine-grained per-step customization and parameter tuning akin to leading automation platforms (n8n, Node-RED) while maintaining a clutter-free canvas and zero-latency local execution.
 
+## ADR-042 — Incompatible Wire Connection Validation, DAG Cycle Prevention, and Real-Time Card Port States
+
+**Decision:**
+1. **Unconstrained Canvas Tool Placement:**
+   - Any tool from the tool palette or via drag-and-drop can be added and positioned anywhere on the canvas with zero placement restrictions or domain barriers.
+2. **Strict Wire Connection Validation (`execution.ts`, `validateEdge`, `areFileCategoriesCompatible`):**
+   - Connections between incompatible port types (e.g. text output into files input) are strictly rejected.
+   - Capabilities validation ensures the source tool produces the port type and the destination tool accepts it.
+   - Cross-domain media compatibility validation: general files tools (archives, checksum, metadata) accept and produce arbitrary files; specialized converters (e.g. `pdf-to-images`, `images-to-pdf`, `extract-audio`, `video-to-gif`) are permitted; mismatched media categories (e.g. image output directly into audio input, audio output into image or document tools) are rejected with clear user guidance.
+3. **DAG Cycle Prevention (`wouldCreateCycle`):**
+   - Synchronous BFS reachability detection checks if connecting Node A to Node B would create a circular dependency loop (`toNodeId` reaching `fromNodeId`).
+   - If a cycle is detected, connection is rejected with an instant warning toast: *"Cannot connect: this would create a circular loop in the workflow."*
+4. **Real-Time Visual Compatibility & Card-Level Auto-Wiring (`WorkflowCanvas.tsx`, `WorkflowNodeCard.tsx`):**
+   - During wire drag, cards dynamically compute `wireStatus` (`compatible`, `incompatible`, `source`).
+   - Compatible cards display an emerald glow and badge, and their matching input port pulses.
+   - Incompatible cards are dimmed (`opacity-40 grayscale-[25%]`) with a red hover border and `INCOMPATIBLE` badge showing the exact rejection reason on tooltip hover.
+   - Wires can be dropped anywhere on the target card body, automatically resolving the matching port or rejecting with an informative warning toast.
+
+**Reason:** Eliminates invalid pipeline states, runtime execution crashes, and infinite DAG loops before execution begins, while vastly improving drag-and-drop wiring ergonomics on the visual workstation.
+
+## ADR-043 — Drawer Wheel Zoom Isolation and Overscroll Containment
+
+**Decision:**
+1. **Event Propagation Boundary:**
+   - Attach `onWheel={(e) => e.stopPropagation()}` to all drawer, modal, and floating toolbar containers (`WorkflowToolDrawer`, `WorkflowTemplatesDrawer`, `WorkflowNodeDetailDrawer`, `WorkflowOutputDrawer`, `WorkflowTemplateModal`, `WorkflowStashPickerModal`, `WorkflowToolbar`, and floating node context menu).
+   - Wheel scroll events occurring within overlay components never bubble to the canvas root container.
+2. **Ancestry Defense in Canvas Zoom Handler (`WorkflowCanvas.tsx`):**
+   - Tag all overlay panels with dataset attributes (`data-drawer`, `data-modal`, `data-toolbar`, `data-context-menu`).
+   - In `handleWheel`, check `target.closest('[data-drawer], [data-modal], [data-toolbar], [data-context-menu], [data-prevent-canvas-zoom]')`. If a wheel event originates from an overlay, immediately return without modifying canvas zoom or calling `preventDefault()`, preserving native scrolling inside the drawer.
+3. **Scroll Chaining Containment:**
+   - Apply CSS `overscroll-contain` to scrollable containers within drawers and modals to prevent scroll chaining to outer elements when reaching the top or bottom of a list.
+
+**Reason:** Prevents frustrating, inadvertent zooming in/out of the workflow canvas while users are browsing tool lists, scrolling parameters, or searching through Stash assets in overlay panels.
+
 
 
 

@@ -54,7 +54,11 @@ export function WorkflowToolbar({
   onSwitchToLinearView
 }: WorkflowToolbarProps) {
   return (
-    <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/80 bg-shell/90 px-3.5 py-2 shadow-xl backdrop-blur-md">
+    <div
+      data-toolbar="workflow-toolbar"
+      onWheel={(e) => e.stopPropagation()}
+      className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/80 bg-shell/90 px-3.5 py-2 shadow-xl backdrop-blur-md"
+    >
       {/* Left section: Workflow Name & Stats */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent/40 bg-raised text-accent">

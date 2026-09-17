@@ -41,7 +41,9 @@ export function WorkflowToolDrawer({ open, onClose, onAddTool }: WorkflowToolDra
     <>
       {/* Slide Drawer with smooth in and out transition (no full-screen blur or drag blocking) */}
       <div
-        className={`absolute top-16 right-4 bottom-6 z-30 flex w-84 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line/80 bg-shell/95 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out transform ${
+        data-drawer="workflow-tool-drawer"
+        onWheel={(e) => e.stopPropagation()}
+        className={`absolute top-16 right-4 bottom-6 z-30 flex w-84 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line/80 bg-shell/95 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out transform overscroll-contain ${
           open
             ? 'translate-x-0 opacity-100 pointer-events-auto scale-100'
             : 'translate-x-10 opacity-0 pointer-events-none scale-95'

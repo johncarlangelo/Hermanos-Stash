@@ -11,6 +11,9 @@ interface WorkflowNodeCardProps {
   selected: boolean
   hasIncomingFileEdge?: boolean
   hasIncomingTextEdge?: boolean
+  wireStatus?: 'compatible' | 'incompatible' | 'source' | null
+  wireReason?: string
+  activeWirePort?: PortType
   onSelect: (nodeId: string) => void
   onDelete: (nodeId: string) => void
   onDuplicate: (nodeId: string) => void
@@ -24,6 +27,7 @@ interface WorkflowNodeCardProps {
     clientPos: { x: number; y: number }
   ) => void
   onEndWire: (nodeId: string, portType: PortType, portDirection: 'in') => void
+  onDropWireOnCard?: (nodeId: string) => void
   onStartDrag: (nodeId: string, e: React.PointerEvent) => void
 }
 
@@ -32,6 +36,9 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   selected,
   hasIncomingFileEdge = false,
   hasIncomingTextEdge = false,
+  wireStatus = null,
+  wireReason,
+  activeWirePort,
   onSelect,
   onDelete,
   onDuplicate,
@@ -40,6 +47,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   onUpdateInputs,
   onStartWire,
   onEndWire,
+  onDropWireOnCard,
   onStartDrag
 }: WorkflowNodeCardProps) {
   const tool = toolRegistry.get(node.toolId)
@@ -128,16 +136,28 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
         setIsDragOver(false)
       }}
       onDrop={handleDropFiles}
+      onPointerUp={(e) => {
+        if (wireStatus && wireStatus !== 'source') {
+          e.stopPropagation()
+          onDropWireOnCard?.(node.id)
+        }
+      }}
       className={`absolute pointer-events-auto select-none rounded-xl border transition-all duration-150 backdrop-blur-md ${
-        isDragOver
-          ? 'border-accent shadow-[0_0_24px_var(--color-accent-glow)] bg-accent/15 z-30 ring-2 ring-accent'
-          : selected
-            ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
-            : status === 'running'
-              ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent/60'
-              : status === 'error'
-                ? 'border-danger/80 shadow-[0_0_20px_-6px_rgba(239,68,68,0.4)] bg-surface/90 z-10'
-                : 'border-line/70 hover:border-line-strong shadow-md bg-surface/80 z-10'
+        wireStatus === 'compatible'
+          ? 'border-emerald-500/80 shadow-[0_0_24px_rgba(16,185,129,0.3)] bg-surface/95 z-20 ring-2 ring-emerald-500/60 cursor-pointer'
+          : wireStatus === 'incompatible'
+            ? 'border-line/40 opacity-40 grayscale-[25%] shadow-none bg-surface/60 z-10 hover:border-danger/70 hover:opacity-80 transition-all cursor-not-allowed'
+            : wireStatus === 'source'
+              ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-2 ring-accent'
+              : isDragOver
+                ? 'border-accent shadow-[0_0_24px_var(--color-accent-glow)] bg-accent/15 z-30 ring-2 ring-accent'
+                : selected
+                  ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent'
+                  : status === 'running'
+                    ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-1 ring-accent/60'
+                    : status === 'error'
+                      ? 'border-danger/80 shadow-[0_0_20px_-6px_rgba(239,68,68,0.4)] bg-surface/90 z-10'
+                      : 'border-line/70 hover:border-line-strong shadow-md bg-surface/80 z-10'
       }`}
     >
       {/* n8n-style rotating double-arrow execution badge */}
@@ -171,7 +191,20 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
 
         {/* Quick Node Actions */}
         <div className="flex items-center gap-1 shrink-0 ml-1">
-          {status === 'running' && (
+          {wireStatus === 'compatible' && (
+            <span className="flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/35 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-emerald-400">
+              <CheckCircle2 size={9} /> COMPATIBLE
+            </span>
+          )}
+          {wireStatus === 'incompatible' && (
+            <span
+              title={wireReason || 'Incompatible connection'}
+              className="flex items-center gap-1 rounded bg-danger/15 border border-danger/35 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-danger truncate max-w-[100px]"
+            >
+              <AlertCircle size={9} /> INCOMPATIBLE
+            </span>
+          )}
+          {status === 'running' && !wireStatus && (
             <span className="flex items-center gap-1 rounded-full bg-accent/15 border border-accent/35 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-accent">
               <RefreshCw size={9} className="animate-spin" />
               RUNNING
@@ -224,10 +257,20 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
                 e.stopPropagation()
                 onEndWire(node.id, 'files', 'in')
               }}
-              className="group/port relative flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/50 bg-slate-950 text-cyan-400 cursor-crosshair transition-transform hover:scale-125"
+              className={`group/port relative flex h-5 w-5 items-center justify-center rounded-full border bg-slate-950 transition-all ${
+                wireStatus === 'compatible' && activeWirePort === 'files'
+                  ? 'border-emerald-400 ring-4 ring-emerald-400/50 scale-125 shadow-[0_0_12px_#10b981] animate-pulse text-emerald-400 cursor-pointer'
+                  : 'border-cyan-500/50 text-cyan-400 cursor-crosshair hover:scale-125'
+              }`}
               title="Input Port: Files"
             >
-              <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]" />
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  wireStatus === 'compatible' && activeWirePort === 'files'
+                    ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]'
+                    : 'bg-cyan-400 shadow-[0_0_6px_#06b6d4]'
+                }`}
+              />
               <span className="pointer-events-none absolute left-6 hidden rounded bg-base/90 px-1.5 py-0.5 text-[9px] font-mono text-cyan-300 shadow group-hover/port:inline-block z-30 whitespace-nowrap">
                 In: Files
               </span>
@@ -241,10 +284,20 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
                 e.stopPropagation()
                 onEndWire(node.id, 'text', 'in')
               }}
-              className="group/port relative flex h-5 w-5 items-center justify-center rounded-full border border-purple-500/50 bg-slate-950 text-purple-400 cursor-crosshair transition-transform hover:scale-125"
+              className={`group/port relative flex h-5 w-5 items-center justify-center rounded-full border bg-slate-950 transition-all ${
+                wireStatus === 'compatible' && activeWirePort === 'text'
+                  ? 'border-emerald-400 ring-4 ring-emerald-400/50 scale-125 shadow-[0_0_12px_#10b981] animate-pulse text-emerald-400 cursor-pointer'
+                  : 'border-purple-500/50 text-purple-400 cursor-crosshair hover:scale-125'
+              }`}
               title="Input Port: Text"
             >
-              <div className="h-2 w-2 rounded-full bg-purple-400 shadow-[0_0_6px_#a855f7]" />
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  wireStatus === 'compatible' && activeWirePort === 'text'
+                    ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]'
+                    : 'bg-purple-400 shadow-[0_0_6px_#a855f7]'
+                }`}
+              />
               <span className="pointer-events-none absolute left-6 hidden rounded bg-base/90 px-1.5 py-0.5 text-[9px] font-mono text-purple-300 shadow group-hover/port:inline-block z-30 whitespace-nowrap">
                 In: Text
               </span>

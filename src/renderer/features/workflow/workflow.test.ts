@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 import '../../tools'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { autoLayoutGraph, calculateBoundingBox, snapToGrid } from './layout'
-import { topologicalSort, validateEdge, runWorkflowPipeline } from './execution'
+import {
+  areFileCategoriesCompatible,
+  runWorkflowPipeline,
+  topologicalSort,
+  validateEdge,
+  wouldCreateCycle
+} from './execution'
 import { BUILT_IN_WORKFLOW_TEMPLATES } from './presets'
 import type { WorkflowGraph } from './types'
 import { QUEUE_WORKFLOW_VERSION } from './version'
@@ -122,6 +128,96 @@ describe('Workflow Topological Sort & DAG Validation', () => {
     expect(capabilityMismatch.valid).toBe(false)
     expect(capabilityMismatch.reason).toContain('does not accept files')
   })
+
+  it('detects wouldCreateCycle on direct and transitive circular connections', () => {
+    const graph: WorkflowGraph = {
+      nodes: [
+        { id: 'node-a', toolId: 'image-compress', position: { x: 0, y: 0 }, params: {} },
+        { id: 'node-b', toolId: 'image-convert', position: { x: 0, y: 0 }, params: {} },
+        { id: 'node-c', toolId: 'image-resize', position: { x: 0, y: 0 }, params: {} }
+      ],
+      edges: [
+        { id: 'e1', fromNodeId: 'node-a', fromPort: 'files', toNodeId: 'node-b', toPort: 'files' },
+        { id: 'e2', fromNodeId: 'node-b', fromPort: 'files', toNodeId: 'node-c', toPort: 'files' }
+      ]
+    }
+
+    // Direct self loop
+    expect(wouldCreateCycle(graph, 'node-a', 'node-a')).toBe(true)
+
+    // Direct reverse connection (b -> a when a -> b exists)
+    expect(wouldCreateCycle(graph, 'node-b', 'node-a')).toBe(true)
+
+    // Transitive reverse connection (c -> a when a -> b -> c exists)
+    expect(wouldCreateCycle(graph, 'node-c', 'node-a')).toBe(true)
+
+    // Valid forward connection (a -> c)
+    expect(wouldCreateCycle(graph, 'node-a', 'node-c')).toBe(false)
+  })
+
+  it('validates cross-domain file categories compatibility and domain rejection', () => {
+    const imageTool = {
+      id: 'image-compress',
+      name: 'Image Compressor',
+      category: 'images',
+      capabilities: { acceptsFiles: true, producesFiles: true }
+    } as unknown as ToolDefinition
+
+    const audioTool = {
+      id: 'audio-normalize',
+      name: 'Audio Normalizer',
+      category: 'audio',
+      capabilities: { acceptsFiles: true, producesFiles: true }
+    } as unknown as ToolDefinition
+
+    const docTool = {
+      id: 'pdf-merge',
+      name: 'PDF Merger',
+      category: 'documents',
+      capabilities: { acceptsFiles: true, producesFiles: true }
+    } as unknown as ToolDefinition
+
+    const generalFileTool = {
+      id: 'checksum-tool',
+      name: 'Checksum Verifier',
+      category: 'files',
+      capabilities: { acceptsFiles: true, producesFiles: true }
+    } as unknown as ToolDefinition
+
+    const bridgeTool = {
+      id: 'pdf-to-images',
+      name: 'PDF to Images',
+      category: 'documents',
+      capabilities: { acceptsFiles: true, producesFiles: true }
+    } as unknown as ToolDefinition
+
+    // General file tool accepts and produces with any category
+    expect(areFileCategoriesCompatible(imageTool, generalFileTool).compatible).toBe(true)
+    expect(areFileCategoriesCompatible(generalFileTool, audioTool).compatible).toBe(true)
+
+    // Audio rejects image outputs
+    const audioFromImage = areFileCategoriesCompatible(imageTool, audioTool)
+    expect(audioFromImage.compatible).toBe(false)
+    expect(audioFromImage.reason).toContain('audio tools require audio file inputs')
+
+    // Image rejects audio outputs
+    const imageFromAudio = areFileCategoriesCompatible(audioTool, imageTool)
+    expect(imageFromAudio.compatible).toBe(false)
+    expect(imageFromAudio.reason).toContain('image tools require image file inputs')
+
+    // Document rejects audio outputs
+    const docFromAudio = areFileCategoriesCompatible(audioTool, docTool)
+    expect(docFromAudio.compatible).toBe(false)
+    expect(docFromAudio.reason).toContain('document tools require PDF or document files')
+
+    // Bridge tool (pdf-to-images -> images) succeeds
+    expect(areFileCategoriesCompatible(bridgeTool, imageTool).compatible).toBe(true)
+
+    // Edge validation integrating areFileCategoriesCompatible
+    const edgeCheck = validateEdge(imageTool, audioTool, 'files', 'files')
+    expect(edgeCheck.valid).toBe(false)
+    expect(edgeCheck.reason).toContain('audio tools require audio file inputs')
+  })
 })
 
 describe('Workflow Pipeline Execution Engine', () => {
@@ -192,7 +288,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.2.4')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.2.6')
     })
   })
 

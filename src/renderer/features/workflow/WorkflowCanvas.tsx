@@ -15,7 +15,7 @@ import {
   calculateBoundingBox,
   snapToGrid
 } from './layout'
-import { runWorkflowPipeline, validateEdge } from './execution'
+import { runWorkflowPipeline, validateEdge, wouldCreateCycle } from './execution'
 import { WorkflowNodeCard } from './WorkflowNodeCard'
 import { WorkflowEdgeRenderer } from './WorkflowEdgeRenderer'
 import { WorkflowToolbar } from './WorkflowToolbar'
@@ -199,6 +199,17 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
 
   // Zoom handlers
   const handleWheel = (e: React.WheelEvent) => {
+    // Prevent zooming canvas when scrolling inside drawers, modals, toolbars, or context menus
+    const target = e.target as HTMLElement | null
+    if (
+      target &&
+      target.closest(
+        '[data-drawer], [data-modal], [data-toolbar], [data-context-menu], [data-prevent-canvas-zoom]'
+      )
+    ) {
+      return
+    }
+
     e.preventDefault()
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92
     setZoom((curr) => Math.min(2.0, Math.max(0.3, curr * zoomFactor)))
@@ -327,6 +338,13 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       return
     }
 
+    // Check circular dependency DAG loop
+    if (wouldCreateCycle(graph, draggingWire.fromNodeId, toNodeId)) {
+      toastError('Cannot connect: this would create a circular loop in the workflow.')
+      setDraggingWire(null)
+      return
+    }
+
     // Check duplicate
     const exists = graph.edges.some(
       (e) =>
@@ -336,6 +354,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         e.toPort === toPort
     )
     if (exists) {
+      toastError('This connection already exists.')
       setDraggingWire(null)
       return
     }
@@ -369,6 +388,84 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
 
     setDraggingWire(null)
     toastSuccess('Connected tools successfully')
+  }
+
+  const handleDropWireOnCard = (toNodeId: string) => {
+    if (!draggingWire) return
+
+    if (draggingWire.fromNodeId === toNodeId) {
+      toastError('Cannot connect a node to itself')
+      setDraggingWire(null)
+      return
+    }
+
+    const fromNode = graph.nodes.find((n) => n.id === draggingWire.fromNodeId)
+    const toNode = graph.nodes.find((n) => n.id === toNodeId)
+    const fromTool = fromNode ? toolRegistry.get(fromNode.toolId) : null
+    const toTool = toNode ? toolRegistry.get(toNode.toolId) : null
+
+    if (!toTool) {
+      setDraggingWire(null)
+      return
+    }
+
+    // Check circular dependency DAG loop
+    if (wouldCreateCycle(graph, draggingWire.fromNodeId, toNodeId)) {
+      toastError('Cannot connect: this would create a circular loop in the workflow.')
+      setDraggingWire(null)
+      return
+    }
+
+    const targetPort: PortType = draggingWire.fromPort
+    const acceptsPort =
+      targetPort === 'files' ? toTool.capabilities.acceptsFiles : toTool.capabilities.acceptsText
+
+    if (!acceptsPort) {
+      toastError(
+        `Cannot connect "${fromTool?.name || 'tool'}" to "${toNode?.customLabel || toTool.name}": tool does not accept "${targetPort}" inputs.`
+      )
+      setDraggingWire(null)
+      return
+    }
+
+    // Check duplicate
+    const exists = graph.edges.some(
+      (e) =>
+        e.fromNodeId === draggingWire.fromNodeId &&
+        e.toNodeId === toNodeId &&
+        e.fromPort === draggingWire.fromPort &&
+        e.toPort === targetPort
+    )
+    if (exists) {
+      toastError('This connection already exists.')
+      setDraggingWire(null)
+      return
+    }
+
+    if (fromTool) {
+      const validation = validateEdge(fromTool, toTool, draggingWire.fromPort, targetPort)
+      if (!validation.valid) {
+        toastError(validation.reason ?? 'Incompatible port connection')
+        setDraggingWire(null)
+        return
+      }
+    }
+
+    const newEdge: WorkflowEdge = {
+      id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      fromNodeId: draggingWire.fromNodeId,
+      fromPort: draggingWire.fromPort,
+      toNodeId,
+      toPort: targetPort
+    }
+
+    setGraph((prev) => ({
+      ...prev,
+      edges: [...prev.edges, newEdge]
+    }))
+
+    setDraggingWire(null)
+    toastSuccess(`Connected to "${toNode?.customLabel || toTool.name}"`)
   }
 
   const handleDeleteEdge = useCallback((edgeId: string) => {
@@ -700,6 +797,47 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
             const hasIncomingFileEdge = incomingEdges.some((e) => e.fromPort === 'files')
             const hasIncomingTextEdge = incomingEdges.some((e) => e.fromPort === 'text')
 
+            let wireStatus: 'compatible' | 'incompatible' | 'source' | null = null
+            let wireReason: string | undefined = undefined
+
+            if (draggingWire) {
+              if (node.id === draggingWire.fromNodeId) {
+                wireStatus = 'source'
+              } else {
+                const fromNode = graph.nodes.find((n) => n.id === draggingWire.fromNodeId)
+                const fromTool = fromNode ? toolRegistry.get(fromNode.toolId) : null
+                const toTool = toolRegistry.get(node.toolId)
+
+                if (wouldCreateCycle(graph, draggingWire.fromNodeId, node.id)) {
+                  wireStatus = 'incompatible'
+                  wireReason = 'Connecting would create a circular dependency loop.'
+                } else if (!toTool) {
+                  wireStatus = 'incompatible'
+                  wireReason = 'Tool definition not found.'
+                } else {
+                  const port = draggingWire.fromPort
+                  const accepts =
+                    port === 'files'
+                      ? toTool.capabilities.acceptsFiles
+                      : toTool.capabilities.acceptsText
+                  if (!accepts) {
+                    wireStatus = 'incompatible'
+                    wireReason = `Tool does not accept "${port}" inputs.`
+                  } else if (fromTool) {
+                    const validation = validateEdge(fromTool, toTool, port, port)
+                    if (!validation.valid) {
+                      wireStatus = 'incompatible'
+                      wireReason = validation.reason
+                    } else {
+                      wireStatus = 'compatible'
+                    }
+                  } else {
+                    wireStatus = 'compatible'
+                  }
+                }
+              }
+            }
+
             return (
               <WorkflowNodeCard
                 key={node.id}
@@ -707,6 +845,9 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                 selected={selectedNodeId === node.id}
                 hasIncomingFileEdge={hasIncomingFileEdge}
                 hasIncomingTextEdge={hasIncomingTextEdge}
+                wireStatus={wireStatus}
+                wireReason={wireReason}
+                activeWirePort={draggingWire?.fromPort}
                 onSelect={setSelectedNodeId}
                 onOpenDetails={(id) => setInspectingNodeId(id)}
                 onContextMenu={(id, e) => {
@@ -718,6 +859,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                 onUpdateInputs={handleUpdateNodeInputs}
                 onStartWire={handleStartWire}
                 onEndWire={handleEndWire}
+                onDropWireOnCard={handleDropWireOnCard}
                 onStartDrag={handleStartNodeDrag}
               />
             )
@@ -802,6 +944,8 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       {/* Node Context Menu */}
       {contextMenu && (
         <div
+          data-context-menu="true"
+          onWheel={(e) => e.stopPropagation()}
           className="fixed z-50 min-w-[175px] rounded-lg border border-line-strong bg-overlay/95 p-1 shadow-2xl backdrop-blur-md select-none"
           style={{
             left: Math.min(contextMenu.x, window.innerWidth - 185),

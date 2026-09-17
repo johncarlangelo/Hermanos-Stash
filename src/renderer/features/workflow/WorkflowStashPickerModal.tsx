@@ -258,6 +258,8 @@ export function WorkflowStashPickerModal({
 
   return (
     <div
+      data-modal="workflow-stash-picker"
+      onWheel={(e) => e.stopPropagation()}
       onClick={handleRequestClose}
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 ${
         isClosing ? 'anim-backdrop-out pointer-events-none' : 'anim-backdrop-in pointer-events-auto'
@@ -265,7 +267,7 @@ export function WorkflowStashPickerModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`flex w-full max-w-2xl max-h-[85vh] flex-col rounded-xl border border-line bg-shell shadow-2xl ${
+        className={`flex w-full max-w-2xl max-h-[85vh] flex-col rounded-xl border border-line bg-shell shadow-2xl overscroll-contain ${
           isClosing ? 'anim-modal-out' : 'anim-modal-in'
         }`}
       >

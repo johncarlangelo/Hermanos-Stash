@@ -10,6 +10,159 @@ import type { ToolDefinition } from '../../../shared/types/tool'
 import type { WorkflowExecutionResult, WorkflowGraph, WorkflowNode } from './types'
 
 /**
+ * Checks domain compatibility between two file-producing/consuming tools.
+ */
+export function areFileCategoriesCompatible(
+  fromTool: ToolDefinition,
+  toTool: ToolDefinition
+): { compatible: boolean; reason?: string } {
+  // General file tools (archives, checksum, file metadata) accept and produce arbitrary files
+  if (fromTool.category === 'files' || toTool.category === 'files') {
+    return { compatible: true }
+  }
+
+  // Cross-domain conversion bridges
+  if (fromTool.id === 'pdf-to-images' && toTool.category === 'images') {
+    return { compatible: true }
+  }
+  if (fromTool.category === 'images' && toTool.id === 'images-to-pdf') {
+    return { compatible: true }
+  }
+  if (fromTool.id === 'extract-audio' && toTool.category === 'audio') {
+    return { compatible: true }
+  }
+  if (fromTool.category === 'video' && toTool.id === 'extract-audio') {
+    return { compatible: true }
+  }
+  if (fromTool.id === 'video-to-gif' && toTool.category === 'images') {
+    return { compatible: true }
+  }
+
+  // Audio tools require audio file inputs
+  if (toTool.category === 'audio') {
+    if (fromTool.category === 'images') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": audio tools require audio file inputs, but "${fromTool.name}" produces images.`
+      }
+    }
+    if (fromTool.category === 'documents') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": audio tools require audio file inputs, but "${fromTool.name}" produces documents.`
+      }
+    }
+    if (fromTool.category === 'video' && toTool.id !== 'extract-audio') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": "${toTool.name}" requires audio file inputs, but "${fromTool.name}" produces video. Connect to "Audio Extractor" first.`
+      }
+    }
+  }
+
+  // Video tools require video file inputs
+  if (toTool.category === 'video') {
+    if (fromTool.category === 'audio') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces audio.`
+      }
+    }
+    if (fromTool.category === 'images') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces images.`
+      }
+    }
+    if (fromTool.category === 'documents') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces documents.`
+      }
+    }
+  }
+
+  // Image tools require image file inputs
+  if (toTool.category === 'images') {
+    if (fromTool.category === 'audio') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces audio.`
+      }
+    }
+    if (fromTool.category === 'video' && fromTool.id !== 'video-to-gif') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces video. Use "Video → GIF" first.`
+      }
+    }
+    if (fromTool.category === 'documents' && fromTool.id !== 'pdf-to-images') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces documents. Use "PDF → Images" first.`
+      }
+    }
+  }
+
+  // Document tools require PDF or document files
+  if (toTool.category === 'documents') {
+    if (fromTool.category === 'audio') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF or document files, but "${fromTool.name}" produces audio.`
+      }
+    }
+    if (fromTool.category === 'video') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF or document files, but "${fromTool.name}" produces video.`
+      }
+    }
+    if (fromTool.category === 'images' && toTool.id !== 'images-to-pdf') {
+      return {
+        compatible: false,
+        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF files, but "${fromTool.name}" produces images. Use "Images → PDF" first.`
+      }
+    }
+  }
+
+  return { compatible: true }
+}
+
+/**
+ * Checks whether adding a directed edge from `fromNodeId` to `toNodeId`
+ * would introduce a cycle into the workflow graph.
+ */
+export function wouldCreateCycle(
+  graph: WorkflowGraph,
+  fromNodeId: string,
+  toNodeId: string
+): boolean {
+  if (fromNodeId === toNodeId) return true
+
+  // If toNodeId can already reach fromNodeId, then adding fromNodeId -> toNodeId creates a cycle
+  const visited = new Set<string>()
+  const queue: string[] = [toNodeId]
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (current === fromNodeId) {
+      return true
+    }
+    if (!visited.has(current)) {
+      visited.add(current)
+      for (const edge of graph.edges) {
+        if (edge.fromNodeId === current && !visited.has(edge.toNodeId)) {
+          queue.push(edge.toNodeId)
+        }
+      }
+    }
+  }
+
+  return false
+}
+
+/**
  * Validates whether an edge between two tools is compatible.
  */
 export function validateEdge(
@@ -36,6 +189,13 @@ export function validateEdge(
       return {
         valid: false,
         reason: `"${toTool.name}" does not accept files.`
+      }
+    }
+    const domainCheck = areFileCategoriesCompatible(fromTool, toTool)
+    if (!domainCheck.compatible) {
+      return {
+        valid: false,
+        reason: domainCheck.reason
       }
     }
   }
