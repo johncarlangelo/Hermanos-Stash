@@ -1,5 +1,11 @@
 # Hermanos Stash — Progress
 
+## Local branch candidate — workflow v0.3.0
+
+Semantic wire compatibility now audited across 78 tools (6,084 ordered pairs), with conservative container/mixed-output handling and saved-graph preflight. 916 tests / 92 files, typecheck, lint and build pass; built-renderer wire rejection/acceptance probe passes. No push or merge; user QA pending. Details and known limits: `docs/workflow-audit/README.md`.
+
+**Correction to older completion wording below:** canvas `executeStep` and linear-queue invokers are still simulations. This audit does not implement real processor chaining. The legacy Photo ID recipe now rejects its mixed-output wire before execution.
+
 ## Current milestone
 
 **Queue Workflow View & Visual Pipeline Orchestrator complete.**

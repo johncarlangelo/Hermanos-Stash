@@ -1,5 +1,12 @@
 # Hermanos Stash — Architecture Decision Record
 
+## 2026-09-18 — Workflow directional domains (local v0.3.0 candidate)
+
+Use explicit per-tool file input/output domains, not sidebar categories. Reject missing classifications; only universal consumers accept unknown/mixed output. Archive containers are distinct from their contents. Independently assert all 78 x 78 port pairings and export the audit CSV. Revalidate saved/imported graphs before execution, without silently rewriting user graphs.
+
+Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve existing registry port declarations and defer real processor adapters, parameter-aware formats and linear-queue parity. Existing Photo ID recipe is incompatible under conservative mixed-output rules and now fails preflight. User must test/approve this local branch before any push/merge. See `docs/workflow-audit/README.md`.
+
+
 ## ADR-001 — Installed desktop application
 
 **Decision:** Build Stash as a desktop application rather than a hosted web application.

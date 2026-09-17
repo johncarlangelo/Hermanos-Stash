@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 import '../../tools'
+import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { autoLayoutGraph, calculateBoundingBox, snapToGrid } from './layout'
 import {
@@ -9,9 +12,11 @@ import {
   validateEdge,
   wouldCreateCycle
 } from './execution'
+
 import { BUILT_IN_WORKFLOW_TEMPLATES } from './presets'
 import type { WorkflowGraph } from './types'
 import { QUEUE_WORKFLOW_VERSION } from './version'
+import { AUDIT_ROWS, expectedAuditPorts } from './compatibility-audit'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -155,80 +160,96 @@ describe('Workflow Topological Sort & DAG Validation', () => {
     expect(wouldCreateCycle(graph, 'node-a', 'node-c')).toBe(false)
   })
 
-  it('validates cross-domain file categories compatibility and domain rejection', () => {
-    const imageTool = {
-      id: 'image-compress',
-      name: 'Image Compressor',
-      category: 'images',
-      capabilities: { acceptsFiles: true, producesFiles: true }
-    } as unknown as ToolDefinition
-
-    const audioTool = {
-      id: 'audio-normalize',
-      name: 'Audio Normalizer',
-      category: 'audio',
-      capabilities: { acceptsFiles: true, producesFiles: true }
-    } as unknown as ToolDefinition
-
-    const docTool = {
-      id: 'pdf-merge',
-      name: 'PDF Merger',
-      category: 'documents',
-      capabilities: { acceptsFiles: true, producesFiles: true }
-    } as unknown as ToolDefinition
-
-    const generalFileTool = {
-      id: 'checksum-tool',
-      name: 'Checksum Verifier',
-      category: 'files',
-      capabilities: { acceptsFiles: true, producesFiles: true }
-    } as unknown as ToolDefinition
-
-    const bridgeTool = {
-      id: 'pdf-to-images',
-      name: 'PDF to Images',
-      category: 'documents',
-      capabilities: { acceptsFiles: true, producesFiles: true }
-    } as unknown as ToolDefinition
-
-    // General file tool accepts and produces with any category
-    expect(areFileCategoriesCompatible(imageTool, generalFileTool).compatible).toBe(true)
-    expect(areFileCategoriesCompatible(generalFileTool, audioTool).compatible).toBe(true)
-
-    // Audio rejects image outputs
-    const audioFromImage = areFileCategoriesCompatible(imageTool, audioTool)
-    expect(audioFromImage.compatible).toBe(false)
-    expect(audioFromImage.reason).toContain('audio tools require audio file inputs')
-
-    // Image rejects audio outputs
-    const imageFromAudio = areFileCategoriesCompatible(audioTool, imageTool)
-    expect(imageFromAudio.compatible).toBe(false)
-    expect(imageFromAudio.reason).toContain('image tools require image file inputs')
-
-    // Document rejects audio outputs
-    const docFromAudio = areFileCategoriesCompatible(audioTool, docTool)
-    expect(docFromAudio.compatible).toBe(false)
-    expect(docFromAudio.reason).toContain('document tools require PDF or document files')
-
-    // Bridge tool (pdf-to-images -> images) succeeds
-    expect(areFileCategoriesCompatible(bridgeTool, imageTool).compatible).toBe(true)
-
-    // Edge validation integrating areFileCategoriesCompatible
-    const edgeCheck = validateEdge(imageTool, audioTool, 'files', 'files')
-    expect(edgeCheck.valid).toBe(false)
-    expect(edgeCheck.reason).toContain('audio tools require audio file inputs')
+  it('validates directional domains using real catalog definitions', () => {
+    const tool = (id: string) => toolRegistry.get(id)!
+    expect(
+      areFileCategoriesCompatible(tool('image-compress'), tool('hash-generator')).compatible
+    ).toBe(true)
+    for (const [a, b] of [
+      ['image-compress', 'audio-normalize'],
+      ['audio-normalize', 'image-compress'],
+      ['audio-normalize', 'pdf-merge']
+    ]) {
+      const result = areFileCategoriesCompatible(tool(a), tool(b))
+      expect(result.compatible).toBe(false)
+      expect(result.reason).toContain(tool(a).name)
+      expect(result.reason).toContain(tool(b).name)
+    }
   })
 })
 
 describe('Workflow Pipeline Execution Engine', () => {
-  it('executes a multi-step pipeline and aggregates final output files', async () => {
-    const template = BUILT_IN_WORKFLOW_TEMPLATES[0] // ID Photo Studio template
-    const inputFiles = ['portrait.jpg']
+  it('rejects a legacy recipe containing mixed-output wires before starting any node', async () => {
+    const template = BUILT_IN_WORKFLOW_TEMPLATES[0]
+    const started: string[] = []
+    await expect(
+      runWorkflowPipeline(template.graph, ['portrait.jpg'], '', {
+        onNodeStart: (id) => started.push(id)
+      })
+    ).rejects.toThrow('requires image files')
+    expect(started).toEqual([])
+  })
 
-    const result = await runWorkflowPipeline(template.graph, inputFiles)
-    expect(result.success).toBe(true)
-    expect(result.finalOutputFiles.length).toBeGreaterThan(0)
-    expect(Object.keys(result.nodeResults)).toHaveLength(template.graph.nodes.length)
+  it.each(['icon-pack', 'qr-decoder'])(
+    'rejects imported audio wires to %s before execution',
+    async (toolId) => {
+      const graph: WorkflowGraph = {
+        nodes: [
+          { id: 'a', toolId: 'extract-audio', params: {}, position: { x: 0, y: 0 } },
+          { id: 'b', toolId, params: {}, position: { x: 300, y: 0 } }
+        ],
+        edges: [{ id: 'e', fromNodeId: 'a', toNodeId: 'b', fromPort: 'files', toPort: 'files' }]
+      }
+      const started: string[] = []
+      await expect(
+        runWorkflowPipeline(graph, ['clip.mp4'], '', {
+          onNodeStart: (id) => started.push(id)
+        })
+      ).rejects.toThrow('requires image files')
+      expect(started).toEqual([])
+    }
+  )
+
+  it('rejects dangling saved wires before execution', async () => {
+    const graph: WorkflowGraph = {
+      nodes: [{ id: 'a', toolId: 'image-convert', params: {}, position: { x: 0, y: 0 } }],
+      edges: [{ id: 'e', fromNodeId: 'missing', toNodeId: 'a', fromPort: 'files', toPort: 'files' }]
+    }
+    await expect(runWorkflowPipeline(graph, [])).rejects.toThrow('missing node')
+  })
+
+  it('rejects unknown saved tools before execution', async () => {
+    const graph: WorkflowGraph = {
+      nodes: [{ id: 'a', toolId: 'unregistered', params: {}, position: { x: 0, y: 0 } }],
+      edges: []
+    }
+    await expect(runWorkflowPipeline(graph, [])).rejects.toThrow('Unknown workflow tool')
+  })
+
+  it('rejects unsupported imported port names', async () => {
+    const graph: WorkflowGraph = {
+      nodes: [
+        { id: 'a', toolId: 'image-convert', params: {}, position: { x: 0, y: 0 } },
+        { id: 'b', toolId: 'image-compress', params: {}, position: { x: 300, y: 0 } }
+      ],
+      edges: [
+        {
+          id: 'e',
+          fromNodeId: 'a',
+          toNodeId: 'b',
+          fromPort: 'bogus',
+          toPort: 'bogus'
+        } as unknown as WorkflowGraph['edges'][number]
+      ]
+    }
+    await expect(runWorkflowPipeline(graph, [])).rejects.toThrow('Unsupported workflow port')
+  })
+
+  it('rejects duplicate saved node identities', async () => {
+    const node = { id: 'a', toolId: 'image-convert', params: {}, position: { x: 0, y: 0 } }
+    await expect(
+      runWorkflowPipeline({ nodes: [node, { ...node }], edges: [] }, [])
+    ).rejects.toThrow('Duplicate workflow node')
   })
 
   it('honors direct node.inputFiles on root nodes without initial pipeline inputs', async () => {
@@ -288,14 +309,18 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.2.6')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.0')
     })
   })
 
   describe('Workflow Node Stash Asset Payload Integration', () => {
     it('accumulates and deduplicates stash assets on a node input files payload', () => {
       const initialFiles = ['/stash/assets/photo1.png']
-      const newStashAssets = ['/stash/assets/photo1.png', '/stash/assets/photo2.png', '/stash/assets/doc.pdf']
+      const newStashAssets = [
+        '/stash/assets/photo1.png',
+        '/stash/assets/photo2.png',
+        '/stash/assets/doc.pdf'
+      ]
       const combined = Array.from(new Set([...initialFiles, ...newStashAssets]))
 
       expect(combined).toEqual([
@@ -305,5 +330,137 @@ describe('Workflow Pipeline Execution Engine', () => {
       ])
       expect(combined).toHaveLength(3)
     })
+  })
+})
+
+describe('78-tool compatibility audit', () => {
+  it('exports the verified 78 x 78 checklist on explicit request', () => {
+    const rows = AUDIT_ROWS.flatMap((from) =>
+      AUDIT_ROWS.map((to) => {
+        const expected = expectedAuditPorts(from, to)
+        const files = validateEdge(
+          toolRegistry.get(from.id)!,
+          toolRegistry.get(to.id)!,
+          'files',
+          'files'
+        )
+        const text = validateEdge(
+          toolRegistry.get(from.id)!,
+          toolRegistry.get(to.id)!,
+          'text',
+          'text'
+        )
+        expect([files.valid, text.valid], `${from.id} -> ${to.id}`).toEqual([
+          expected.files,
+          expected.text
+        ])
+        return {
+          from: from.id,
+          to: to.id,
+          files: files.valid,
+          text: text.valid,
+          fileReason: files.reason ?? 'Compatible at media-domain level',
+          textReason: text.reason ?? 'Compatible text ports; content validation still required'
+        }
+      })
+    )
+    expect(rows).toHaveLength(6084)
+    if (process.env.STASH_EXPORT_COMPATIBILITY === '1') {
+      const dir = path.resolve('docs/workflow-audit')
+      mkdirSync(dir, { recursive: true })
+      const quote = (value: unknown) => `"${String(value).replaceAll('"', '""')}"`
+      const fields = ['from', 'to', 'files', 'text', 'fileReason', 'textReason'] as const
+      writeFileSync(
+        path.join(dir, 'compatibility.csv'),
+        [fields.join(','), ...rows.map((r) => fields.map((f) => quote(r[f])).join(','))].join(
+          '\n'
+        ) + '\n'
+      )
+      writeFileSync(
+        path.join(dir, 'tools.csv'),
+        [
+          'id,input,output,acceptsText,producesText',
+          ...AUDIT_ROWS.map((r) =>
+            [r.id, r.input, r.output, r.acceptsText, r.producesText].join(',')
+          )
+        ].join('\n') + '\n'
+      )
+      console.log(
+        JSON.stringify({
+          pairs: rows.length,
+          fileLinks: rows.filter((r) => r.files).length,
+          textLinks: rows.filter((r) => r.text).length
+        })
+      )
+    }
+  })
+  it('covers each registered tool exactly once with matching port declarations', () => {
+    expect(AUDIT_ROWS).toHaveLength(78)
+    expect(AUDIT_ROWS.map((r) => r.id).sort()).toEqual(
+      toolRegistry
+        .all()
+        .map((t) => t.id)
+        .sort()
+    )
+    for (const row of AUDIT_ROWS) {
+      const caps = toolRegistry.get(row.id)!.capabilities
+      expect(
+        [!!caps.acceptsFiles, !!caps.producesFiles, !!caps.acceptsText, !!caps.producesText],
+        row.id
+      ).toEqual([row.input !== '-', row.output !== '-', row.acceptsText, row.producesText])
+    }
+  })
+
+  it.each(AUDIT_ROWS)('checks every destination for $id (78 x 4 port combinations)', (from) => {
+    for (const to of AUDIT_ROWS) {
+      const expected = expectedAuditPorts(from, to)
+      for (const sourcePort of ['files', 'text'] as const) {
+        for (const targetPort of ['files', 'text'] as const) {
+          const result = validateEdge(
+            toolRegistry.get(from.id)!,
+            toolRegistry.get(to.id)!,
+            sourcePort,
+            targetPort
+          )
+          const label = `${from.id}:${sourcePort} -> ${to.id}:${targetPort}`
+          expect(result.valid, label).toBe(sourcePort === targetPort && expected[sourcePort])
+          if (!result.valid) expect(result.reason, label).toBeTruthy()
+        }
+      }
+    }
+  })
+})
+
+describe('Workflow semantic domain regressions', () => {
+  const tool = (id: string) => toolRegistry.get(id)!
+
+  it.each(['icon-pack', 'qr-decoder', 'image-ocr'])(
+    'rejects audio into %s regardless of sidebar category',
+    (id) => {
+      expect(validateEdge(tool('extract-audio'), tool(id), 'files', 'files').valid).toBe(false)
+      expect(validateEdge(tool('image-compress'), tool(id), 'files', 'files').valid).toBe(true)
+    }
+  )
+
+  it('fails closed for an unclassified file tool even in a familiar category', () => {
+    const unknown = { ...tool('image-compress'), id: 'unclassified' }
+    expect(validateEdge(unknown, tool('image-compress'), 'files', 'files').valid).toBe(false)
+    expect(validateEdge(tool('image-compress'), unknown, 'files', 'files').valid).toBe(false)
+  })
+
+  it('does not confuse an archive container with its contents', () => {
+    expect(validateEdge(tool('zip-create'), tool('image-compress'), 'files', 'files').valid).toBe(
+      false
+    )
+    expect(validateEdge(tool('image-compress'), tool('zip-extract'), 'files', 'files').valid).toBe(
+      false
+    )
+    expect(validateEdge(tool('zip-create'), tool('zip-extract'), 'files', 'files').valid).toBe(true)
+    expect(validateEdge(tool('zip-extract'), tool('image-compress'), 'files', 'files').valid).toBe(
+      false
+    )
+    expect(validateEdge(tool('zip-extract'), tool('hash-generator'), 'files', 'files').valid).toBe(
+      true
+    )
   })
 })

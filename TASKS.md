@@ -391,7 +391,17 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Drawer Wheel Zoom Isolation & Overscroll Containment (`WorkflowCanvas.tsx`, `WorkflowToolDrawer.tsx`, `WorkflowTemplatesDrawer.tsx`, `WorkflowNodeDetailDrawer.tsx`, `WorkflowOutputDrawer.tsx`, `WorkflowTemplateModal.tsx`, `WorkflowStashPickerModal.tsx`, `WorkflowToolbar.tsx`, `version.ts`)**: Isolate mouse wheel and trackpad scroll events originating inside drawers and modals from bubbling to the canvas root container via `onWheel={(e) => e.stopPropagation()}` and `target.closest('[data-drawer]...')` ancestry guards, preventing unintended canvas zooming while scrolling through tools, templates, or asset drawers.
 
 ### Upcoming Queue Workflow Candidate Tasks
-- [ ] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
+
+Local v0.3.0 implementation is verified; parent task stays in progress pending user QA. See `docs/workflow-audit/README.md` and CSV matrix. Static domain compatibility is not codec validation or real pipeline execution.
+- [x] Revalidate saved/imported graph connections before any pipeline node starts.
+- [ ] Follow-up: parameter/format-aware artifact contracts, real processor adapters, and linear-queue parity.
+- [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
+- [-] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
+  - [x] Audit all 78 registered tools against actual file input/output implementations.
+  - [x] Replace UI-category inference with explicit directional domains; reject unknown domains.
+  - [x] Verify all 6,084 ordered pairs (all four port combinations) against an independent audit fixture and export a reviewable matrix.
+  - [x] Run focused/full tests, typecheck, lint, format, build and independent review; record limitations.
+  - [ ] User tests local `union-alpha/feature-validator` branch before any push or merge.
   - Fix cross-category media matching bugs where tools whose UI category differs from their media domain fall through validation (e.g. `Audio Extractor` audio output connecting to `Icon Pack Generator` or `QR Decoder` in the `developer` category).
   - Generate and verify a comprehensive N × N compatibility and incompatibility checklist matrix covering all 78 tools across all categories (`images`, `audio`, `video`, `documents`, `developer`, `text`, `files`, `future`).
   - Introduce semantic domain classification helpers (e.g. `IMAGE_CONSUMING_TOOL_IDS`, `AUDIO_CONSUMING_TOOL_IDS`, `DOC_CONSUMING_TOOL_IDS`) to strictly enforce valid media inputs regardless of top-level sidebar category.

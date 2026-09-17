@@ -13,14 +13,24 @@
  * directions. Adding a tool = one table entry, not N set edits.
  */
 
-export type ToolFileDomain = 'image' | 'audio' | 'video' | 'document' | 'any'
+export type ToolFileDomain =
+  'image' | 'audio' | 'video' | 'document' | 'archive' | 'textfile' | 'any'
 
-export const FILE_DOMAINS: ToolFileDomain[] = ['image', 'audio', 'video', 'document', 'any']
+export const FILE_DOMAINS: ToolFileDomain[] = [
+  'image',
+  'audio',
+  'video',
+  'document',
+  'archive',
+  'textfile',
+  'any'
+]
 
 /**
  * Per-tool input/output media domains. `null` = tool does not handle files on
  * that side (text-only or view-only). `any` = universal file tool that
- * accepts/produces arbitrary media.
+ * accepts arbitrary files on input; on output it means unknown/mixed media.
+ * Unknown/mixed outputs only feed universal consumers, never specialized tools.
  */
 export const TOOL_FILE_DOMAINS: Record<
   string,
@@ -33,9 +43,9 @@ export const TOOL_FILE_DOMAINS: Record<
   'image-exif': { input: 'image', output: null },
   'image-watermark': { input: 'image', output: 'image' },
   'image-palette': { input: 'image', output: null }, // produces text (CSS/Tailwind)
-  'image-slicer': { input: 'image', output: 'image' },
+  'image-slicer': { input: 'image', output: 'archive' },
   'image-grid': { input: 'image', output: 'image' },
-  'id-photo-maker': { input: 'image', output: 'image' },
+  'id-photo-maker': { input: 'image', output: 'any' },
   'image-to-ascii': { input: 'image', output: null }, // produces TEXT art
   'social-resizer': { input: 'image', output: 'image' },
   // --- documents (PDF manipulators) ---
@@ -48,7 +58,7 @@ export const TOOL_FILE_DOMAINS: Record<
   'pdf-watermark': { input: 'document', output: 'document' },
   'pdf-preview': { input: 'document', output: null },
   'pdf-to-text': { input: 'document', output: null },
-  'pdf-to-images': { input: 'document', output: 'image' }, // bridge: doc → image
+  'pdf-to-images': { input: 'document', output: 'archive' }, // exports a ZIP of rendered pages
   'images-to-pdf': { input: 'image', output: 'document' }, // bridge: image → doc
   'markdown-to-pdf': { input: null, output: 'document' }, // consumes TEXT
   // --- video / audio ---
@@ -61,9 +71,9 @@ export const TOOL_FILE_DOMAINS: Record<
   'audio-normalize': { input: 'audio', output: 'audio' },
   // --- universal file tools (accept/produce arbitrary media) ---
   'file-metadata': { input: 'any', output: null },
-  'zip-create': { input: 'any', output: 'any' },
-  'zip-extract': { input: 'any', output: 'any' },
-  'archive-inspect': { input: 'any', output: 'any' },
+  'zip-create': { input: 'any', output: 'archive' },
+  'zip-extract': { input: 'archive', output: 'any' },
+  'archive-inspect': { input: 'archive', output: 'any' },
   'checksum-verifier': { input: 'any', output: null },
   'duplicate-finder': { input: 'any', output: null },
   'folder-analyzer': { input: 'any', output: null },
@@ -77,8 +87,8 @@ export const TOOL_FILE_DOMAINS: Record<
   // --- image in → text out ---
   'image-ocr': { input: 'image', output: null },
   'qr-decoder': { input: 'image', output: null },
-  // --- token estimation accepts arbitrary files, produces text ---
-  'token-counter': { input: 'any', output: null }
+  // --- token estimation reads text/code files, not arbitrary binary media ---
+  'token-counter': { input: 'textfile', output: null }
 }
 
 export function fileInputDomain(id: string): ToolFileDomain | null {

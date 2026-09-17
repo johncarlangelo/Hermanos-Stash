@@ -53,7 +53,7 @@ describe('tool file-domain classification', () => {
 
   it('classifies cross-domain converter bridges with differing in/out domains', () => {
     expect(fileInputDomain('pdf-to-images')).toBe('document')
-    expect(fileOutputDomain('pdf-to-images')).toBe('image')
+    expect(fileOutputDomain('pdf-to-images')).toBe('archive')
     expect(fileInputDomain('video-to-gif')).toBe('video')
     expect(fileOutputDomain('video-to-gif')).toBe('image')
     expect(fileInputDomain('images-to-pdf')).toBe('image')
@@ -91,16 +91,10 @@ describe('tool file-domain classification', () => {
   })
 
   it('classifies arbitrary-file tools as universal consumers/producers', () => {
-    for (const id of [
-      'zip-create',
-      'zip-extract',
-      'archive-inspect',
-      'checksum-verifier',
-      'hash-generator'
-    ]) {
+    for (const id of ['zip-create', 'checksum-verifier', 'hash-generator']) {
       expect(UNIVERSAL_CONSUMING_TOOL_IDS).toContain(id)
     }
-    for (const id of ['zip-create', 'zip-extract', 'archive-inspect']) {
+    for (const id of ['zip-extract', 'archive-inspect']) {
       expect(UNIVERSAL_PRODUCING_TOOL_IDS).toContain(id)
     }
     // Analysis tools produce text, not files.
