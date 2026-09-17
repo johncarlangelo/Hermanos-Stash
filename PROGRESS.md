@@ -1,5 +1,9 @@
 # Hermanos Stash — Progress
 
+## Root README refresh
+
+README now lists all 78 tools with reconciled category counts, Queue Workflow BETA (including simulated execution and legacy recipe limitations), and Local LLM Playground & Benchmark BETA with server prerequisites and explicitly simulated sandbox metrics. Removed stale test-count badges and fixed the clone-directory command. AGENTS.md now requires README updates with tool/feature changes. Catalog counts and local links verified; matrix freshness check passed with changed=0. Initial independent documentation review scored 4/5 and identified an overstated LUFS/FFmpeg claim. Source confirms peak/RMS dBFS gain adjustment; README now states this explicitly and distinguishes five FFmpeg-backed tools from two Web Audio tools. Narrow independent re-review scored 5/5 with no remaining blockers or major findings. Documentation-only changes; no runtime behavior altered.
+
 ## Workflow matrix reference (local v0.3.1)
 
 Added `docs/workflow-audit/COMPATIBILITY_MATRIX.md`: all four verdicts for every ordered pair. Regenerate using `npm run workflow:matrix`; verify freshness using `npm run workflow:matrix:check`. Catalog counts now scale automatically. AGENTS.md requires both commands and reviewed oracle/domain updates when integrating tools. No push or merge.

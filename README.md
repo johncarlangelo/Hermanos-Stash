@@ -2,18 +2,18 @@
 
 # HERMANOS STASH
 
-**One window. 77 tools. Zero cloud.**
+**One window. 78 tools. Local-first.**
 
 A local-first desktop toolbox for files, documents, images, video, audio,
-text, developer work and reusable AI prompts — everything processed on your
-machine, nothing sent anywhere.
+text, developer work and reusable AI prompts — built for processing on your
+machine. Optional model-server connections power the experimental LLM playground.
 
-![Tools](https://img.shields.io/badge/tools-77-d9a35c)
-![Tests](https://img.shields.io/badge/tests-791_passing-85bb90)
+![Tools](https://img.shields.io/badge/tools-78-d9a35c)
+![Tests](https://img.shields.io/badge/tests-Vitest-85bb90)
 ![License](https://img.shields.io/badge/license-MIT-9aa2b1)
 ![Electron](https://img.shields.io/badge/Electron-43-2b2f3a)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3b82f6)
-![Offline](https://img.shields.io/badge/cloud-none-important)
+![Local-first](https://img.shields.io/badge/local--first-no_required_cloud-important)
 
 </div>
 
@@ -23,9 +23,9 @@ machine, nothing sent anywhere.
 > images*, *extract the audio*, *format that JSON*. The usual answer is a
 > different sketchy web page for each one.
 >
-> **Stash is the opposite bet:** one installed app you can trust, where every
-> byte stays on your disk. No accounts. No telemetry. No paid APIs. Fully
-> offline.
+> **Stash is the opposite bet:** one installed app you can trust, built around local processing. No accounts or paid APIs are required.
+> Local AI inference needs a separately installed model server; its simulation
+> sandbox works without one.
 
 ---
 
@@ -58,28 +58,29 @@ Stash suggests every registered tool that handles it.
 
 ```bash
 git clone https://github.com/johncarlangelo/Hermanos-Stash.git
-cd "Hermanos Stash"
+cd Hermanos-Stash
 npm install
 npm run dev          # launches the app with hot reload
 ```
 
 **FFmpeg (optional):** place `ffmpeg.exe` + `ffprobe.exe` in `resources/ffmpeg/`
-(or have them on PATH) to unlock the video and audio tools. Everything else
-works without them.
+(or have them on PATH) for FFmpeg-backed video/audio processing. The Local LLM
+Playground separately needs a running model server for real inference; its sandbox
+does not.
 
 ### Keyboard shortcuts
 
 | Keys | Action |
 |---|---|
-| `Ctrl K` | Command palette — fuzzy-search all 50 tools |
+| `Ctrl K` | Command palette — fuzzy-search all 78 tools |
 | `Esc` | Back to workspace |
 | `Ctrl 1–5` | Open your first five favorites |
 | Drag file → window background | Find matching tools |
 
-## The catalog — 50 tools
+## The catalog — 78 tools
 
 <details>
-<summary><strong>Text & Data</strong> — 8 tools</summary>
+<summary><strong>Text & Data</strong> — 12 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -91,11 +92,15 @@ works without them.
 | Text Diff | Line-by-line LCS diff with add/remove highlighting |
 | Case Converter & Counter | camel / snake / kebab / title + word & reading-time stats |
 | HTML Entities & Slug | Encode/decode entities, generate clean URL slugs |
+| ASCII Art & Retro Banner Generator **BETA** | Create multi-line ASCII art, retro terminal banners, and framed typography. |
+| ASCII & Unicode Table Generator | Convert CSV, TSV, and JSON data into formatted Unicode and Markdown tables. |
+| XML ⇄ JSON Converter & Formatter | Bi-directional XML and JSON converter with custom attribute prefixes. |
+| Text Statistics & Readability Analyzer | Analyze word counts, reading time, keyword density, and Flesch-Kincaid readability. |
 
 </details>
 
 <details>
-<summary><strong>Files & Archives</strong> — 4 tools</summary>
+<summary><strong>Files & Archives</strong> — 8 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -103,11 +108,15 @@ works without them.
 | ZIP Creator | Pack any mix of files into one archive |
 | ZIP Extractor | Extract archives with zip-slip protection |
 | Batch Rename | Pattern-based bulk renaming with dry-run preview |
+| Archive Inspector | Inspect, search, and preview files inside .zip, .rar, .7z, and .tar archives in-memory without extracting them to disk. |
+| Duplicate File & Hash Matcher | Find identical duplicate files by size and SHA-256 hash to reclaim disk space. |
+| Disk Space & Folder Tree Analyzer | Inspect storage distribution, media category breakdown, and largest files. |
+| File Checksum Signature Verifier | Verify file integrity using SHA-256, SHA-512, and standard .sha256sum files. |
 
 </details>
 
 <details>
-<summary><strong>Images</strong> — 6 tools</summary>
+<summary><strong>Images</strong> — 13 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -117,11 +126,18 @@ works without them.
 | EXIF Inspector | Camera, lens, exposure, date, GPS metadata |
 | Image Watermarker | Batch text stamps with position and opacity control |
 | Social Preset Resizer | og:image, X card, Instagram, YouTube — smart crop |
+| SVG & Vector Studio **BETA** | Design vector shapes, graphics, and icons with live code generation and multi-format export. |
+| Image → ASCII Art Converter **BETA** | Convert photos and graphics into customizable ASCII & ANSI text art. |
+| Image Color Palette & Swatch Extractor | Extract dominant color palettes with WCAG contrast ratios, CSS variables, and Tailwind export. |
+| Image Slicer & Grid Splitter | Split images into tiles; download individual images or a ZIP. |
+| Contact Sheet & Collage Grid Builder | Combine multiple images into high-resolution photo contact sheets and collages. |
+| CSS & Vector Gradient Studio | Design gradients; copy CSS/SVG or download a PNG. |
+| ID & Passport Photo Studio | Scale, crop, and tile portrait photos onto printable 1x1, 2x2, and passport sheets with cutting guides ready for Word and PDF export. |
 
 </details>
 
 <details>
-<summary><strong>Documents & PDF</strong> — 9 tools</summary>
+<summary><strong>Documents & PDF</strong> — 13 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -134,14 +150,19 @@ works without them.
 | Images → PDF | One natural-size page per JPG/PNG |
 | PDF → Images | Every page rendered to PNG/JPEG, packed into a ZIP |
 | PDF → Text | Extract searchable text, save as `.txt` |
+| Image OCR Extractor | Extract editable text from images, photos, scans, and screenshots locally using offline Tesseract OCR. |
+| PDF Page Numberer & Bates Stamper | Stamp sequential page numbers, Bates numbers, and custom headers onto PDF pages. |
+| PDF Watermarker & Stamp Applier | Stamp confidential watermarks and diagonal text stamps across PDF documents. |
+| Markdown / Text → PDF Exporter | Render formatted Markdown notes and specifications into paginated vector PDF documents. |
 
 </details>
 
 <details>
-<summary><strong>Video & Audio</strong> — 5 tools · FFmpeg-powered</summary>
+<summary><strong>Video & Audio</strong> — 7 tools · 5 FFmpeg-backed, 2 Web Audio</summary>
 
-Every output is re-probed after processing — container type and duration must
-check out before the result reaches you.
+Video Converter, Video Compressor, Video → GIF, Audio Extractor and Audio Converter
+use FFmpeg. Audio Trimmer and Audio Normalizer use Web Audio instead. FFmpeg-backed
+converters validate outputs after processing; format support depends on the tool.
 
 | Tool | What it does |
 |---|---|
@@ -150,11 +171,13 @@ check out before the result reaches you.
 | Video → GIF | Two-pass palette-optimized GIFs |
 | Audio Extractor | Pull soundtracks as AAC / MP3 / WAV / FLAC / Opus |
 | Audio Converter | Convert between the same codecs |
+| Audio Waveform Visualizer & Trimmer | Visual waveform scrubber with start/end markers, fade envelopes, and lossless WAV export. |
+| Audio Loudness & Volume Normalizer | Adjust gain to a target peak or RMS level in dBFS using Web Audio; not integrated LUFS/EBU R128 normalization. |
 
 </details>
 
 <details>
-<summary><strong>Developer</strong> — 16 tools</summary>
+<summary><strong>Developer</strong> — 21 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -174,18 +197,66 @@ check out before the result reaches you.
 | JSON → TypeScript | Paste JSON, get clean interface definitions |
 | QR Decoder | Drop an image, read the code |
 | QR Code Generator | Scannable codes, copy-image or save-to-PNG |
+| cURL ⇄ Multi-Language Code Generator | Convert cURL commands into JavaScript Fetch, Axios, Python Requests, Go, Rust, and PHP. |
+| JSON Schema Validator & Generator | Generate JSON Schema Draft-07 from sample payloads and validate data live. |
+| Chmod & Unix Permission Calculator | Interactive 3x3 permission matrix with octal, symbolic, and natural language explainers. |
+| Cryptographic Keypair Generator | Generate RSA 2048/4096 and ECDSA P-256/384 keypairs with PEM export. |
+| SemVer Calculator & Range Tester | Calculate SemVer 2.0 bumps, test version ranges (^, ~), and sort version lists. |
 
 </details>
 
 <details open>
-<summary><strong>Prompt Library & Brand Studio</strong> — 2 tools · local, no AI API</summary>
+<summary><strong>Prompts, Brand & Local AI</strong> — 4 tools · local-first</summary>
 
 | Tool | What it does |
 |---|---|
 | Prompt Library | Reusable prompts with `{{variables}}` you fill before copying — search, tags, starter pack, JSON import/export |
 | Brand Bible Creator | Compose a brand guide: colors with auto palettes and contrast, type scale, voice, usage rules — export as Markdown/JSON |
+| Token & Context Studio | Offline BPE token counter, context window visualizer, and local LLM API cost estimator. |
+| Local LLM Playground & Benchmark **BETA** | Chat, test prompts, and benchmark local Ollama and LM Studio models on your hardware with real-time tokens/sec telemetry. |
 
 </details>
+
+## Queue Workflow — BETA
+
+Open **Queue** to arrange tools on a visual canvas, connect file/text ports,
+load built-in recipes, and save or import/export workflows. A linear queue view
+is also available.
+
+- **Directional media-domain validation:** Audio Extractor → Icon Pack is rejected;
+  Image Compressor → Icon Pack is allowed. Sidebar category does not determine compatibility.
+- **Saved/imported graph preflight:** connections are rechecked before any node starts.
+- **Exhaustive static audit:** 78 tools, 6,084 ordered pairs and **24,336 port combinations**.
+  See the [compatibility matrix](docs/workflow-audit/COMPATIBILITY_MATRIX.md).
+
+> **BETA limits:** pipeline execution is still simulated; this is not real processor
+> chaining. Valid wires do not guarantee codec/extension or text-content compatibility.
+> The legacy Photo ID recipe loads for editing but its mixed-output connection fails
+> preflight. Linear Queue still uses its separate capability-only validator.
+> See [audit scope and limitations](docs/workflow-audit/README.md).
+
+After adding or changing a tool, update its capabilities, media domains and independently
+reviewed audit fixture, then run:
+
+```bash
+npm run workflow:matrix        # Run workflow tests; regenerate Markdown and CSVs
+npm run workflow:matrix:check  # Run validation; fail on missing/stale artifacts without rewriting them
+```
+
+These are developer/agent commands, not required at app startup. AGENTS.md mandates
+them for tool integration; there is no automatic Git hook or CI job installed.
+
+## Tool #78: Local LLM Playground & Benchmark — BETA
+
+Chat with local models, try system prompts and generation settings, and inspect
+throughput (tokens/sec) and time to first token. The default endpoints are
+**Ollama** (`http://localhost:11434`) and **LM Studio** (`http://localhost:1234`).
+Start your chosen server and load a model separately; Stash does not bundle model weights.
+
+An **Offline Simulation Sandbox** lets you explore the interface without a running
+model server. Its responses and benchmark numbers are simulated, not hardware results.
+Real inference sends prompts to the selected endpoint; keep it local for local-only use.
+Endpoint compatibility and benchmark behavior remain experimental.
 
 ## Under the hood
 
@@ -205,7 +276,8 @@ Main process
 ```
 
 - **Registry-driven shell** — tools register a definition + lazy view in one
-  file; the shell never imports tool internals. Tool #51 touches nothing else.
+  file; the shell never imports tool internals. New tools also update tests,
+  capability/domain declarations and documentation.
 - **Structured errors end-to-end** — every thrown value crosses the boundary
   as a user-safe message with technical detail preserved for power users.
 - **Mature libraries for hard formats** — sharp, jszip, pdf-lib, pdf.js,
@@ -216,7 +288,7 @@ Main process
 
 Verification is treated as part of correctness here:
 
-- **553 unit/integration tests**, including suites that generate real PDFs,
+- **Vitest unit/integration tests**, including suites that generate real PDFs,
   images and videos at runtime and assert on actual outputs.
 - **Two CDP harnesses** launch the production build and drive the *real* DOM —
   clicking favorites, navigating views, dragging actual files — asserting
@@ -243,8 +315,8 @@ Verification is treated as part of correctness here:
 
 ## Status
 
-All planned milestones complete and engineering-verified. The suite grows by
-usage: new tools slot into the registry without touching the core. See
+78 tools are registered. Queue Workflow and selected tools remain **BETA**;
+visual pipeline execution is simulated, not production processor chaining. See
 [`TASKS.md`](TASKS.md) for what's brewing.
 
 <div align="center">

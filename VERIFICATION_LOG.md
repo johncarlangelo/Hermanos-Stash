@@ -1,5 +1,10 @@
 # Hermanos Stash — Verification Log
 
+## Root README catalog and BETA documentation refresh
+
+Documentation-only update on main. Checked README category rows sum to 78 (12 text, 8 files, 13 images, 13 documents, 7 video/audio, 21 developer, 4 prompts/local AI). All four registry BETA tools are labeled. All local README Markdown links resolve. `npm run workflow:matrix:check` passed with changed=0; full Vitest suite passed 917 tests across 92 files; typecheck, lint and `git diff --check` passed. Runtime code unchanged; no new UI execution claims. Independent documentation review recorded in PROGRESS.md upon completion.
+
+
 ## Generated compatibility Markdown maintenance
 
 `npm run workflow:matrix` generates 6,084 explicit pair rows with all four port verdicts (24,336 total), summaries and inventory. Independently parsed every Markdown verdict against exported CSV. Repeated generation was unchanged. Deliberately stale Markdown made `workflow:matrix:check` exit 1 without rewriting tracked artifacts; restored content passed with changed=0. Counts derive from catalog size and reject missing oracle entries. Tests export to temporary storage so failed generation cannot publish unverified artifacts. AGENTS.md updated with mandatory tool integration steps and current domain ownership. Version advanced to 0.3.1 per feature contract. No CI hook installed; no push/merge.

@@ -1,5 +1,9 @@
 # Hermanos Stash â€” Task Board
 
+## README maintenance
+
+- [x] Refresh root README from the 78-tool registry, document Queue Workflow and Local LLM Playground BETA limitations, and require README updates in AGENTS.md. Catalog totals, local links and matrix freshness verified; independent review finding corrected and re-review passed 5/5.
+
 Legend:
 
 - `[ ]` not started

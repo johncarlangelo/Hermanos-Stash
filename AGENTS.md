@@ -157,6 +157,7 @@ After implementation:
 - run the broader verification suite before declaring completion;
 - execute the inspection loop (`GREPLOOP.md`) until a clean 5/5 score is achieved;
 - update `TOOL_CATALOG.md` and `TOOL_SPEC.md` whenever tools are added or modified;
+- update the root `README.md` in the same change whenever a tool is added, removed, renamed, recategorized or materially changed: reconcile headline/badge/catalog/category/shortcut counts against `src/renderer/tools/index.ts`, add or revise its catalog entry, preserve BETA labels, and document prerequisites and known limitations. Update feature sections when Queue Workflow or other user-facing behavior changes; never describe simulated execution as real processing. Verify local Markdown links and catalog totals before committing. This is a required agent checklist step, not an automatically executed hook;
 - verify and register tool compatibility/incompatibility in the Queue Workflow engine (`execution.ts`) and add test coverage in `workflow.test.ts` whenever tools are added or modified;
 - update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
