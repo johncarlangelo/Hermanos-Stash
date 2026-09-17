@@ -7,126 +7,36 @@
 
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
+import { fileInputDomain, fileOutputDomain } from '../../../shared/utils/tool-domains'
 import type { WorkflowExecutionResult, WorkflowGraph, WorkflowNode } from './types'
 
-/**
- * Checks domain compatibility between two file-producing/consuming tools.
- */
+/** Directional media compatibility, independent of sidebar categories. */
 export function areFileCategoriesCompatible(
   fromTool: ToolDefinition,
   toTool: ToolDefinition
 ): { compatible: boolean; reason?: string } {
-  // General file tools (archives, checksum, file metadata) accept and produce arbitrary files
-  if (fromTool.category === 'files' || toTool.category === 'files') {
+  const output = fileOutputDomain(fromTool.id)
+  const input = fileInputDomain(toTool.id)
+  if (
+    !fromTool.capabilities.producesFiles ||
+    !toTool.capabilities.acceptsFiles ||
+    !output ||
+    !input
+  ) {
+    return {
+      compatible: false,
+      reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": missing file capability or audited media domain.`
+    }
+  }
+  // Universal CONSUMERS can inspect any file. Unknown/mixed outputs cannot
+  // safely feed a specialized processor without inspecting actual artifacts.
+  if (input === 'any' || (output !== 'any' && output === input)) {
     return { compatible: true }
   }
-
-  // Cross-domain conversion bridges
-  if (fromTool.id === 'pdf-to-images' && toTool.category === 'images') {
-    return { compatible: true }
+  return {
+    compatible: false,
+    reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": produces ${output} files; requires ${input} files. Select or extract compatible artifacts first.`
   }
-  if (fromTool.category === 'images' && toTool.id === 'images-to-pdf') {
-    return { compatible: true }
-  }
-  if (fromTool.id === 'extract-audio' && toTool.category === 'audio') {
-    return { compatible: true }
-  }
-  if (fromTool.category === 'video' && toTool.id === 'extract-audio') {
-    return { compatible: true }
-  }
-  if (fromTool.id === 'video-to-gif' && toTool.category === 'images') {
-    return { compatible: true }
-  }
-
-  // Audio tools require audio file inputs
-  if (toTool.category === 'audio') {
-    if (fromTool.category === 'images') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": audio tools require audio file inputs, but "${fromTool.name}" produces images.`
-      }
-    }
-    if (fromTool.category === 'documents') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": audio tools require audio file inputs, but "${fromTool.name}" produces documents.`
-      }
-    }
-    if (fromTool.category === 'video' && toTool.id !== 'extract-audio') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": "${toTool.name}" requires audio file inputs, but "${fromTool.name}" produces video. Connect to "Audio Extractor" first.`
-      }
-    }
-  }
-
-  // Video tools require video file inputs
-  if (toTool.category === 'video') {
-    if (fromTool.category === 'audio') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces audio.`
-      }
-    }
-    if (fromTool.category === 'images') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces images.`
-      }
-    }
-    if (fromTool.category === 'documents') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": video tools require video file inputs, but "${fromTool.name}" produces documents.`
-      }
-    }
-  }
-
-  // Image tools require image file inputs
-  if (toTool.category === 'images') {
-    if (fromTool.category === 'audio') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces audio.`
-      }
-    }
-    if (fromTool.category === 'video' && fromTool.id !== 'video-to-gif') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces video. Use "Video → GIF" first.`
-      }
-    }
-    if (fromTool.category === 'documents' && fromTool.id !== 'pdf-to-images') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": image tools require image file inputs, but "${fromTool.name}" produces documents. Use "PDF → Images" first.`
-      }
-    }
-  }
-
-  // Document tools require PDF or document files
-  if (toTool.category === 'documents') {
-    if (fromTool.category === 'audio') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF or document files, but "${fromTool.name}" produces audio.`
-      }
-    }
-    if (fromTool.category === 'video') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF or document files, but "${fromTool.name}" produces video.`
-      }
-    }
-    if (fromTool.category === 'images' && toTool.id !== 'images-to-pdf') {
-      return {
-        compatible: false,
-        reason: `Cannot connect "${fromTool.name}" to "${toTool.name}": document tools require PDF files, but "${fromTool.name}" produces images. Use "Images → PDF" first.`
-      }
-    }
-  }
-
-  return { compatible: true }
 }
 
 /**
@@ -309,6 +219,25 @@ export async function runWorkflowPipeline(
   }
 ): Promise<WorkflowExecutionResult> {
   const startTime = Date.now()
+  // Saved/imported graphs bypass wire gestures: validate before any callbacks
+  // or processing. Never silently run a connection the canvas would reject.
+  const auditedNodes = new Map<string, ToolDefinition>()
+  for (const node of graph.nodes) {
+    if (auditedNodes.has(node.id)) throw new Error(`Duplicate workflow node: ${node.id}`)
+    const tool = toolRegistry.get(node.toolId)
+    if (!tool) throw new Error(`Unknown workflow tool: ${node.toolId}`)
+    auditedNodes.set(node.id, tool)
+  }
+  for (const edge of graph.edges) {
+    const from = auditedNodes.get(edge.fromNodeId)
+    const to = auditedNodes.get(edge.toNodeId)
+    if (!from || !to) throw new Error(`Workflow edge ${edge.id} references a missing node.`)
+    if (!['files', 'text'].includes(edge.fromPort) || !['files', 'text'].includes(edge.toPort)) {
+      throw new Error(`Unsupported workflow port on edge ${edge.id}.`)
+    }
+    const validation = validateEdge(from, to, edge.fromPort, edge.toPort)
+    if (!validation.valid) throw new Error(validation.reason ?? 'Incompatible workflow edge.')
+  }
   const { sortedNodeIds, hasCycle } = topologicalSort(graph)
 
   if (hasCycle) {

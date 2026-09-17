@@ -95,19 +95,26 @@ Whenever adding a new tool or modifying an existing tool in `src/renderer/tools/
    - `supportsBatch?: boolean` / `supportsProgress?: boolean` / `supportsCancellation?: boolean`
    Never leave file or text capabilities unstated. The Visual Queue Workflow dynamically derives port types (files vs. text anchors) from these flags.
 
-2. **Domain vs. UI Category Disambiguation (`execution.ts`):**
-   - **CRITICAL RULE:** Never rely solely on `tool.category` for media file compatibility. A tool categorized under `developer`, `documents`, or `text` for desktop sidebar navigation may actually consume or produce `images` (e.g. `icon-pack` and `qr-decoder` are in `developer`, but strictly consume image files; `image-ocr` is in `documents`, but consumes images).
-   - Whenever introducing a tool that accepts or produces files:
-     - Determine its true media domain (`images`, `audio`, `video`, `documents`, or universal `files`).
-     - Update `areFileCategoriesCompatible` in `src/renderer/features/workflow/execution.ts` to enforce valid input/output domains.
-     - Ensure the new tool cannot be connected to incompatible media sources (e.g., audio files must NEVER connect to image-consuming or document-consuming tools, and vice-versa).
-     - If the tool is an intentional cross-domain converter bridge (e.g., `extract-audio` for video → audio, `pdf-to-images` for document → image, `image-ocr` for image → text), explicitly register its bridge exemption in `execution.ts`.
-     - Never let a tool fall through to `{ compatible: true }` by default if it cannot process arbitrary file formats.
+2. **Domain vs. UI Category Disambiguation (`tool-domains.ts`):**
+   - Never infer file compatibility from sidebar category: Icon Pack / QR Decoder consume images despite their `developer` category.
+   - Review actual input and export handlers, then update `TOOL_FILE_DOMAINS` in `src/shared/utils/tool-domains.ts`. Its directional entries drive `areFileCategoriesCompatible` in `execution.ts`; do not add category fallbacks or bridge exemptions.
+   - Domains: `image`, `audio`, `video`, `document` (PDF), `archive`, `textfile`, `any`. Input `any` means universal consumer; output `any` means mixed/unknown, not universally compatible.
+   - Model bridges per side: Audio Extractor is video → audio; PDF → Images is document → archive (ZIP). Image Slicer exports individual images or ZIP, so its unselected output is mixed (`any`).
+   - Keep missing domains fail-closed. Text outputs use text capability flags; same-domain compatibility does not guarantee matching codecs or actual processor execution.
 
 3. **Mandatory Compatibility Test Coverage (`workflow.test.ts`):**
    - When introducing or altering a tool, add unit tests in `src/renderer/features/workflow/workflow.test.ts`:
      - Test valid connections to/from appropriate domain tools.
      - Test rejection of incompatible connections with clear warning messages.
+
+4. **Generated matrix maintenance (mandatory for every new/changed tool):**
+   - Independently update `AUDIT_ROWS` and receiver groups in `src/renderer/features/workflow/compatibility-audit.ts`. Do not derive expected classifications from the production domain table.
+   - Run `npm run workflow:matrix`: tests export into a temporary directory first; only a passing run publishes `docs/workflow-audit/COMPATIBILITY_MATRIX.md`, `tools.csv`, and `compatibility.csv`. Do not hand-edit verdicts.
+   - Run `npm run workflow:matrix:check` before completing a tool change. This read-only check exits nonzero for missing/stale artifacts. Counts scale automatically with the catalog: N² pairs, 4N² port combinations. Registry membership checks reject any missing audit entry.
+   - Review and commit all three generated files with the tool change; update TASKS.md and verification evidence. Cover both incoming and outgoing connections.
+   - Regenerate after changes to capabilities, domains, audit expectations, workflow version or rejection messages.
+   - This command is CI-ready, but no CI workflow or automatic Git hook is currently configured. Until one is installed, running it is a mandatory developer/agent checklist step.
+   - Retain the documented limits: static ports/media domains are not codec/content checks or proof of real processor execution.
 
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
@@ -117,7 +124,7 @@ Whenever adding a new tool or modifying an existing tool in `src/renderer/tools/
 > This feature version tag is an interim testing mechanism while the workflow engine undergoes rapid user testing and refinement; once testing is completed and the feature is stabilized, this version tag and incrementation rule will be cleanly removed.
 
 1. **Canonical Version Source**:
-   - Defined in [`version.ts`](file:///d:/Comsci%20things/Hermanos%20Stash/src/renderer/features/workflow/version.ts) as `export const QUEUE_WORKFLOW_VERSION = '0.1.0'`.
+   - Defined by `QUEUE_WORKFLOW_VERSION` in `src/renderer/features/workflow/version.ts`; read that file for its current value rather than duplicating a stale version example here.
    - Rendered across workflow view headers (`WorkflowToolbar.tsx`, `QueueView.tsx`) alongside the canonical amber `BETA` pill.
 2. **Mandatory Incrementation on Every Push (Queue Workflow Only)**:
    Every pull request or commit that modifies files under `src/renderer/features/workflow/` or affects Queue Workflow behavior MUST increment `QUEUE_WORKFLOW_VERSION` according to strict Semantic Versioning:

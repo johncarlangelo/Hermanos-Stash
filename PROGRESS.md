@@ -1,5 +1,16 @@
 # Hermanos Stash — Progress
 
+## Workflow matrix reference (local v0.3.1)
+
+Added `docs/workflow-audit/COMPATIBILITY_MATRIX.md`: all four verdicts for every ordered pair. Regenerate using `npm run workflow:matrix`; verify freshness using `npm run workflow:matrix:check`. Catalog counts now scale automatically. AGENTS.md requires both commands and reviewed oracle/domain updates when integrating tools. No push or merge.
+
+
+## Local branch candidate — workflow v0.3.0
+
+Semantic wire compatibility now audited across 78 tools (6,084 ordered pairs), with conservative container/mixed-output handling and saved-graph preflight. 917 tests / 92 files, typecheck, lint and build pass; built-renderer wire rejection/acceptance probe passes. No push or merge; user QA pending. Details and known limits: `docs/workflow-audit/README.md`.
+
+**Correction to older completion wording below:** canvas `executeStep` and linear-queue invokers are still simulations. This audit does not implement real processor chaining. The legacy Photo ID recipe now rejects its mixed-output wire before execution.
+
 ## Current milestone
 
 **Queue Workflow View & Visual Pipeline Orchestrator complete.**

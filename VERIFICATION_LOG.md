@@ -1,5 +1,27 @@
 # Hermanos Stash — Verification Log
 
+## Generated compatibility Markdown maintenance
+
+`npm run workflow:matrix` generates 6,084 explicit pair rows with all four port verdicts (24,336 total), summaries and inventory. Independently parsed every Markdown verdict against exported CSV. Repeated generation was unchanged. Deliberately stale Markdown made `workflow:matrix:check` exit 1 without rewriting tracked artifacts; restored content passed with changed=0. Counts derive from catalog size and reject missing oracle entries. Tests export to temporary storage so failed generation cannot publish unverified artifacts. AGENTS.md updated with mandatory tool integration steps and current domain ownership. Version advanced to 0.3.1 per feature contract. No CI hook installed; no push/merge.
+
+
+## 2026-09-18 — Image Slicer audit correction
+
+Source confirms individual image downloads and ZIP exports (`ImageSlicerTool.tsx:112-140`). Classified output as mixed/unknown until selected, consistent with ID Photo Studio. Regression failed archive-vs-any before fix. Regenerated full matrix: 6,084 pairs, 450 file links, 1,148 text links. Full suite 917 tests / 92 files passed; typecheck, lint, build passed. Existing UI probe evidence predates this narrow correction; no new UI probe claimed.
+
+## 2026-09-18 — local workflow v0.3.0 compatibility candidate
+
+- Branch: `union-alpha/feature-validator`; no push/merge, human approval pending.
+- `npm test`: **916 tests / 92 files passed**. SQLite experimental warnings only.
+- `npm run typecheck`: passed. `npm run lint`: passed. `npm run build`: passed.
+- Exhaustive independent oracle: 78 tools, 6,084 directed pairs, four port combinations each. CSV export verified as 6,084 unique pairs; 452 file links and 1,148 text links.
+- RED evidence: semantic matrix exposed 31 mismatched producer rows (binary -> Token Counter, ZIP exports -> images, mixed ID outputs). Seven preflight regressions failed because invalid graphs ran successfully or yielded the wrong error; all pass after gate. Earlier missing-import/syntax failures were not valid RED evidence and are not claimed as such.
+- Built-renderer DOM probe: `node scripts/e2e-workflow-compatibility.mjs` passed twice. Latest evidence `.hermes/workflow-compatibility-1789663861718/results.json`: audio -> Icon Pack rejected (0 wires), image -> Icon Pack accepted (1 wire), correct preview/toast, zero console errors/exceptions, isolated data folder verified, child cleanup exit 0.
+- Review: independent architecture reviewer scored initial implementation 4/5, finding imported/template graphs bypassed the gate. Fixed with pre-run registry, endpoint, port, domain and duplicate-node checks; regression tests pass. No independent re-review/5-of-5 claimed.
+- Limitations and reproducible commands: `docs/workflow-audit/README.md`. Domain matching is not codec matching; execution remains simulated, linear queue unchanged, legacy Photo ID recipe now blocked at run time.
+- User visual/native-input QA remains open.
+
+
 Per-tool evidence against `TOOL_SPEC.md` ("Adding a tool checklist", standard
 states) and `VERIFY.md` ("Tool verification", "UX checks"). Maintained for every
 future tool batch.
