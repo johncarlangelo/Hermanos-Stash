@@ -1,5 +1,10 @@
 # Hermanos Stash — Verification Log
 
+## Generated compatibility Markdown maintenance
+
+`npm run workflow:matrix` generates 6,084 explicit pair rows with all four port verdicts (24,336 total), summaries and inventory. Independently parsed every Markdown verdict against exported CSV. Repeated generation was unchanged. Deliberately stale Markdown made `workflow:matrix:check` exit 1 without rewriting tracked artifacts; restored content passed with changed=0. Counts derive from catalog size and reject missing oracle entries. Tests export to temporary storage so failed generation cannot publish unverified artifacts. AGENTS.md updated with mandatory tool integration steps and current domain ownership. Version advanced to 0.3.1 per feature contract. No CI hook installed; no push/merge.
+
+
 ## 2026-09-18 — Image Slicer audit correction
 
 Source confirms individual image downloads and ZIP exports (`ImageSlicerTool.tsx:112-140`). Classified output as mixed/unknown until selected, consistent with ID Photo Studio. Regression failed archive-vs-any before fix. Regenerated full matrix: 6,084 pairs, 450 file links, 1,148 text links. Full suite 917 tests / 92 files passed; typecheck, lint, build passed. Existing UI probe evidence predates this narrow correction; no new UI probe claimed.

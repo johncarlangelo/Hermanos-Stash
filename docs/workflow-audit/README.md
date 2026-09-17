@@ -1,5 +1,14 @@
 # Workflow compatibility audit — local v0.3.0 candidate
 
+## Generated Markdown reference
+
+[COMPATIBILITY_MATRIX.md](./COMPATIBILITY_MATRIX.md) lists all four port verdicts for every ordered pair, grouped by source.
+
+- `npm run workflow:matrix`: runs workflow tests against the live registry and independent audit fixture in a temporary directory, then publishes the Markdown and both CSVs.
+- `npm run workflow:matrix:check`: runs the same validation, compares generated content and exits nonzero for missing/stale artifacts; never rewrites tracked files.
+- For a new tool: declare registry capabilities, classify actual input/output domains, update the independent audit fixture and receiver groups, then run both commands. N² / 4N² counts grow automatically; missing fixture entries fail registry checks.
+- Commit all three generated files with the tool change. AGENTS.md mandates this process. No CI workflow or Git hook is currently installed; the check command is ready to be added to CI.
+
 ## Scope and reproducibility
 
 The registry contains 78 tools. `tools.csv` records each tool's declared file and text ports plus independently reviewed file-domain expectations. `compatibility.csv` contains **6,084 unique ordered tool pairs**. There are 450 permitted file-port links and 1,148 permitted text-port links at this abstraction level.

@@ -15,6 +15,8 @@
     "lint": "eslint .",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "test": "vitest run",
+    "workflow:matrix": "node scripts/generate-compatibility-doc.mjs",
+    "workflow:matrix:check": "node scripts/generate-compatibility-doc.mjs --check",
     "test:watch": "vitest",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"

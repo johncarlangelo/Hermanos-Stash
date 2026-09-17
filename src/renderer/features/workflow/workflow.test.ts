@@ -309,7 +309,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.0')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.1')
     })
   })
 
@@ -333,8 +333,8 @@ describe('Workflow Pipeline Execution Engine', () => {
   })
 })
 
-describe('78-tool compatibility audit', () => {
-  it('exports the verified 78 x 78 checklist on explicit request', () => {
+describe('catalog compatibility audit', () => {
+  it('exports the verified N x N checklist on explicit request', () => {
     const rows = AUDIT_ROWS.flatMap((from) =>
       AUDIT_ROWS.map((to) => {
         const expected = expectedAuditPorts(from, to)
@@ -364,9 +364,9 @@ describe('78-tool compatibility audit', () => {
         }
       })
     )
-    expect(rows).toHaveLength(6084)
+    expect(rows).toHaveLength(toolRegistry.all().length ** 2)
     if (process.env.STASH_EXPORT_COMPATIBILITY === '1') {
-      const dir = path.resolve('docs/workflow-audit')
+      const dir = path.resolve(process.env.STASH_COMPATIBILITY_OUTPUT_DIR ?? 'docs/workflow-audit')
       mkdirSync(dir, { recursive: true })
       const quote = (value: unknown) => `"${String(value).replaceAll('"', '""')}"`
       const fields = ['from', 'to', 'files', 'text', 'fileReason', 'textReason'] as const
@@ -395,7 +395,7 @@ describe('78-tool compatibility audit', () => {
     }
   })
   it('covers each registered tool exactly once with matching port declarations', () => {
-    expect(AUDIT_ROWS).toHaveLength(78)
+    expect(AUDIT_ROWS).toHaveLength(toolRegistry.all().length)
     expect(AUDIT_ROWS.map((r) => r.id).sort()).toEqual(
       toolRegistry
         .all()
@@ -411,7 +411,7 @@ describe('78-tool compatibility audit', () => {
     }
   })
 
-  it.each(AUDIT_ROWS)('checks every destination for $id (78 x 4 port combinations)', (from) => {
+  it.each(AUDIT_ROWS)('checks every destination for $id (N x 4 port combinations)', (from) => {
     for (const to of AUDIT_ROWS) {
       const expected = expectedAuditPorts(from, to)
       for (const sourcePort of ['files', 'text'] as const) {
