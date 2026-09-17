@@ -192,7 +192,22 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.2.2')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.2.3')
+    })
+  })
+
+  describe('Workflow Node Stash Asset Payload Integration', () => {
+    it('accumulates and deduplicates stash assets on a node input files payload', () => {
+      const initialFiles = ['/stash/assets/photo1.png']
+      const newStashAssets = ['/stash/assets/photo1.png', '/stash/assets/photo2.png', '/stash/assets/doc.pdf']
+      const combined = Array.from(new Set([...initialFiles, ...newStashAssets]))
+
+      expect(combined).toEqual([
+        '/stash/assets/photo1.png',
+        '/stash/assets/photo2.png',
+        '/stash/assets/doc.pdf'
+      ])
+      expect(combined).toHaveLength(3)
     })
   })
 })

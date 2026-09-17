@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
+  Boxes,
   CheckCircle2,
   FileCode,
   Layers,
@@ -17,8 +18,12 @@ import {
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getCategory } from '../../../shared/constants/categories'
 import { getIcon } from '../../components/icons'
+import type { AssetRecord } from '../../../shared/ipc'
+import { formatBytes } from '../../../shared/utils/files'
+import { toastSuccess } from '../../stores/toasts'
 import { executeStep } from './execution'
 import type { WorkflowGraph, WorkflowNode } from './types'
+import { WorkflowStashPickerModal } from './WorkflowStashPickerModal'
 
 interface WorkflowNodeDetailDrawerProps {
   open: boolean
@@ -41,22 +46,112 @@ export function WorkflowNodeDetailDrawer({
   onUpdateInputs,
   onDisconnectEdge
 }: WorkflowNodeDetailDrawerProps) {
-  const node: WorkflowNode | undefined = useMemo(() => {
+  // Retain the last non-empty node and tool while animating out
+  const lastNodeRef = useRef<WorkflowNode | null>(null)
+  const lastToolRef = useRef<ReturnType<typeof toolRegistry.get> | null>(null)
+
+  const currentNode = useMemo(() => {
     if (!nodeId) return undefined
     return graph.nodes.find((n) => n.id === nodeId)
   }, [graph.nodes, nodeId])
 
-  const tool = useMemo(() => {
-    if (!node) return undefined
-    return toolRegistry.get(node.toolId)
-  }, [node])
+  const currentTool = useMemo(() => {
+    if (!currentNode) return undefined
+    return toolRegistry.get(currentNode.toolId)
+  }, [currentNode])
+
+  if (currentNode && currentTool) {
+    lastNodeRef.current = currentNode
+    lastToolRef.current = currentTool
+  }
+
+  const node = currentNode || (open ? undefined : (lastNodeRef.current ?? undefined))
+  const tool = currentTool || (open ? undefined : (lastToolRef.current ?? undefined))
+
+  // Animation in/out lifecycle
+  const hasNode = Boolean(node)
+  const [isRendered, setIsRendered] = useState(open && hasNode)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    let raf: number
+
+    if (open && hasNode) {
+      setIsRendered(true)
+      raf = requestAnimationFrame(() => {
+        setIsVisible(true)
+      })
+    } else {
+      setIsVisible(false)
+      timer = setTimeout(() => {
+        setIsRendered(false)
+      }, 240)
+    }
+
+    return () => {
+      clearTimeout(timer)
+      cancelAnimationFrame(raf)
+    }
+  }, [open, hasNode])
 
   const category = useMemo(() => {
     if (!tool) return undefined
     return getCategory(tool.category)
   }, [tool])
 
+  const recommendedCategory = useMemo(() => {
+    if (!tool) return undefined
+    switch (tool.category) {
+      case 'images':
+        return 'image'
+      case 'documents':
+        return 'document'
+      case 'audio':
+        return 'audio'
+      case 'video':
+        return 'video'
+      case 'files':
+        return 'archive'
+      case 'developer':
+      case 'text':
+        return 'code'
+      default:
+        return undefined
+    }
+  }, [tool])
+
   const Icon = tool ? getIcon(tool.icon) : Sliders
+
+  // Stash / Gallery Quick Access state
+  const [stashPickerOpen, setStashPickerOpen] = useState(false)
+  const [recentStashAssets, setRecentStashAssets] = useState<AssetRecord[]>([])
+
+  useEffect(() => {
+    if (open && window.stash?.assets?.list) {
+      window.stash.assets
+        .list({ limit: 6 })
+        .then((items) => setRecentStashAssets(items))
+        .catch(() => setRecentStashAssets([]))
+    }
+  }, [open, node?.id])
+
+  const handleAttachFromStash = (filePaths: string[]) => {
+    if (!node) return
+    const existing = node.inputFiles || []
+    const combined = Array.from(new Set([...existing, ...filePaths]))
+    onUpdateInputs(node.id, { inputFiles: combined })
+    toastSuccess(`Attached ${filePaths.length} asset(s) from Stash`)
+  }
+
+  const handleAttachSingleStashAsset = (filePath: string) => {
+    if (!node) return
+    const existing = node.inputFiles || []
+    if (existing.includes(filePath)) return
+    const combined = [...existing, filePath]
+    onUpdateInputs(node.id, { inputFiles: combined })
+    toastSuccess('Attached asset from Stash')
+  }
 
   // Local state for label editing
   const nodeLabel = node?.customLabel || tool?.name || node?.toolId || ''
@@ -89,9 +184,10 @@ export function WorkflowNodeDetailDrawer({
   const hasIncomingFileEdge = incomingEdges.some((e) => e.fromPort === 'files')
   const hasIncomingTextEdge = incomingEdges.some((e) => e.fromPort === 'text')
 
-  if (!node || !tool) {
+  if (!isRendered || !node || !tool) {
     return null
   }
+
 
   const acceptsFiles = tool.capabilities.acceptsFiles
   const acceptsText = tool.capabilities.acceptsText
@@ -220,13 +316,14 @@ export function WorkflowNodeDetailDrawer({
   }
 
   return (
-    <div
-      className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out transform ${
-        open
-          ? 'translate-x-0 opacity-100 pointer-events-auto scale-100'
-          : 'translate-x-12 opacity-0 pointer-events-none scale-95'
-      }`}
-    >
+    <>
+      <div
+        className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl transition-all duration-240 ease-[cubic-bezier(0.22,1,0.36,1)] transform ${
+          isVisible
+            ? 'translate-x-0 opacity-100 pointer-events-auto scale-100'
+            : 'translate-x-16 opacity-0 pointer-events-none scale-[0.98]'
+        }`}
+      >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-line px-4 py-3 bg-surface/60 rounded-t-xl shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -263,6 +360,16 @@ export function WorkflowNodeDetailDrawer({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {acceptsFiles && (
+            <button
+              type="button"
+              onClick={() => setStashPickerOpen(true)}
+              className="cursor-pointer rounded-lg p-1.5 text-faint hover:text-accent hover:bg-surface transition-colors"
+              title="Quick access to Stash / Gallery assets"
+            >
+              <Boxes size={15} />
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -524,15 +631,24 @@ export function WorkflowNodeDetailDrawer({
                   <div className="text-center py-2 space-y-1">
                     <UploadCloud size={20} className="mx-auto text-faint" />
                     <p className="text-[11px] text-dim">
-                      Drag and drop files here, or pick directly
+                      Drag and drop files here, or attach directly
                     </p>
-                    <button
-                      type="button"
-                      onClick={handlePickFiles}
-                      className="mt-1 inline-flex items-center gap-1 rounded bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink border border-line hover:bg-raised transition-colors cursor-pointer"
-                    >
-                      <Plus size={11} /> Browse Files
-                    </button>
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handlePickFiles}
+                        className="inline-flex items-center gap-1 rounded bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink border border-line hover:bg-raised transition-colors cursor-pointer"
+                      >
+                        <Plus size={11} /> Browse Files
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStashPickerOpen(true)}
+                        className="inline-flex items-center gap-1 rounded bg-accent/15 px-2.5 py-1 text-[11px] font-semibold text-accent border border-accent/30 hover:bg-accent/25 transition-colors cursor-pointer"
+                      >
+                        <Boxes size={11} /> From Stash
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -540,13 +656,23 @@ export function WorkflowNodeDetailDrawer({
                       <span className="text-[10px] font-mono text-faint">
                         Attached Files ({node.inputFiles!.length})
                       </span>
-                      <button
-                        type="button"
-                        onClick={handlePickFiles}
-                        className="text-[10px] text-accent hover:underline cursor-pointer"
-                      >
-                        + Add More
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setStashPickerOpen(true)}
+                          className="inline-flex items-center gap-1 text-[10px] text-accent hover:underline cursor-pointer"
+                        >
+                          <Boxes size={10} /> From Stash
+                        </button>
+                        <span className="text-faint text-[9px]">•</span>
+                        <button
+                          type="button"
+                          onClick={handlePickFiles}
+                          className="text-[10px] text-accent hover:underline cursor-pointer"
+                        >
+                          + Browse
+                        </button>
+                      </div>
                     </div>
                     <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
                       {node.inputFiles!.map((f) => {
@@ -574,6 +700,46 @@ export function WorkflowNodeDetailDrawer({
                   </div>
                 )}
               </div>
+
+              {/* Quick Stash Assets strip */}
+              {recentStashAssets.length > 0 && (
+                <div className="rounded-lg border border-line/60 bg-base/40 p-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-[10px] font-semibold text-dim">
+                      <Boxes size={11} className="text-accent" /> Recent from Stash
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setStashPickerOpen(true)}
+                      className="text-[10px] text-accent hover:underline cursor-pointer font-medium"
+                    >
+                      Browse All Stash...
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {recentStashAssets.slice(0, 5).map((asset) => {
+                      const isAttached = (node.inputFiles || []).includes(asset.filePath)
+                      return (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          disabled={isAttached}
+                          onClick={() => handleAttachSingleStashAsset(asset.filePath)}
+                          className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] transition-colors truncate max-w-[170px] ${
+                            isAttached
+                              ? 'bg-surface/50 text-faint border border-line/40 cursor-default opacity-60'
+                              : 'bg-surface text-ink border border-line hover:border-accent hover:text-accent cursor-pointer'
+                          }`}
+                          title={`${asset.fileName} (${formatBytes(asset.fileSize)}) — Click to attach`}
+                        >
+                          <Plus size={9} className={isAttached ? 'opacity-0' : 'text-accent'} />
+                          <span className="truncate">{asset.fileName}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -787,5 +953,15 @@ export function WorkflowNodeDetailDrawer({
         </div>
       </div>
     </div>
+
+      {/* Quick Access Stash / Gallery Asset Picker Modal */}
+      <WorkflowStashPickerModal
+        open={stashPickerOpen}
+        onClose={() => setStashPickerOpen(false)}
+        onAttachAssets={handleAttachFromStash}
+        alreadyAttachedPaths={node.inputFiles || []}
+        recommendedCategory={recommendedCategory}
+      />
+    </>
   )
 }
