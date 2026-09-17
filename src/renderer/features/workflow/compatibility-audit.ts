@@ -88,7 +88,7 @@ chmod-calculator|-|-|01
 keypair-generator|-|-|01
 semver-calculator|-|-|11
 image-palette|image|-|01
-image-slicer|image|archive|00
+image-slicer|image|any|00
 image-grid|image|image|00
 gradient-studio|-|image|01
 pdf-numberer|document|document|00

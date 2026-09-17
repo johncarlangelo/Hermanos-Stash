@@ -17,6 +17,10 @@ import {
 } from './tool-domains'
 
 describe('tool file-domain classification', () => {
+  it('treats Image Slicer individual-image and ZIP exports as mixed until selected', () => {
+    expect(fileInputDomain('image-slicer')).toBe('image')
+    expect(fileOutputDomain('image-slicer')).toBe('any')
+  })
   it('classifies every entry with a valid domain pair and kebab-case id', () => {
     for (const [id, domains] of Object.entries(TOOL_FILE_DOMAINS)) {
       expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/)

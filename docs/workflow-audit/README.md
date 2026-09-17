@@ -2,7 +2,7 @@
 
 ## Scope and reproducibility
 
-The registry contains 78 tools. `tools.csv` records each tool's declared file and text ports plus independently reviewed file-domain expectations. `compatibility.csv` contains **6,084 unique ordered tool pairs**. There are 452 permitted file-port links and 1,148 permitted text-port links at this abstraction level.
+The registry contains 78 tools. `tools.csv` records each tool's declared file and text ports plus independently reviewed file-domain expectations. `compatibility.csv` contains **6,084 unique ordered tool pairs**. There are 450 permitted file-port links and 1,148 permitted text-port links at this abstraction level.
 
 `workflow.test.ts` compares the production validator with the independent `compatibility-audit.ts` receiver groups for every pair and all four port combinations (24,336 combinations). It also checks the exact catalog membership and port declarations; adding/removing a tool fails the audit until reviewed.
 
@@ -19,7 +19,7 @@ Normal test runs do not write audit files. CSV rows are test-verified before exp
 - Sidebar category is never evidence of file compatibility.
 - Input/output domains are distinct: video -> audio extraction, video -> GIF, images -> PDF.
 - Universal **consumers** accept any audited output. Unknown/mixed **outputs** cannot feed specialized processors without artifact selection.
-- ZIP is a container, not its contents. PDF-to-images and Image Slicer export ZIPs.
+- ZIP is a container, not its contents. PDF-to-images exports ZIPs; Image Slicer exports individual images or ZIP and is classified as mixed.
 - Token Counter reads text/code files, not arbitrary images/audio/archives.
 - Missing file capabilities and unaudited domains reject by default.
 - Text ports remain content-agnostic: a text wire does not promise valid JSON, SQL, etc.
@@ -32,7 +32,7 @@ Normal test runs do not write audit files. CSV rows are test-verified before exp
 | Icon Pack, QR Decoder, Image OCR | `src/renderer/tools/{icon-pack,qr-decoder,image-ocr}/*Tool.tsx` | Image consumers even under developer/documents categories |
 | Audio Extractor | `src/renderer/tools/audio-extract/AudioExtractTool.tsx` | Video input, audio output |
 | PDF -> Images | `src/renderer/tools/pdf-to-images/PdfToImagesTool.tsx` (`generateAsync`, ZIP save) | PDF input, archive output |
-| Image Slicer | `src/renderer/tools/image-slicer/ImageSlicerTool.tsx` | Image input, archive output |
+| Image Slicer | `src/renderer/tools/image-slicer/ImageSlicerTool.tsx` | Image input, mixed individual images / archive output |
 | ID Photo Maker | `src/renderer/tools/id-photo-maker/IdPhotoMakerTool.tsx` | Image input; mixed PNG/PDF/DOCX exports, conservatively unknown output |
 | Token Counter | `src/renderer/tools/token-counter/TokenCounterTool.tsx` | Text-file input; text output |
 | ZIP Extractor / Archive Inspector | `src/renderer/tools/{zip-extract,archive-inspect}/*Tool.tsx` and `src/main/processing/archives.ts` | Archive input; unclassified extracted output |

@@ -1,5 +1,9 @@
 # Hermanos Stash — Verification Log
 
+## 2026-09-18 — Image Slicer audit correction
+
+Source confirms individual image downloads and ZIP exports (`ImageSlicerTool.tsx:112-140`). Classified output as mixed/unknown until selected, consistent with ID Photo Studio. Regression failed archive-vs-any before fix. Regenerated full matrix: 6,084 pairs, 450 file links, 1,148 text links. Full suite 917 tests / 92 files passed; typecheck, lint, build passed. Existing UI probe evidence predates this narrow correction; no new UI probe claimed.
+
 ## 2026-09-18 — local workflow v0.3.0 compatibility candidate
 
 - Branch: `union-alpha/feature-validator`; no push/merge, human approval pending.

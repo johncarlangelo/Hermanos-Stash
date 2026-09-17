@@ -63,7 +63,7 @@ chmod-calculator,-,-,false,true
 keypair-generator,-,-,false,true
 semver-calculator,-,-,true,true
 image-palette,image,-,false,true
-image-slicer,image,archive,false,false
+image-slicer,image,any,false,false
 image-grid,image,image,false,false
 gradient-studio,-,image,false,true
 pdf-numberer,document,document,false,false

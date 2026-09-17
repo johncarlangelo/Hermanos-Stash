@@ -43,7 +43,7 @@ export const TOOL_FILE_DOMAINS: Record<
   'image-exif': { input: 'image', output: null },
   'image-watermark': { input: 'image', output: 'image' },
   'image-palette': { input: 'image', output: null }, // produces text (CSS/Tailwind)
-  'image-slicer': { input: 'image', output: 'archive' },
+  'image-slicer': { input: 'image', output: 'any' },
   'image-grid': { input: 'image', output: 'image' },
   'id-photo-maker': { input: 'image', output: 'any' },
   'image-to-ascii': { input: 'image', output: null }, // produces TEXT art

@@ -394,6 +394,7 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 
 Local v0.3.0 implementation is verified; parent task stays in progress pending user QA. See `docs/workflow-audit/README.md` and CSV matrix. Static domain compatibility is not codec validation or real pipeline execution.
 - [x] Revalidate saved/imported graph connections before any pipeline node starts.
+- [x] Correct Image Slicer to mixed image/ZIP output; verified individual download and ZIP handlers (lines 112-140), regression test and regenerated matrix. Latest gates: 917 tests / 92 files, typecheck, lint and build pass.
 - [ ] Follow-up: parameter/format-aware artifact contracts, real processor adapters, and linear-queue parity.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
 - [-] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
