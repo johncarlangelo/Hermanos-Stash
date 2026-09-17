@@ -390,6 +390,13 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Incompatible Wire Connection Validation & Link Prevention (`execution.ts`, `WorkflowCanvas.tsx`, `WorkflowNodeCard.tsx`, `version.ts`)**: Prevent connecting cables between incompatible tool ports (text-to-files mismatch, missing tool capabilities, cross-domain media mismatches like audio into images, DAG circular dependency loops) with instant rejection warning toasts; real-time visual compatibility card states (`COMPATIBLE` emerald glow with pulsing input ports vs. dimmed `INCOMPATIBLE` warning badges with error reason tooltips); card-level wire drop auto-wiring; while keeping canvas tool placement 100% unconstrained.
 - [x] **Drawer Wheel Zoom Isolation & Overscroll Containment (`WorkflowCanvas.tsx`, `WorkflowToolDrawer.tsx`, `WorkflowTemplatesDrawer.tsx`, `WorkflowNodeDetailDrawer.tsx`, `WorkflowOutputDrawer.tsx`, `WorkflowTemplateModal.tsx`, `WorkflowStashPickerModal.tsx`, `WorkflowToolbar.tsx`, `version.ts`)**: Isolate mouse wheel and trackpad scroll events originating inside drawers and modals from bubbling to the canvas root container via `onWheel={(e) => e.stopPropagation()}` and `target.closest('[data-drawer]...')` ancestry guards, preventing unintended canvas zooming while scrolling through tools, templates, or asset drawers.
 
+### Upcoming Queue Workflow Candidate Tasks
+- [ ] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
+  - Fix cross-category media matching bugs where tools whose UI category differs from their media domain fall through validation (e.g. `Audio Extractor` audio output connecting to `Icon Pack Generator` or `QR Decoder` in the `developer` category).
+  - Generate and verify a comprehensive N × N compatibility and incompatibility checklist matrix covering all 78 tools across all categories (`images`, `audio`, `video`, `documents`, `developer`, `text`, `files`, `future`).
+  - Introduce semantic domain classification helpers (e.g. `IMAGE_CONSUMING_TOOL_IDS`, `AUDIO_CONSUMING_TOOL_IDS`, `DOC_CONSUMING_TOOL_IDS`) to strictly enforce valid media inputs regardless of top-level sidebar category.
+  - Expand test suite in `workflow.test.ts` to assert all valid links and reject all invalid cross-domain pairings.
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*

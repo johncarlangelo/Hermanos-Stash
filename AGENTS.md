@@ -84,6 +84,31 @@ When flagging a tool as **BETA** (e.g. experimental, active testing, newly proto
    ```
    Do not introduce custom icons (e.g. Sparkles) or arbitrary non-standard badge styles.
 
+### Queue Workflow Tool Compatibility Contract
+
+Whenever adding a new tool or modifying an existing tool in `src/renderer/tools/index.ts`:
+
+1. **Mandatory Capability Declaration (`ToolDefinition.capabilities`):**
+   Accurately declare all supported I/O types:
+   - `acceptsFiles?: boolean` / `acceptsMultipleFiles?: boolean` / `producesFiles?: boolean`
+   - `acceptsText?: boolean` / `producesText?: boolean`
+   - `supportsBatch?: boolean` / `supportsProgress?: boolean` / `supportsCancellation?: boolean`
+   Never leave file or text capabilities unstated. The Visual Queue Workflow dynamically derives port types (files vs. text anchors) from these flags.
+
+2. **Domain vs. UI Category Disambiguation (`execution.ts`):**
+   - **CRITICAL RULE:** Never rely solely on `tool.category` for media file compatibility. A tool categorized under `developer`, `documents`, or `text` for desktop sidebar navigation may actually consume or produce `images` (e.g. `icon-pack` and `qr-decoder` are in `developer`, but strictly consume image files; `image-ocr` is in `documents`, but consumes images).
+   - Whenever introducing a tool that accepts or produces files:
+     - Determine its true media domain (`images`, `audio`, `video`, `documents`, or universal `files`).
+     - Update `areFileCategoriesCompatible` in `src/renderer/features/workflow/execution.ts` to enforce valid input/output domains.
+     - Ensure the new tool cannot be connected to incompatible media sources (e.g., audio files must NEVER connect to image-consuming or document-consuming tools, and vice-versa).
+     - If the tool is an intentional cross-domain converter bridge (e.g., `extract-audio` for video → audio, `pdf-to-images` for document → image, `image-ocr` for image → text), explicitly register its bridge exemption in `execution.ts`.
+     - Never let a tool fall through to `{ compatible: true }` by default if it cannot process arbitrary file formats.
+
+3. **Mandatory Compatibility Test Coverage (`workflow.test.ts`):**
+   - When introducing or altering a tool, add unit tests in `src/renderer/features/workflow/workflow.test.ts`:
+     - Test valid connections to/from appropriate domain tools.
+     - Test rejection of incompatible connections with clear warning messages.
+
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
 > [!IMPORTANT]
@@ -125,6 +150,7 @@ After implementation:
 - run the broader verification suite before declaring completion;
 - execute the inspection loop (`GREPLOOP.md`) until a clean 5/5 score is achieved;
 - update `TOOL_CATALOG.md` and `TOOL_SPEC.md` whenever tools are added or modified;
+- verify and register tool compatibility/incompatibility in the Queue Workflow engine (`execution.ts`) and add test coverage in `workflow.test.ts` whenever tools are added or modified;
 - update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
 - never mark a task complete without evidence.
