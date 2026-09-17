@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowDownRight,
@@ -71,29 +71,46 @@ export function WorkflowNodeDetailDrawer({
   // Animation in/out lifecycle
   const hasNode = Boolean(node)
   const [isRendered, setIsRendered] = useState(open && hasNode)
-  const [isVisible, setIsVisible] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
 
+  const prevOpenRef = useRef(open)
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>
-    let raf: number
-
     if (open && hasNode) {
       setIsRendered(true)
-      raf = requestAnimationFrame(() => {
-        setIsVisible(true)
-      })
-    } else {
-      setIsVisible(false)
+      setIsClosing(false)
+    } else if (prevOpenRef.current && !open && isRendered) {
+      setIsClosing(true)
       timer = setTimeout(() => {
         setIsRendered(false)
-      }, 240)
+        setIsClosing(false)
+      }, 200)
+    } else if (!open) {
+      setIsRendered(false)
+      setIsClosing(false)
     }
+    prevOpenRef.current = open
+    return () => clearTimeout(timer)
+  }, [open, hasNode, isRendered])
 
-    return () => {
-      clearTimeout(timer)
-      cancelAnimationFrame(raf)
+  const handleRequestClose = useCallback(() => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setIsRendered(false)
+      setIsClosing(false)
+      onClose()
+    }, 200)
+  }, [onClose])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        handleRequestClose()
+      }
     }
-  }, [open, hasNode])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open, handleRequestClose])
 
   const category = useMemo(() => {
     if (!tool) return undefined
@@ -318,10 +335,10 @@ export function WorkflowNodeDetailDrawer({
   return (
     <>
       <div
-        className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl transition-all duration-240 ease-[cubic-bezier(0.22,1,0.36,1)] transform ${
-          isVisible
-            ? 'translate-x-0 opacity-100 pointer-events-auto scale-100'
-            : 'translate-x-16 opacity-0 pointer-events-none scale-[0.98]'
+        className={`absolute top-16 right-4 bottom-6 z-40 flex w-104 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-line-strong bg-shell/95 shadow-2xl backdrop-blur-xl ${
+          isClosing
+            ? 'anim-drawer-out pointer-events-none'
+            : 'anim-drawer-in pointer-events-auto'
         }`}
       >
       {/* Header */}
@@ -372,7 +389,7 @@ export function WorkflowNodeDetailDrawer({
           )}
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="cursor-pointer rounded-lg p-1.5 text-faint hover:text-ink hover:bg-surface transition-colors"
             title="Close node inspector"
           >

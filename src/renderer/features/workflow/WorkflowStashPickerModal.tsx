@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Boxes,
   Check,
@@ -196,31 +196,78 @@ export function WorkflowStashPickerModal({
     setSelectedPaths(new Set())
   }
 
+  // Animation lifecycle
+  const [isRendered, setIsRendered] = useState(open)
+  const [isClosing, setIsClosing] = useState(false)
+
+  const prevOpenRef = useRef(open)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    if (open) {
+      setIsRendered(true)
+      setIsClosing(false)
+    } else if (prevOpenRef.current && !open && isRendered) {
+      setIsClosing(true)
+      timer = setTimeout(() => {
+        setIsRendered(false)
+        setIsClosing(false)
+      }, 180)
+    } else if (!open) {
+      setIsRendered(false)
+      setIsClosing(false)
+    }
+    prevOpenRef.current = open
+    return () => clearTimeout(timer)
+  }, [open, isRendered])
+
+  const handleRequestClose = useCallback(() => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setIsRendered(false)
+      setIsClosing(false)
+      onClose()
+    }, 180)
+  }, [onClose])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        handleRequestClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open, handleRequestClose])
+
   // Submit selection
   const handleConfirmAttach = () => {
     const paths = Array.from(selectedPaths)
     if (paths.length > 0) {
       onAttachAssets(paths)
-      onClose()
+      handleRequestClose()
     }
   }
 
   // Single asset instant attach
   const handleInstantAttach = (path: string) => {
     onAttachAssets([path])
-    onClose()
+    handleRequestClose()
   }
 
-  if (!open) return null
+  if (!isRendered) return null
 
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200"
+      onClick={handleRequestClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 ${
+        isClosing ? 'anim-backdrop-out pointer-events-none' : 'anim-backdrop-in pointer-events-auto'
+      }`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-2xl max-h-[85vh] flex-col rounded-xl border border-line bg-shell shadow-2xl transition-all duration-200"
+        className={`flex w-full max-w-2xl max-h-[85vh] flex-col rounded-xl border border-line bg-shell shadow-2xl ${
+          isClosing ? 'anim-modal-out' : 'anim-modal-in'
+        }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5 bg-surface/70 rounded-t-xl shrink-0">
@@ -246,7 +293,7 @@ export function WorkflowStashPickerModal({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="cursor-pointer rounded p-1.5 text-faint hover:text-ink hover:bg-surface transition-colors"
             >
               <X size={15} />
@@ -475,7 +522,7 @@ export function WorkflowStashPickerModal({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="cursor-pointer rounded-lg px-3 py-1.5 text-xs text-dim hover:text-ink hover:bg-surface transition-colors"
             >
               Cancel

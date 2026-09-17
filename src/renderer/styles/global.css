@@ -213,6 +213,30 @@
   .anim-pop {
     animation: pop 150ms var(--ease-out-soft) both;
   }
+
+  .anim-drawer-in {
+    animation: drawer-slide-in 240ms var(--ease-out-soft) both;
+  }
+
+  .anim-drawer-out {
+    animation: drawer-slide-out 200ms var(--ease-out-soft) both;
+  }
+
+  .anim-modal-in {
+    animation: modal-pop-in 220ms var(--ease-out-soft) both;
+  }
+
+  .anim-modal-out {
+    animation: modal-pop-out 180ms var(--ease-out-soft) both;
+  }
+
+  .anim-backdrop-in {
+    animation: backdrop-fade-in 200ms var(--ease-out-soft) both;
+  }
+
+  .anim-backdrop-out {
+    animation: backdrop-fade-out 180ms var(--ease-out-soft) both;
+  }
 }
 
 @keyframes fade-in {
@@ -243,6 +267,68 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes drawer-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(48px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes drawer-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(48px) scale(0.98);
+  }
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdrop-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
