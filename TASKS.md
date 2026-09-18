@@ -404,16 +404,20 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
 - [x] Correct Image Slicer to mixed image/ZIP output; verified individual download and ZIP handlers (lines 112-140), regression test and regenerated matrix. Latest gates: 917 tests / 92 files, typecheck, lint and build pass.
 - [ ] Follow-up: parameter/format-aware artifact contracts, real processor adapters, and linear-queue parity.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
+- [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:
+  - **Filter Out Inert / Non-Transforming Tools:** Audit tools that have no I/O capability or pipeline transformation utility (e.g. `mime-lookup` and `http-status` with empty capabilities `{}`, `chmod-calculator`, `cron-explainer`). Evaluate hiding them from the workflow palette drawer (e.g. via `isWorkflowCompatible?: boolean` or requiring at least one input/output port) so inert cards don't clutter the canvas.
+  - **Metric / Terminal Sink Nodes:** Clarify the role of inspector/calculator tools like `token-counter` (can act as a read-only terminal sink or pipeline token estimator).
+  - **Local LLM & Prompt Pipeline Integration:** Define a non-interactive step-execution contract for `prompt-library` (source node feeding prompt text) and `local-llm-playground` (pipeline node that accepts prompt text/context and outputs generated text via local Ollama/LM Studio endpoints, e.g. for `PDF -> Text -> Local LLM Summary -> Markdown-to-PDF` pipelines).
 - [-] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
   - [x] Audit all 78 registered tools against actual file input/output implementations.
   - [x] Replace UI-category inference with explicit directional domains; reject unknown domains.
   - [x] Verify all 6,084 ordered pairs (all four port combinations) against an independent audit fixture and export a reviewable matrix.
   - [x] Run focused/full tests, typecheck, lint, format, build and independent review; record limitations.
   - [ ] User tests local `union-alpha/feature-validator` branch before any push or merge.
-  - Fix cross-category media matching bugs where tools whose UI category differs from their media domain fall through validation (e.g. `Audio Extractor` audio output connecting to `Icon Pack Generator` or `QR Decoder` in the `developer` category).
-  - Generate and verify a comprehensive N × N compatibility and incompatibility checklist matrix covering all 78 tools across all categories (`images`, `audio`, `video`, `documents`, `developer`, `text`, `files`, `future`).
-  - Introduce semantic domain classification helpers (e.g. `IMAGE_CONSUMING_TOOL_IDS`, `AUDIO_CONSUMING_TOOL_IDS`, `DOC_CONSUMING_TOOL_IDS`) to strictly enforce valid media inputs regardless of top-level sidebar category.
-  - Expand test suite in `workflow.test.ts` to assert all valid links and reject all invalid cross-domain pairings.
+  - [x] Fix cross-category media matching bugs where tools whose UI category differs from their media domain fall through validation (e.g. `Audio Extractor` audio output connecting to `Icon Pack Generator` or `QR Decoder` in the `developer` category).
+  - [x] Generate and verify a comprehensive N × N compatibility and incompatibility checklist matrix covering all 78 tools across all categories (`images`, `audio`, `video`, `documents`, `developer`, `text`, `files`, `future`).
+  - [x] Introduce semantic domain classification helpers (`TOOL_FILE_DOMAINS` in `tool-domains.ts`) to strictly enforce valid media inputs regardless of top-level sidebar category.
+  - [x] Expand test suite in `workflow.test.ts` to assert all valid links and reject all invalid cross-domain pairings.
 
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
