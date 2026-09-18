@@ -31,6 +31,7 @@ import { toastError, toastSuccess } from '../../stores/toasts'
 import { useQueueStore } from '../../stores/queue'
 import { validateQueueChain } from '../../../shared/utils/queue-validation'
 import { DropZone } from '../../components/ui/DropZone'
+import { executeStep } from '../workflow/execution'
 
 interface StepResult {
   step: number
@@ -170,20 +171,9 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
       setCurrentStepIndex(i)
 
       try {
-        let outputFiles: string[] = []
         const stepParams = step.params ?? {}
-
-        if (toolDef.capabilities.acceptsMultipleFiles) {
-          const result = await invokeToolBatch(toolDef.id, currentFiles, stepParams)
-          outputFiles = result.outputFiles ?? []
-        } else if (toolDef.capabilities.acceptsFiles) {
-          // Single file tool - process each file sequentially
-          for (const file of currentFiles) {
-            if (aborted) break
-            const result = await invokeToolSingle(toolDef.id, file, stepParams)
-            if (result.outputFile) outputFiles.push(result.outputFile)
-          }
-        }
+        const stepResult = await executeStep(toolDef.id, currentFiles, '', stepParams)
+        const outputFiles = stepResult.outputFiles ?? []
 
         setStepResults((prev) =>
           prev.map((r, idx) =>
@@ -635,17 +625,6 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
       </div>
     </div>
   )
-}
-
-// Mock tool batch/single invokers
-async function invokeToolBatch(_toolId: string, files: string[], _params: Record<string, unknown>) {
-  await new Promise((r) => setTimeout(r, 400))
-  return { outputFiles: files.map((f) => f.replace(/\.[^.]+$/, '_processed$&')) }
-}
-
-async function invokeToolSingle(_toolId: string, file: string, _params: Record<string, unknown>) {
-  await new Promise((r) => setTimeout(r, 200))
-  return { outputFile: file.replace(/\.[^.]+$/, '_processed$&') }
 }
 
 export default QueueRunner

@@ -107,7 +107,9 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
               strokeOpacity={isSelected ? 0.6 : 0.3}
               filter="url(#wire-glow)"
               className={`transition-opacity duration-150 ${
-                isSelected || sourceNodeRunning ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                isSelected || sourceNodeRunning
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100'
               }`}
             />
 

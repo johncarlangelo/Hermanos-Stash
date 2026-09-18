@@ -5,6 +5,7 @@
  * passes outputs between steps, and streams execution progress.
  */
 
+import type { WatermarkPosition } from '../../../shared/ipc'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { fileInputDomain, fileOutputDomain } from '../../../shared/utils/tool-domains'
@@ -173,18 +174,245 @@ export function topologicalSort(graph: WorkflowGraph): {
   return { sortedNodeIds, hasCycle }
 }
 
+export type StepExecutor = (
+  toolId: string,
+  files: string[],
+  text: string,
+  params: Record<string, unknown>,
+  options?: { outputDir?: string }
+) => Promise<{ outputFiles: string[]; outputText?: string }>
+
+let customExecutor: StepExecutor | null = null
+
+/** Allows headless test runners or custom engines to register a direct processor. */
+export function setCustomStepExecutor(executor: StepExecutor | null): void {
+  customExecutor = executor
+}
+
 /**
- * Executes a single tool in simulation / batch runner mode.
+ * Executes a tool using the real Electron IPC bridge (window.stash).
+ */
+async function executeWithStash(
+  toolId: string,
+  files: string[],
+  text: string,
+  params: Record<string, unknown>,
+  options?: { outputDir?: string }
+): Promise<{ outputFiles: string[]; outputText?: string }> {
+  const toolDef = toolRegistry.get(toolId)
+  const producesFiles = toolDef ? toolDef.capabilities.producesFiles : true
+  const producesText = toolDef ? toolDef.capabilities.producesText : false
+
+  // Analysis / inspection / text-producing tools that consume files but output text
+  if (!producesFiles) {
+    if (toolId === 'file-metadata' && files[0]) {
+      const stat = await window.stash.fs.stat(files[0])
+      return {
+        outputFiles: [],
+        outputText: `File: ${stat.name}\nSize: ${stat.sizeBytes} bytes\nExtension: ${stat.extension}\nModified: ${new Date(stat.modifiedAtMs).toLocaleString()}`
+      }
+    }
+    if (toolId === 'hash-generator' && files[0]) {
+      const res = await window.stash.crypto.hashFile({ path: files[0], algorithm: 'sha256' })
+      return {
+        outputFiles: [],
+        outputText: `SHA-256: ${res.hex}\nFile: ${files[0]}`
+      }
+    }
+    if (toolId === 'image-ocr' && files[0]) {
+      const res = await window.stash.processing.ocrImage({ path: files[0] })
+      return {
+        outputFiles: [],
+        outputText: res.text
+      }
+    }
+    const outputText =
+      producesText && text.trim().length > 0
+        ? `Processed by ${toolDef?.name ?? toolId}:\n${text}`
+        : undefined
+    return { outputFiles: [], outputText }
+  }
+
+  // File-producing tool without inputs
+  if (files.length === 0) {
+    return { outputFiles: [], outputText: undefined }
+  }
+
+  // Acquire isolated workspace directory for this operation
+  const opDir = options?.outputDir ?? (await window.stash.temp.createOperation(`wf-${toolId}`))
+
+  switch (toolId) {
+    case 'image-convert': {
+      const format = (params.format as 'png' | 'jpeg' | 'webp' | 'avif' | 'tiff') || 'png'
+      const quality = typeof params.quality === 'number' ? params.quality : 85
+      const res = await window.stash.processing.convertImages({
+        paths: files,
+        outputDir: opDir,
+        format,
+        quality
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'image-compress': {
+      const quality = typeof params.quality === 'number' ? params.quality : 75
+      const res = await window.stash.processing.compressImages({
+        paths: files,
+        outputDir: opDir,
+        quality
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'image-watermark': {
+      const res = await window.stash.processing.watermarkImages({
+        paths: files,
+        outputDir: opDir,
+        text: String(params.watermarkText || 'Hermanos Stash'),
+        position: (params.position as WatermarkPosition) || 'bottom-right',
+        opacity: typeof params.opacity === 'number' ? params.opacity : 0.6,
+        fontSize: typeof params.fontSize === 'number' ? params.fontSize : 28
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'social-resizer': {
+      const res = await window.stash.processing.socialResize({
+        paths: files,
+        outputDir: opDir,
+        presets: [(params.presetId as string) || 'instagram-square']
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'icon-pack': {
+      const res = await window.stash.icons.generatePack({
+        path: files[0],
+        outputDir: opDir
+      })
+      return { outputFiles: res.succeeded.map((s) => s.path) }
+    }
+    case 'images-to-pdf': {
+      const targetPdf = `${opDir}/images-to-pdf.pdf`
+      await window.stash.pdfs.imagesToPdf({ paths: files, targetPdf })
+      return { outputFiles: [targetPdf] }
+    }
+    case 'pdf-merge': {
+      const targetPdf = `${opDir}/merged.pdf`
+      await window.stash.pdfs.merge({ paths: files, targetPdf })
+      return { outputFiles: [targetPdf] }
+    }
+    case 'pdf-split': {
+      const res = await window.stash.pdfs.split({
+        path: files[0],
+        outputDir: opDir,
+        pageSpec: (params.pageSpec as string) || '1'
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'pdf-rotate': {
+      const targetPdf = `${opDir}/rotated.pdf`
+      await window.stash.pdfs.rotate({
+        path: files[0],
+        targetPdf,
+        angle: (params.angle as 90 | 180 | 270) || 90,
+        pageSpec: (params.pageSpec as string) || 'all'
+      })
+      return { outputFiles: [targetPdf] }
+    }
+    case 'pdf-compress': {
+      const targetPdf = `${opDir}/compressed.pdf`
+      await window.stash.pdfs.compress({ path: files[0], targetPdf })
+      return { outputFiles: [targetPdf] }
+    }
+    case 'pdf-reorder': {
+      const targetPdf = `${opDir}/reordered.pdf`
+      await window.stash.pdfs.reorder({
+        path: files[0],
+        targetPdf,
+        pageSpec: (params.pageSpec as string) || '1'
+      })
+      return { outputFiles: [targetPdf] }
+    }
+    case 'video-convert': {
+      const res = await window.stash.media.convertVideo({
+        path: files[0],
+        outputDir: opDir,
+        format: (params.format as 'mp4' | 'webm' | 'mkv') || 'mp4'
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'video-compress': {
+      const res = await window.stash.media.compressVideo({
+        path: files[0],
+        outputDir: opDir,
+        crfQuality: typeof params.crfQuality === 'number' ? params.crfQuality : 28
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'video-to-gif': {
+      const res = await window.stash.media.videoToGif({
+        path: files[0],
+        outputDir: opDir,
+        fps: typeof params.fps === 'number' ? params.fps : 15,
+        maxWidth: typeof params.maxWidth === 'number' ? params.maxWidth : 640
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'extract-audio': {
+      const res = await window.stash.media.extractAudio({
+        path: files[0],
+        outputDir: opDir,
+        codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'audio-convert': {
+      const res = await window.stash.media.convertAudio({
+        path: files[0],
+        outputDir: opDir,
+        codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
+      })
+      return { outputFiles: res.succeeded.map((s) => s.output) }
+    }
+    case 'zip-create': {
+      const targetZip = `${opDir}/archive.zip`
+      await window.stash.archives.createZip({ paths: files, targetZip })
+      return { outputFiles: [targetZip] }
+    }
+    case 'zip-extract': {
+      await window.stash.archives.extractZip({ zipPath: files[0], outputDir: opDir })
+      const list = await window.stash.files.listDir(opDir)
+      const extractedPaths = list.entries.map((e) => `${opDir}/${e.name}`)
+      return { outputFiles: extractedPaths }
+    }
+    default: {
+      return {
+        outputFiles: files,
+        outputText: producesText ? text : undefined
+      }
+    }
+  }
+}
+
+/**
+ * Executes a single tool in workflow execution mode.
+ * Invokes real backend processing via window.stash in desktop mode,
+ * custom registered executor, or fallback in unit test environments.
  */
 export async function executeStep(
   toolId: string,
   files: string[],
   text: string,
-  _params: Record<string, unknown>
+  params: Record<string, unknown>,
+  options?: { outputDir?: string }
 ): Promise<{ outputFiles: string[]; outputText?: string }> {
-  // Processing step execution
-  await new Promise((r) => setTimeout(r, 300))
+  if (typeof window !== 'undefined' && window.stash) {
+    return executeWithStash(toolId, files, text, params, options)
+  }
 
+  if (customExecutor) {
+    return customExecutor(toolId, files, text, params, options)
+  }
+
+  // Fallback for headless environments without StashBridge or registered executor
+  await new Promise((r) => setTimeout(r, 10))
   const toolDef = toolRegistry.get(toolId)
   const producesFiles = toolDef ? toolDef.capabilities.producesFiles : true
   const producesText = toolDef ? toolDef.capabilities.producesText : false
@@ -216,6 +444,7 @@ export async function runWorkflowPipeline(
     onNodeError?: (nodeId: string, error: string) => void
     onProgress?: (ratio: number) => void
     isAborted?: () => boolean
+    outputDir?: string
   }
 ): Promise<WorkflowExecutionResult> {
   const startTime = Date.now()
@@ -307,7 +536,8 @@ export async function runWorkflowPipeline(
         node.toolId,
         stepInputFiles,
         stepInputText,
-        node.params
+        node.params,
+        { outputDir: callbacks?.outputDir }
       )
 
       const nodeDuration = Date.now() - nodeStartTime

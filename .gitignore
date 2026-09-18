@@ -94,3 +94,5 @@ temp/
 scratch/
 .scratch/
 .playwright-mcp/
+.hermes/
+TEST PIPELINE OUTPUTS/

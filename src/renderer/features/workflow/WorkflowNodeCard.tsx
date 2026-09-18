@@ -1,5 +1,14 @@
 import React, { memo, useState } from 'react'
-import { AlertCircle, CheckCircle2, Copy, Plus, RefreshCw, Settings2, Sliders, X } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Copy,
+  Plus,
+  RefreshCw,
+  Settings2,
+  Sliders,
+  X
+} from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { getIcon } from '../../components/icons'
 import { getCategory } from '../../../shared/constants/categories'

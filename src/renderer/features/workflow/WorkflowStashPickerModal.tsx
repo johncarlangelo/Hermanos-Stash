@@ -27,7 +27,16 @@ interface WorkflowStashPickerModalProps {
   recommendedCategory?: string
 }
 
-type StashTab = 'all' | 'recommended' | 'image' | 'document' | 'audio' | 'video' | 'archive' | 'code' | 'favorites'
+type StashTab =
+  | 'all'
+  | 'recommended'
+  | 'image'
+  | 'document'
+  | 'audio'
+  | 'video'
+  | 'archive'
+  | 'code'
+  | 'favorites'
 
 // Thumbnail preview component for image assets
 function StashImageThumbnail({ path }: { path: string }) {
@@ -109,9 +118,7 @@ export function WorkflowStashPickerModal({
   const [assets, setAssets] = useState<AssetRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<StashTab>(
-    recommendedCategory ? 'recommended' : 'all'
-  )
+  const [activeTab, setActiveTab] = useState<StashTab>(recommendedCategory ? 'recommended' : 'all')
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
 
   // Reset tab and selections whenever modal opens

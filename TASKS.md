@@ -402,7 +402,8 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 Local v0.3.0 implementation is verified; parent task stays in progress pending user QA. See `docs/workflow-audit/README.md` and CSV matrix. Static domain compatibility is not codec validation or real pipeline execution.
 - [x] Revalidate saved/imported graph connections before any pipeline node starts.
 - [x] Correct Image Slicer to mixed image/ZIP output; verified individual download and ZIP handlers (lines 112-140), regression test and regenerated matrix. Latest gates: 917 tests / 92 files, typecheck, lint and build pass.
-- [ ] Follow-up: parameter/format-aware artifact contracts, real processor adapters, and linear-queue parity.
+- [x] Follow-up: real processor adapters and linear-queue parity: connected `executeStep` in `execution.ts` and `QueueRunner.tsx` to `window.stash` / real Node processors, replacing output placeholders with actual filesystem processing; verified 16 physical binary outputs in `TEST PIPELINE OUTPUTS/` with zero ghost files.
+- [ ] Follow-up: parameter/format-aware artifact contracts.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:
   - **Filter Out Inert / Non-Transforming Tools:** Audit tools that have no I/O capability or pipeline transformation utility (e.g. `mime-lookup` and `http-status` with empty capabilities `{}`, `chmod-calculator`, `cron-explainer`). Evaluate hiding them from the workflow palette drawer (e.g. via `isWorkflowCompatible?: boolean` or requiring at least one input/output port) so inert cards don't clutter the canvas.
@@ -413,7 +414,6 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Replace UI-category inference with explicit directional domains; reject unknown domains.
   - [x] Verify all 6,084 ordered pairs (all four port combinations) against an independent audit fixture and export a reviewable matrix.
   - [x] Run focused/full tests, typecheck, lint, format, build and independent review; record limitations.
-  - [ ] User tests local `union-alpha/feature-validator` branch before any push or merge.
   - [x] Fix cross-category media matching bugs where tools whose UI category differs from their media domain fall through validation (e.g. `Audio Extractor` audio output connecting to `Icon Pack Generator` or `QR Decoder` in the `developer` category).
   - [x] Generate and verify a comprehensive N × N compatibility and incompatibility checklist matrix covering all 78 tools across all categories (`images`, `audio`, `video`, `documents`, `developer`, `text`, `files`, `future`).
   - [x] Introduce semantic domain classification helpers (`TOOL_FILE_DOMAINS` in `tool-domains.ts`) to strictly enforce valid media inputs regardless of top-level sidebar category.
