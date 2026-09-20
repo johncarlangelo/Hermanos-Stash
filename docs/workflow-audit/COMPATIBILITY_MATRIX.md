@@ -3,7 +3,7 @@
 
 # Queue Workflow Compatibility Matrix
 
-**Workflow feature version:** `0.3.4` · **Registered tools:** 78 · **Ordered tool pairs:** 6084 · **Port combinations per pair:** 4 (files→files, text→text, files→text, text→files) · **Total documented combinations:** 24336
+**Workflow feature version:** `0.4.0` · **Registered tools:** 78 · **Ordered tool pairs:** 6084 · **Port combinations per pair:** 4 (files→files, text→text, files→text, text→files) · **Total documented combinations:** 24336
 
 **Source of truth:** the committed CSVs in this folder, which are written only by `workflow.test.ts` after asserting every row against the independent audit fixture (`compatibility-audit.ts`). This document is a human-readable rendering of those CSVs; the CSVs remain the pair-level record.
 

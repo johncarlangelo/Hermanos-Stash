@@ -24,6 +24,7 @@ import { toastSuccess } from '../../stores/toasts'
 import { executeStep } from './execution'
 import type { WorkflowGraph, WorkflowNode } from './types'
 import { WorkflowStashPickerModal } from './WorkflowStashPickerModal'
+import { getToolParamFields, resolveParamValue } from './tool-params'
 
 interface WorkflowNodeDetailDrawerProps {
   open: boolean
@@ -201,6 +202,8 @@ export function WorkflowNodeDetailDrawer({
   const hasIncomingFileEdge = incomingEdges.some((e) => e.fromPort === 'files')
   const hasIncomingTextEdge = incomingEdges.some((e) => e.fromPort === 'text')
 
+  const paramFields = useMemo(() => (tool ? getToolParamFields(tool.id) : []), [tool])
+
   if (!isRendered || !node || !tool) {
     return null
   }
@@ -213,11 +216,19 @@ export function WorkflowNodeDetailDrawer({
   // Node params
   const params = node.params || {}
 
-  const handleParamChange = (key: string, value: unknown) => {
-    onUpdateParams(node.id, {
+  const handleParamChange = (key: string, value: unknown, aliases?: string[]) => {
+    const updated: Record<string, unknown> = {
       ...params,
       [key]: value
-    })
+    }
+    if (aliases) {
+      for (const alias of aliases) {
+        if (alias in updated) {
+          updated[alias] = value
+        }
+      }
+    }
+    onUpdateParams(node.id, updated)
   }
 
   const handleSaveLabel = () => {
@@ -437,161 +448,126 @@ export function WorkflowNodeDetailDrawer({
             </div>
 
             <div className="rounded-lg border border-line/80 bg-surface/30 p-3 space-y-3.5">
-              {/* Image Tool Options */}
-              {(tool.category === 'images' || tool.id.includes('image')) && (
-                <>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-dim">Output Quality</span>
-                      <span className="font-mono text-accent">
-                        {(params.quality as number) || 85}%
-                      </span>
+              {paramFields.length === 0 ? (
+                <div className="py-2 text-center text-[11px] text-faint">
+                  This tool operates with standard automatic processing and has no configurable options.
+                </div>
+              ) : (
+                paramFields.map((field) => {
+                  const currentValue = resolveParamValue(params, field)
+                  return (
+                    <div key={field.key} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <label className="text-dim font-medium">{field.label}</label>
+                        {field.type === 'range' && (
+                          <span className="font-mono text-accent">
+                            {String(currentValue ?? field.defaultValue)}
+                            {field.unit ? ` ${field.unit}` : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {field.type === 'text' && (
+                        <input
+                          type="text"
+                          placeholder={field.placeholder || ''}
+                          value={String(currentValue ?? '')}
+                          onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                          className="w-full rounded border border-line bg-base px-2.5 py-1 text-[11px] text-ink outline-none focus:border-accent"
+                        />
+                      )}
+
+                      {field.type === 'number' && (
+                        <input
+                          type="number"
+                          placeholder={field.placeholder || ''}
+                          min={field.min}
+                          max={field.max}
+                          step={field.step || 1}
+                          value={
+                            currentValue !== undefined && currentValue !== null && currentValue !== ''
+                              ? Number(currentValue)
+                              : ''
+                          }
+                          onChange={(e) =>
+                            handleParamChange(
+                              field.key,
+                              e.target.value === '' ? undefined : Number(e.target.value),
+                              field.aliases
+                            )
+                          }
+                          className="w-full rounded border border-line bg-base px-2.5 py-1 text-[11px] text-ink outline-none focus:border-accent"
+                        />
+                      )}
+
+                      {field.type === 'range' && (
+                        <input
+                          type="range"
+                          min={field.min ?? 0}
+                          max={field.max ?? 100}
+                          step={field.step ?? 1}
+                          value={Number(currentValue ?? field.defaultValue ?? 0)}
+                          onChange={(e) =>
+                            handleParamChange(field.key, Number(e.target.value), field.aliases)
+                          }
+                          className="w-full accent-accent cursor-pointer h-1.5 rounded-lg bg-line"
+                        />
+                      )}
+
+                      {field.type === 'select' && (
+                        <select
+                          value={String(currentValue ?? field.defaultValue ?? '')}
+                          onChange={(e) => {
+                            const val = field.options?.some((o) => typeof o.value === 'number')
+                              ? Number(e.target.value)
+                              : e.target.value
+                            handleParamChange(field.key, val, field.aliases)
+                          }}
+                          className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none cursor-pointer hover:border-line-strong"
+                        >
+                          {field.options?.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {field.type === 'color' && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={String(currentValue ?? field.defaultValue ?? '#000000')}
+                            onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                            className="h-6 w-8 cursor-pointer rounded border border-line bg-base p-0.5"
+                          />
+                          <input
+                            type="text"
+                            value={String(currentValue ?? field.defaultValue ?? '')}
+                            onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                            className="flex-1 rounded border border-line bg-base px-2 py-1 font-mono text-[11px] text-ink outline-none focus:border-accent"
+                          />
+                        </div>
+                      )}
+
+                      {field.type === 'boolean' && (
+                        <label className="flex items-center gap-2 cursor-pointer text-[11px] text-dim select-none">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(currentValue ?? field.defaultValue ?? false)}
+                            onChange={(e) => handleParamChange(field.key, e.target.checked, field.aliases)}
+                            className="accent-accent"
+                          />
+                          <span>{field.hint || field.label}</span>
+                        </label>
+                      )}
+
+                      {field.hint && field.type !== 'boolean' && (
+                        <p className="text-[10px] text-faint leading-normal">{field.hint}</p>
+                      )}
                     </div>
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      value={(params.quality as number) || 85}
-                      onChange={(e) => handleParamChange('quality', Number(e.target.value))}
-                      className="w-full accent-accent cursor-pointer h-1.5 rounded-lg bg-line"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-dim">Output Format</label>
-                    <select
-                      value={(params.format as string) || 'original'}
-                      onChange={(e) => handleParamChange('format', e.target.value)}
-                      className="rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none cursor-pointer hover:border-line-strong"
-                    >
-                      <option value="original">Original Format</option>
-                      <option value="png">PNG</option>
-                      <option value="jpeg">JPEG</option>
-                      <option value="webp">WebP</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-dim">Max Width (px)</label>
-                      <input
-                        type="number"
-                        placeholder="Auto"
-                        value={(params.maxWidth as number) || ''}
-                        onChange={(e) =>
-                          handleParamChange(
-                            'maxWidth',
-                            e.target.value ? Number(e.target.value) : undefined
-                          )
-                        }
-                        className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none focus:border-accent"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-dim">Max Height (px)</label>
-                      <input
-                        type="number"
-                        placeholder="Auto"
-                        value={(params.maxHeight as number) || ''}
-                        onChange={(e) =>
-                          handleParamChange(
-                            'maxHeight',
-                            e.target.value ? Number(e.target.value) : undefined
-                          )
-                        }
-                        className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none focus:border-accent"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* PDF Tool Options */}
-              {(tool.category === 'documents' || tool.id.includes('pdf')) && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-dim">Page Ranges (e.g. 1-3, 5, 8-10)</label>
-                    <input
-                      type="text"
-                      placeholder="all"
-                      value={(params.pageRanges as string) || ''}
-                      onChange={(e) => handleParamChange('pageRanges', e.target.value)}
-                      className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] text-ink font-mono outline-none focus:border-accent"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-dim">Watermark Text (optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. CONFIDENTIAL"
-                      value={(params.watermark as string) || ''}
-                      onChange={(e) => handleParamChange('watermark', e.target.value)}
-                      className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none focus:border-accent"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-dim">Rotation</label>
-                    <select
-                      value={(params.rotation as number) || 0}
-                      onChange={(e) => handleParamChange('rotation', Number(e.target.value))}
-                      className="rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none cursor-pointer hover:border-line-strong"
-                    >
-                      <option value={0}>0° (Default)</option>
-                      <option value={90}>90° Clockwise</option>
-                      <option value={180}>180° Flip</option>
-                      <option value={270}>270° Counter-clockwise</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {/* Text / Developer / Converter Tool Options */}
-              {(tool.category === 'text' ||
-                tool.category === 'developer' ||
-                tool.id.includes('hash') ||
-                tool.id.includes('uuid')) && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-dim">Casing / Transform</label>
-                    <select
-                      value={(params.caseMode as string) || 'preserve'}
-                      onChange={(e) => handleParamChange('caseMode', e.target.value)}
-                      className="rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none cursor-pointer hover:border-line-strong"
-                    >
-                      <option value="preserve">Preserve As-Is</option>
-                      <option value="lowercase">lowercase</option>
-                      <option value="uppercase">UPPERCASE</option>
-                      <option value="titlecase">Title Case</option>
-                      <option value="camelcase">camelCase</option>
-                      <option value="snakecase">snake_case</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-dim">Indentation</label>
-                    <select
-                      value={(params.indent as number) || 2}
-                      onChange={(e) => handleParamChange('indent', Number(e.target.value))}
-                      className="rounded border border-line bg-base px-2 py-1 text-[11px] text-ink outline-none cursor-pointer hover:border-line-strong"
-                    >
-                      <option value={2}>2 Spaces</option>
-                      <option value={4}>4 Spaces</option>
-                      <option value={1}>1 Tab</option>
-                    </select>
-                  </div>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-[11px] text-dim select-none">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(params.trimWhitespace)}
-                      onChange={(e) => handleParamChange('trimWhitespace', e.target.checked)}
-                      className="accent-accent"
-                    />
-                    <span>Trim leading & trailing whitespace</span>
-                  </label>
-                </>
+                  )
+                })
               )}
 
               {/* Universal execution flags */}

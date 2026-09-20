@@ -116,6 +116,13 @@ Whenever adding a new tool or modifying an existing tool in `src/renderer/tools/
    - This command is CI-ready, but no CI workflow or automatic Git hook is currently configured. Until one is installed, running it is a mandatory developer/agent checklist step.
    - Retain the documented limits: static ports/media domains are not codec/content checks or proof of real processor execution.
 
+5. **Mandatory Parameter Specification & Workspace Parity (`tool-params.ts`, `execution.ts`):**
+   - Whenever adding or modifying a tool, never hardcode ad-hoc inputs in `WorkflowNodeDetailDrawer.tsx`.
+   - Inspect the workspace tool view (`src/renderer/tools/<tool-id>/...`) and match its exact user-facing controls, keys, and defaults.
+   - Register its canonical parameter schema in `src/renderer/features/workflow/tool-params.ts`. Provide aliases where legacy keys or recipe templates exist (e.g. `watermark` for `text`, `range` for `pageSpec`).
+   - Implement real parameter consumption in `src/renderer/features/workflow/execution.ts` using alias fallbacks (`params.key ?? params.alias ?? default`).
+   - Tools with standard automatic processing and no configurable parameters must be explicitly defined as parameterless so the drawer renders a clean informative message instead of phantom sliders.
+
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
 > [!IMPORTANT]

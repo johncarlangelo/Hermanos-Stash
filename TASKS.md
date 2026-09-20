@@ -417,7 +417,15 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
     - Added multi-file loops for PDF steps (`pdf-numberer`, `pdf-watermark`, `pdf-rotate`, `pdf-compress`, `pdf-reorder`).
     - Added page range bounds clamping in `pdf-split` against actual document page count.
     - Hardened `default:` to defensively copy files into the step's isolated `opDir`, eliminating dangling file references across all unhandled pipeline steps.
-    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.3.4`, updated tests and compatibility documentation matrix. 922 tests across 92 test files passing, typecheck and lint passing with 0 errors.
+- [x] **Queue Workflow Node Parameter Parity & Dynamic Schema Engine (`v0.4.0`)**:
+  - **Problem Statement:** In the Queue Workflow node parameters drawer, parameters like watermark text were hardcoded with divergent keys (`watermark` in drawer vs. `text` in recipes and execution engine), causing user input in the drawer to be ignored. Furthermore, node parameters were manually hardcoded for a small subset of tools rather than mirroring the real, working controls from the 78 workspace tools.
+  - **Solution & Implementation:**
+    - Established an exhaustive 78-tool parameter audit inventory (`78_tool_parameter_checklist.md`) mapping every tool view to its canonical configuration parameters, types, and defaults.
+    - Added Rule #5 (*Mandatory Parameter Specification & Workspace Parity*) to `AGENTS.md` operating contract to ensure all future tools maintain parameter parity without regression.
+    - Created `src/renderer/features/workflow/tool-params.ts`: centralized registry specifying parameter schemas (`ToolParamField`), typed inputs (`text`, `number`, `range`, `select`, `boolean`, `color`), unit labels, and backward-compatible aliases for every configurable tool.
+    - Refactored `WorkflowNodeDetailDrawer.tsx` to dynamically render input controls from `getToolParamFields(tool.id)` with alias synchronization, while cleanly indicating automatic processing for parameterless tools.
+    - Hardened `execution.ts` with alias-safe parameter resolution (`resolveParamValue`) and added real execution adapters for text utilities (`json-format`, `case-converter`, `base64-codec`, `hash-generator`).
+    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.0` in `version.ts` and added comprehensive unit test suites in `workflow.test.ts`. Verified all 925 tests pass, matrix check passes (0 diffs), typecheck passes, and lint passes with 0 errors.
 - [ ] Follow-up: parameter/format-aware artifact contracts.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:

@@ -8,6 +8,7 @@ import type { StashBridge } from '../../../shared/ipc'
 import { autoLayoutGraph, calculateBoundingBox, snapToGrid } from './layout'
 import {
   areFileCategoriesCompatible,
+  executeStep,
   runWorkflowPipeline,
   setCustomStepExecutor,
   topologicalSort,
@@ -19,6 +20,7 @@ import { BUILT_IN_WORKFLOW_TEMPLATES } from './presets'
 import type { WorkflowGraph } from './types'
 import { QUEUE_WORKFLOW_VERSION } from './version'
 import { AUDIT_ROWS, expectedAuditPorts } from './compatibility-audit'
+import { getToolParamFields, resolveParamValue } from './tool-params'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -311,7 +313,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.4')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.4.0')
     })
   })
 
@@ -580,6 +582,144 @@ describe('Workflow Pipeline Execution Engine', () => {
         '/stash/assets/doc.pdf'
       ])
       expect(combined).toHaveLength(3)
+    })
+  })
+
+  describe('Workflow Tool Parameters Schema & Workspace Parity', () => {
+    it('defines rich parameter schemas matching workspace controls for transform tools', () => {
+      const watermarkFields = getToolParamFields('pdf-watermark')
+      expect(watermarkFields.length).toBeGreaterThan(0)
+      const textField = watermarkFields.find((f) => f.key === 'text')
+      expect(textField).toBeDefined()
+      expect(textField?.type).toBe('text')
+      expect(textField?.aliases).toContain('watermark')
+      expect(textField?.aliases).toContain('watermarkText')
+
+      const numbererFields = getToolParamFields('pdf-numberer')
+      expect(numbererFields.length).toBeGreaterThan(0)
+      const formatField = numbererFields.find((f) => f.key === 'format')
+      expect(formatField?.type).toBe('select')
+      const prefixField = numbererFields.find((f) => f.key === 'batesPrefix')
+      expect(prefixField?.aliases).toContain('prefix')
+
+      const videoFields = getToolParamFields('video-convert')
+      expect(videoFields.some((f) => f.key === 'format')).toBe(true)
+      expect(videoFields.some((f) => f.key === 'crfQuality' && f.aliases?.includes('crf'))).toBe(true)
+
+      const socialFields = getToolParamFields('social-resizer')
+      expect(socialFields.some((f) => f.key === 'presetId')).toBe(true)
+    })
+
+    it('returns empty fields for parameterless or standard automatic tools', () => {
+      expect(getToolParamFields('pdf-compress')).toEqual([])
+      expect(getToolParamFields('zip-extract')).toEqual([])
+      expect(getToolParamFields('archive-inspect')).toEqual([])
+      expect(getToolParamFields('file-metadata')).toEqual([])
+    })
+
+    it('resolves parameter values prioritizing canonical key over aliases, falling back to default', () => {
+      const textField = getToolParamFields('pdf-watermark').find((f) => f.key === 'text')!
+
+      // 1. Fallback to default
+      expect(resolveParamValue({}, textField)).toBe('CONFIDENTIAL')
+
+      // 2. Fallback to alias if canonical key is missing
+      expect(resolveParamValue({ watermark: 'test output' }, textField)).toBe('test output')
+      expect(resolveParamValue({ watermarkText: 'legacy text' }, textField)).toBe('legacy text')
+
+      // 3. Prioritize canonical key when explicitly set
+      expect(resolveParamValue({ text: 'canonical text', watermark: 'ignored alias' }, textField)).toBe(
+        'canonical text'
+      )
+    })
+
+    it('prioritizes user-customized alias over default or recipe preset string', () => {
+      const textField = getToolParamFields('pdf-watermark').find((f) => f.key === 'text')!
+
+      // When canonical holds recipe preset 'STRICTLY PRIVATE' and alias holds user input 'test output'
+      expect(
+        resolveParamValue({ text: 'STRICTLY PRIVATE', watermark: 'test output' }, textField)
+      ).toBe('test output')
+
+      // When canonical holds default 'CONFIDENTIAL' and alias holds user input 'test output'
+      expect(
+        resolveParamValue({ text: 'CONFIDENTIAL', watermark: 'test output' }, textField)
+      ).toBe('test output')
+
+      // When canonical was genuinely customized by user, canonical wins
+      expect(
+        resolveParamValue({ text: 'MY CUSTOM WATERMARK', watermark: 'old text' }, textField)
+      ).toBe('MY CUSTOM WATERMARK')
+    })
+
+    it('executes text transformation tools end-to-end with configured parameters', async () => {
+      // 1. Case Converter
+      const caseUpper = await executeStep('case-converter', [], 'hello world', { caseMode: 'upper' })
+      expect(caseUpper.outputText).toBe('HELLO WORLD')
+
+      const caseSnake = await executeStep('case-converter', [], 'hello world', { caseMode: 'snake' })
+      expect(caseSnake.outputText).toBe('hello_world')
+
+      const caseCamel = await executeStep('case-converter', [], 'hello world', { caseMode: 'camel' })
+      expect(caseCamel.outputText).toBe('helloWorld')
+
+      // 2. JSON Formatter
+      const jsonPretty = await executeStep('json-format', [], '{"a":1,"b":2}', { indent: 2 })
+      expect(jsonPretty.outputText).toBe('{\n  "a": 1,\n  "b": 2\n}')
+
+      const jsonMinify = await executeStep('json-format', [], '{\n  "a": 1\n}', { mode: 'minify' })
+      expect(jsonMinify.outputText).toBe('{"a":1}')
+
+      // 3. Base64 Codec
+      const b64Encoded = await executeStep('base64-codec', [], 'Hello Hermanos', { direction: 'encode' })
+      expect(b64Encoded.outputText).toBe(btoa('Hello Hermanos'))
+
+      const b64Decoded = await executeStep('base64-codec', [], btoa('Hello Hermanos'), { direction: 'decode' })
+      expect(b64Decoded.outputText).toBe('Hello Hermanos')
+
+      // 4. YAML <-> JSON
+      const yamlRes = await executeStep('yaml-json', [], 'name: Stash\ncount: 42', { direction: 'yaml-to-json' })
+      expect(JSON.parse(yamlRes.outputText || '{}')).toEqual({ name: 'Stash', count: 42 })
+
+      // 5. CSV <-> JSON
+      const csvRes = await executeStep('csv-json', [], 'id,name\n1,Alpha\n2,Beta', { direction: 'csv-to-json' })
+      expect(JSON.parse(csvRes.outputText || '[]')).toEqual([
+        { id: '1', name: 'Alpha' },
+        { id: '2', name: 'Beta' }
+      ])
+    })
+
+    it('passes user watermark parameter correctly through execution pipeline', async () => {
+      let capturedWatermarkText: string | undefined
+      setCustomStepExecutor(async (toolId, files, _text, params) => {
+        if (toolId === 'pdf-watermark') {
+          const textField = getToolParamFields('pdf-watermark').find((f) => f.key === 'text')!
+          capturedWatermarkText = String(resolveParamValue(params, textField))
+        }
+        return {
+          outputFiles: files.map((f) => `/scratch/${toolId}/${path.basename(f)}`),
+          opDir: `/scratch/${toolId}`,
+          isTemp: true
+        }
+      })
+
+      try {
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-1', toolId: 'pdf-split', position: { x: 0, y: 0 }, params: { range: '1-2' } },
+            { id: 'node-2', toolId: 'pdf-watermark', position: { x: 200, y: 0 }, params: { text: 'STRICTLY PRIVATE', watermark: 'test output' } }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/document.pdf'])
+        expect(result.success).toBe(true)
+        expect(capturedWatermarkText).toBe('test output')
+      } finally {
+        setCustomStepExecutor(null)
+      }
     })
   })
 })

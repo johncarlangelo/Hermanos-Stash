@@ -22,6 +22,11 @@ import {
   stampPdfWatermark,
   type PdfWatermarkConfig
 } from '../../tools/pdf-watermark/logic'
+import { formatJson, type JsonIndent } from '../../tools/json-format/logic'
+import { convertCase, type CaseKind } from '../../tools/case-converter/logic'
+import { encodeBase64Utf8, decodeBase64Utf8 } from '../../tools/base64/logic'
+import { yamlToJson, jsonToYaml } from '../../tools/yaml-json/logic'
+import { csvToJson, jsonToCsv, type CsvDelimiter } from '../../tools/csv-json/logic'
 
 /** Directional media compatibility, independent of sidebar categories. */
 export function areFileCategoriesCompatible(
@@ -215,7 +220,7 @@ async function executeWithStash(
   const producesFiles = toolDef ? toolDef.capabilities.producesFiles : true
   const producesText = toolDef ? toolDef.capabilities.producesText : false
 
-  // Analysis / inspection / text-producing tools that consume files but output text
+  // Analysis / inspection / text-producing tools that consume files or text but output text
   if (!producesFiles) {
     if (toolId === 'file-metadata' && files[0]) {
       const stat = await window.stash.fs.stat(files[0])
@@ -225,12 +230,29 @@ async function executeWithStash(
         isTemp: false
       }
     }
-    if (toolId === 'hash-generator' && files[0]) {
-      const res = await window.stash.crypto.hashFile({ path: files[0], algorithm: 'sha256' })
-      return {
-        outputFiles: [],
-        outputText: `SHA-256: ${res.hex}\nFile: ${files[0]}`,
-        isTemp: false
+    if (toolId === 'hash-generator') {
+      const algo =
+        ((params.algorithm ?? params.algo) as 'sha256' | 'sha512' | 'md5' | 'sha1') || 'sha256'
+      if (files.length > 0) {
+        const lines: string[] = []
+        for (const file of files) {
+          const res = await window.stash.crypto.hashFile({ path: file, algorithm: algo })
+          const name = file.split(/[\\/]/).pop() || file
+          lines.push(`${res.hex}  ${name}`)
+        }
+        return {
+          outputFiles: [],
+          outputText: lines.join('\n'),
+          isTemp: false
+        }
+      }
+      if (text) {
+        const res = await window.stash.crypto.hashText({ text, algorithm: algo })
+        return {
+          outputFiles: [],
+          outputText: res.hex,
+          isTemp: false
+        }
       }
     }
     if (toolId === 'image-ocr' && files[0]) {
@@ -238,6 +260,62 @@ async function executeWithStash(
       return {
         outputFiles: [],
         outputText: res.text,
+        isTemp: false
+      }
+    }
+    if ((toolId === 'case-converter' || toolId === 'text-cases') && text) {
+      let mode = ((params.caseMode ?? params.mode ?? params.casing) as string) || 'upper'
+      if (mode === 'uppercase') mode = 'upper'
+      if (mode === 'lowercase') mode = 'lower'
+      return { outputFiles: [], outputText: convertCase(text, mode as CaseKind), isTemp: false }
+    }
+    if (toolId === 'json-format' && text) {
+      const mode = (params.mode as string) || 'pretty'
+      const rawIndent = params.indent ?? params.indentChoice
+      const indent: JsonIndent =
+        mode === 'minify'
+          ? 'minify'
+          : rawIndent === 1 || rawIndent === '\t'
+            ? '\t'
+            : typeof rawIndent === 'number'
+              ? rawIndent
+              : 2
+      const res = formatJson(text, indent)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'base64-codec' && text) {
+      const mode = (params.direction ?? params.mode) === 'decode' ? 'decode' : 'encode'
+      const res = mode === 'decode' ? decodeBase64Utf8(text) : encodeBase64Utf8(text)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'yaml-json' && text) {
+      const dir = (params.direction as string) || 'yaml-to-json'
+      const res = dir === 'json-to-yaml' ? jsonToYaml(text) : yamlToJson(text)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'csv-json' && text) {
+      const dir = (params.direction as string) || 'csv-to-json'
+      const delimiter = ((params.delimiter as string) || ',') as CsvDelimiter
+      const headerRow = params.headerRow !== false
+      const res =
+        dir === 'json-to-csv'
+          ? jsonToCsv(text, { delimiter, headerRow })
+          : csvToJson(text, { delimiter, headerRow })
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
         isTemp: false
       }
     }
@@ -271,21 +349,37 @@ async function executeWithStash(
     }
     case 'image-compress': {
       const quality = typeof params.quality === 'number' ? params.quality : 75
+      const maxDimension =
+        typeof params.maxDimension === 'number' && params.maxDimension > 0
+          ? params.maxDimension
+          : undefined
       const res = await window.stash.processing.compressImages({
         paths: files,
         outputDir: opDir,
-        quality
+        quality,
+        maxDimension
       })
       return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'image-watermark': {
+      const text = String(
+        params.text ??
+        params.watermarkText ??
+        params.watermark ??
+        'Hermanos Stash'
+      )
+      const position = (params.position as WatermarkPosition) || 'bottom-right'
+      const opacity = typeof params.opacity === 'number' ? params.opacity : 0.6
+      const fontSize = typeof params.fontSize === 'number' ? params.fontSize : 28
+      const color = (params.color as string) || (params.colorHex as string) || undefined
       const res = await window.stash.processing.watermarkImages({
         paths: files,
         outputDir: opDir,
-        text: String(params.watermarkText || 'Hermanos Stash'),
-        position: (params.position as WatermarkPosition) || 'bottom-right',
-        opacity: typeof params.opacity === 'number' ? params.opacity : 0.6,
-        fontSize: typeof params.fontSize === 'number' ? params.fontSize : 28
+        text,
+        position,
+        opacity,
+        fontSize,
+        color
       })
       return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
@@ -315,7 +409,11 @@ async function executeWithStash(
       return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-split': {
-      let pageSpec = (params.pageSpec as string) || (params.range as string) || '1'
+      let pageSpec =
+        (params.pageSpec as string) ||
+        (params.range as string) ||
+        (params.pageRanges as string) ||
+        '1'
       try {
         const info = await window.stash.pdfs.getInfo(files[0])
         if (pageSpec.includes('-')) {
@@ -348,21 +446,49 @@ async function executeWithStash(
         const targetPdf = `${opDir}/${base}-numbered.pdf`
         const { bytes } = await window.stash.fs.readFileBytes({ path: file })
         const prefix =
-          typeof params.prefix === 'string'
-            ? params.prefix
-            : typeof params.batesPrefix === 'string'
-              ? params.batesPrefix
+          typeof params.batesPrefix === 'string'
+            ? params.batesPrefix
+            : typeof params.prefix === 'string'
+              ? params.prefix
               : 'DOC-'
         const format =
           (params.format as NumberingFormat) ||
-          (params.prefix || params.batesPrefix ? 'bates' : DEFAULT_NUMBERING_CONFIG.format)
+          (params.batesPrefix || params.prefix ? 'bates' : DEFAULT_NUMBERING_CONFIG.format)
         const position = (params.position as NumberPosition) || 'bottom-center'
+        const batesDigits =
+          typeof params.batesDigits === 'number'
+            ? params.batesDigits
+            : DEFAULT_NUMBERING_CONFIG.batesDigits
+        const startNumber =
+          typeof params.startNumber === 'number'
+            ? params.startNumber
+            : typeof params.startingNumber === 'number'
+              ? params.startingNumber
+              : DEFAULT_NUMBERING_CONFIG.startNumber
+        const fontSize =
+          typeof params.fontSize === 'number'
+            ? params.fontSize
+            : DEFAULT_NUMBERING_CONFIG.fontSize
+        const colorHex =
+          typeof params.colorHex === 'string'
+            ? params.colorHex
+            : DEFAULT_NUMBERING_CONFIG.colorHex
+        const pageRangeText =
+          (params.pageRangeText as string) ||
+          (params.pageRanges as string) ||
+          (params.range as string) ||
+          'all'
         const stampedBytes = await stampPdfPageNumbers(bytes, {
           ...DEFAULT_NUMBERING_CONFIG,
+          ...(params as Partial<PdfNumberingConfig>),
           format,
           batesPrefix: prefix,
+          batesDigits,
           position,
-          ...(params as Partial<PdfNumberingConfig>)
+          startNumber,
+          fontSize,
+          colorHex,
+          pageRangeText
         })
         await window.stash.fs.writeFileBytes(
           targetPdf,
@@ -382,11 +508,55 @@ async function executeWithStash(
         const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `watermarked-${idx + 1}`
         const targetPdf = `${opDir}/${base}-watermarked.pdf`
         const { bytes } = await window.stash.fs.readFileBytes({ path: file })
-        const text = typeof params.text === 'string' ? params.text : 'CONFIDENTIAL'
+        const watermarkAlias =
+          typeof params.watermark === 'string'
+            ? params.watermark
+            : typeof params.watermarkText === 'string'
+              ? params.watermarkText
+              : undefined
+        const canonicalText = typeof params.text === 'string' ? params.text : undefined
+        const text =
+          watermarkAlias &&
+          watermarkAlias !== '' &&
+          canonicalText &&
+          watermarkAlias !== canonicalText &&
+          (canonicalText === 'CONFIDENTIAL' || canonicalText === 'STRICTLY PRIVATE')
+            ? watermarkAlias
+            : canonicalText ?? watermarkAlias ?? 'CONFIDENTIAL'
+        const rotationDegrees =
+          typeof params.rotationDegrees === 'number'
+            ? params.rotationDegrees
+            : typeof params.rotation === 'number'
+              ? params.rotation
+              : DEFAULT_WATERMARK_CONFIG.rotationDegrees
+        const fontSize =
+          typeof params.fontSize === 'number'
+            ? params.fontSize
+            : DEFAULT_WATERMARK_CONFIG.fontSize
+        const opacity =
+          typeof params.opacity === 'number'
+            ? params.opacity
+            : DEFAULT_WATERMARK_CONFIG.opacity
+        const colorHex =
+          typeof params.colorHex === 'string'
+            ? params.colorHex
+            : DEFAULT_WATERMARK_CONFIG.colorHex
+        const tiled = Boolean(params.tiled)
+        const pageRangeText =
+          (params.pageRangeText as string) ||
+          (params.pageRanges as string) ||
+          (params.range as string) ||
+          'all'
         const stampedBytes = await stampPdfWatermark(bytes, {
           ...DEFAULT_WATERMARK_CONFIG,
+          ...(params as Partial<PdfWatermarkConfig>),
           text,
-          ...(params as Partial<PdfWatermarkConfig>)
+          rotationDegrees,
+          fontSize,
+          opacity,
+          colorHex,
+          tiled,
+          pageRangeText
         })
         await window.stash.fs.writeFileBytes(
           targetPdf,
@@ -405,11 +575,20 @@ async function executeWithStash(
         const file = files[idx]
         const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `rotated-${idx + 1}`
         const targetPdf = `${opDir}/${base}-rotated.pdf`
+        const angle =
+          (params.angle as 90 | 180 | 270) ||
+          (params.rotation as 90 | 180 | 270) ||
+          90
+        const pageSpec =
+          (params.pageSpec as string) ||
+          (params.pageRanges as string) ||
+          (params.range as string) ||
+          'all'
         await window.stash.pdfs.rotate({
           path: file,
           targetPdf,
-          angle: (params.angle as 90 | 180 | 270) || 90,
-          pageSpec: (params.pageSpec as string) || 'all'
+          angle,
+          pageSpec
         })
         outputFiles.push(targetPdf)
       }
@@ -442,45 +621,94 @@ async function executeWithStash(
       return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'video-convert': {
-      const res = await window.stash.media.convertVideo({
-        path: files[0],
-        outputDir: opDir,
-        format: (params.format as 'mp4' | 'webm' | 'mkv') || 'mp4'
-      })
-      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      const crf =
+        typeof params.crfQuality === 'number'
+          ? params.crfQuality
+          : typeof params.crf === 'number'
+            ? params.crf
+            : 23
+      const format = (params.format as 'mp4' | 'webm' | 'mkv') || 'mp4'
+      for (const file of files) {
+        const res = await window.stash.media.convertVideo({
+          path: file,
+          outputDir: opDir,
+          format,
+          crfQuality: crf
+        })
+        outputFiles.push(...res.succeeded.map((s) => s.output))
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'video-compress': {
-      const res = await window.stash.media.compressVideo({
-        path: files[0],
-        outputDir: opDir,
-        crfQuality: typeof params.crfQuality === 'number' ? params.crfQuality : 28
-      })
-      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      const crfQuality =
+        typeof params.crfQuality === 'number'
+          ? params.crfQuality
+          : typeof params.crf === 'number'
+            ? params.crf
+            : 28
+      const maxDimension =
+        typeof params.maxDimension === 'number' && params.maxDimension > 0
+          ? params.maxDimension
+          : undefined
+      for (const file of files) {
+        const res = await window.stash.media.compressVideo({
+          path: file,
+          outputDir: opDir,
+          crfQuality,
+          maxDimension
+        })
+        outputFiles.push(...res.succeeded.map((s) => s.output))
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'video-to-gif': {
-      const res = await window.stash.media.videoToGif({
-        path: files[0],
-        outputDir: opDir,
-        fps: typeof params.fps === 'number' ? params.fps : 15,
-        maxWidth: typeof params.maxWidth === 'number' ? params.maxWidth : 640
-      })
-      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      const fps = typeof params.fps === 'number' ? params.fps : 15
+      const maxWidth = typeof params.maxWidth === 'number' ? params.maxWidth : 640
+      for (const file of files) {
+        const res = await window.stash.media.videoToGif({
+          path: file,
+          outputDir: opDir,
+          fps,
+          maxWidth
+        })
+        outputFiles.push(...res.succeeded.map((s) => s.output))
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'extract-audio': {
-      const res = await window.stash.media.extractAudio({
-        path: files[0],
-        outputDir: opDir,
-        codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
-      })
-      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      const codec =
+        ((params.format ?? params.codec) as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
+      const bitrateKbps = typeof params.bitrateKbps === 'number' ? params.bitrateKbps : undefined
+      for (const file of files) {
+        const res = await window.stash.media.extractAudio({
+          path: file,
+          outputDir: opDir,
+          codec,
+          bitrateKbps
+        })
+        outputFiles.push(...res.succeeded.map((s) => s.output))
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'audio-convert': {
-      const res = await window.stash.media.convertAudio({
-        path: files[0],
-        outputDir: opDir,
-        codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
-      })
-      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      const codec =
+        ((params.codec ?? params.format) as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
+      const bitrateKbps = typeof params.bitrateKbps === 'number' ? params.bitrateKbps : undefined
+      for (const file of files) {
+        const res = await window.stash.media.convertAudio({
+          path: file,
+          outputDir: opDir,
+          codec,
+          bitrateKbps
+        })
+        outputFiles.push(...res.succeeded.map((s) => s.output))
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'zip-create': {
       const targetZip = `${opDir}/archive.zip`
@@ -536,6 +764,66 @@ export async function executeStep(
 ): Promise<{ outputFiles: string[]; outputText?: string; opDir?: string; isTemp?: boolean }> {
   if (customExecutor) {
     return customExecutor(toolId, files, text, params, options)
+  }
+
+  // Pure in-memory text transformations do not require Electron IPC or window.stash
+  if (text) {
+    if (toolId === 'case-converter' || toolId === 'text-cases') {
+      let mode = ((params.caseMode ?? params.mode ?? params.casing) as string) || 'upper'
+      if (mode === 'uppercase') mode = 'upper'
+      if (mode === 'lowercase') mode = 'lower'
+      return { outputFiles: [], outputText: convertCase(text, mode as CaseKind), isTemp: false }
+    }
+    if (toolId === 'json-format') {
+      const mode = (params.mode as string) || 'pretty'
+      const rawIndent = params.indent ?? params.indentChoice
+      const indent: JsonIndent =
+        mode === 'minify'
+          ? 'minify'
+          : rawIndent === 1 || rawIndent === '\t'
+            ? '\t'
+            : typeof rawIndent === 'number'
+              ? rawIndent
+              : 2
+      const res = formatJson(text, indent)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'base64-codec') {
+      const mode = (params.direction ?? params.mode) === 'decode' ? 'decode' : 'encode'
+      const res = mode === 'decode' ? decodeBase64Utf8(text) : encodeBase64Utf8(text)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'yaml-json') {
+      const dir = (params.direction as string) || 'yaml-to-json'
+      const res = dir === 'json-to-yaml' ? jsonToYaml(text) : yamlToJson(text)
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
+    if (toolId === 'csv-json') {
+      const dir = (params.direction as string) || 'csv-to-json'
+      const delimiter = ((params.delimiter as string) || ',') as CsvDelimiter
+      const headerRow = params.headerRow !== false
+      const res =
+        dir === 'json-to-csv'
+          ? jsonToCsv(text, { delimiter, headerRow })
+          : csvToJson(text, { delimiter, headerRow })
+      return {
+        outputFiles: [],
+        outputText: res.ok ? res.output : text,
+        isTemp: false
+      }
+    }
   }
 
   if (typeof window !== 'undefined' && window.stash) {
