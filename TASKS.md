@@ -410,6 +410,14 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
     - Implemented eager and `finally` scratch purging in `runWorkflowPipeline`: tracks downstream consumers for each intermediate DAG node; as soon as all downstream nodes finish consuming intermediate artifacts, that intermediate node's temporary workspace is immediately deleted via `window.stash.temp.cleanup(dir)`. Any intermediate directories left over due to aborts or errors are purged in a `finally` block. Leaf/terminal node outputs and user-specified custom export directories (`options.outputDir`) are strictly preserved.
     - Updated `QueueRunner.tsx` to eagerly clean up intermediate temporary workspaces as steps complete, badging intermediate steps as `HANDED OFF` (`Passed X artifact(s) to Step #...`) and only exposing the terminal step's output files with a direct "Reveal in Explorer" button.
     - Bumped `QUEUE_WORKFLOW_VERSION` to `0.3.3` in `version.ts` and added unit test coverage in `workflow.test.ts`. Verified all 921 tests across 92 test files pass, matrix check passes (0 diffs), typecheck passes, and ESLint passes with 0 errors.
+- [x] **Recipe Pipeline Execution Fix: PDF Numberer, Watermark & Dangling Scratch Defense (`v0.3.4`)**:
+  - **Problem Statement:** Testing recipe *Document Bates Stamper & PDF Optimizer* (`pdf-split` → `pdf-numberer` → `pdf-watermark` → `pdf-compress`) threw `ENOENT` during `pdf:compress` because intermediate `pdf-numberer` and `pdf-watermark` lacked dedicated pipeline step execution handlers, causing them to fall back to `default: { outputFiles: files }` referencing `node-1`'s scratch workspace. When eager intermediate cleanup deleted `node-1`'s scratch workspace, downstream `pdf-compress` attempted to open the deleted split PDF.
+  - **Solution & Implementation:**
+    - Connected `stampPdfPageNumbers` (`pdf-numberer`) and `stampPdfWatermark` (`pdf-watermark`) in `executeWithStash` to generate real numbered/bates and watermarked PDF outputs in their own step `opDir`.
+    - Added multi-file loops for PDF steps (`pdf-numberer`, `pdf-watermark`, `pdf-rotate`, `pdf-compress`, `pdf-reorder`).
+    - Added page range bounds clamping in `pdf-split` against actual document page count.
+    - Hardened `default:` to defensively copy files into the step's isolated `opDir`, eliminating dangling file references across all unhandled pipeline steps.
+    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.3.4`, updated tests and compatibility documentation matrix. 922 tests across 92 test files passing, typecheck and lint passing with 0 errors.
 - [ ] Follow-up: parameter/format-aware artifact contracts.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:

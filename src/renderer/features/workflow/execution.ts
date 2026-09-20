@@ -10,6 +10,18 @@ import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
 import { fileInputDomain, fileOutputDomain } from '../../../shared/utils/tool-domains'
 import type { WorkflowExecutionResult, WorkflowGraph, WorkflowNode } from './types'
+import {
+  DEFAULT_NUMBERING_CONFIG,
+  stampPdfPageNumbers,
+  type NumberPosition,
+  type NumberingFormat,
+  type PdfNumberingConfig
+} from '../../tools/pdf-numberer/logic'
+import {
+  DEFAULT_WATERMARK_CONFIG,
+  stampPdfWatermark,
+  type PdfWatermarkConfig
+} from '../../tools/pdf-watermark/logic'
 
 /** Directional media compatibility, independent of sidebar categories. */
 export function areFileCategoriesCompatible(
@@ -303,36 +315,131 @@ async function executeWithStash(
       return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-split': {
+      let pageSpec = (params.pageSpec as string) || (params.range as string) || '1'
+      try {
+        const info = await window.stash.pdfs.getInfo(files[0])
+        if (pageSpec.includes('-')) {
+          const parts = pageSpec.split('-')
+          const start = parseInt(parts[0], 10) || 1
+          const end = parseInt(parts[1], 10) || info.pageCount
+          const clampedStart = Math.min(Math.max(1, start), info.pageCount)
+          const clampedEnd = Math.min(Math.max(clampedStart, end), info.pageCount)
+          pageSpec =
+            clampedStart === clampedEnd ? `${clampedStart}` : `${clampedStart}-${clampedEnd}`
+        } else {
+          const single = parseInt(pageSpec, 10) || 1
+          pageSpec = `${Math.min(Math.max(1, single), info.pageCount)}`
+        }
+      } catch {
+        // Fall back to original pageSpec if getInfo fails
+      }
       const res = await window.stash.pdfs.split({
         path: files[0],
         outputDir: opDir,
-        pageSpec: (params.pageSpec as string) || '1'
+        pageSpec
       })
       return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
+    case 'pdf-numberer': {
+      const outputFiles: string[] = []
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `numbered-${idx + 1}`
+        const targetPdf = `${opDir}/${base}-numbered.pdf`
+        const { bytes } = await window.stash.fs.readFileBytes({ path: file })
+        const prefix =
+          typeof params.prefix === 'string'
+            ? params.prefix
+            : typeof params.batesPrefix === 'string'
+              ? params.batesPrefix
+              : 'DOC-'
+        const format =
+          (params.format as NumberingFormat) ||
+          (params.prefix || params.batesPrefix ? 'bates' : DEFAULT_NUMBERING_CONFIG.format)
+        const position = (params.position as NumberPosition) || 'bottom-center'
+        const stampedBytes = await stampPdfPageNumbers(bytes, {
+          ...DEFAULT_NUMBERING_CONFIG,
+          format,
+          batesPrefix: prefix,
+          position,
+          ...(params as Partial<PdfNumberingConfig>)
+        })
+        await window.stash.fs.writeFileBytes(
+          targetPdf,
+          stampedBytes.buffer.slice(
+            stampedBytes.byteOffset,
+            stampedBytes.byteOffset + stampedBytes.byteLength
+          ) as ArrayBuffer
+        )
+        outputFiles.push(targetPdf)
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
+    }
+    case 'pdf-watermark': {
+      const outputFiles: string[] = []
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `watermarked-${idx + 1}`
+        const targetPdf = `${opDir}/${base}-watermarked.pdf`
+        const { bytes } = await window.stash.fs.readFileBytes({ path: file })
+        const text = typeof params.text === 'string' ? params.text : 'CONFIDENTIAL'
+        const stampedBytes = await stampPdfWatermark(bytes, {
+          ...DEFAULT_WATERMARK_CONFIG,
+          text,
+          ...(params as Partial<PdfWatermarkConfig>)
+        })
+        await window.stash.fs.writeFileBytes(
+          targetPdf,
+          stampedBytes.buffer.slice(
+            stampedBytes.byteOffset,
+            stampedBytes.byteOffset + stampedBytes.byteLength
+          ) as ArrayBuffer
+        )
+        outputFiles.push(targetPdf)
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
+    }
     case 'pdf-rotate': {
-      const targetPdf = `${opDir}/rotated.pdf`
-      await window.stash.pdfs.rotate({
-        path: files[0],
-        targetPdf,
-        angle: (params.angle as 90 | 180 | 270) || 90,
-        pageSpec: (params.pageSpec as string) || 'all'
-      })
-      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `rotated-${idx + 1}`
+        const targetPdf = `${opDir}/${base}-rotated.pdf`
+        await window.stash.pdfs.rotate({
+          path: file,
+          targetPdf,
+          angle: (params.angle as 90 | 180 | 270) || 90,
+          pageSpec: (params.pageSpec as string) || 'all'
+        })
+        outputFiles.push(targetPdf)
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'pdf-compress': {
-      const targetPdf = `${opDir}/compressed.pdf`
-      await window.stash.pdfs.compress({ path: files[0], targetPdf })
-      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `compressed-${idx + 1}`
+        const targetPdf = `${opDir}/${base}-compressed.pdf`
+        await window.stash.pdfs.compress({ path: file, targetPdf })
+        outputFiles.push(targetPdf)
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'pdf-reorder': {
-      const targetPdf = `${opDir}/reordered.pdf`
-      await window.stash.pdfs.reorder({
-        path: files[0],
-        targetPdf,
-        pageSpec: (params.pageSpec as string) || '1'
-      })
-      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
+      const outputFiles: string[] = []
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `reordered-${idx + 1}`
+        const targetPdf = `${opDir}/${base}-reordered.pdf`
+        await window.stash.pdfs.reorder({
+          path: file,
+          targetPdf,
+          pageSpec: (params.pageSpec as string) || '1'
+        })
+        outputFiles.push(targetPdf)
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'video-convert': {
       const res = await window.stash.media.convertVideo({
@@ -387,8 +494,26 @@ async function executeWithStash(
       return { outputFiles: extractedPaths, opDir, isTemp: !isCustomDir }
     }
     default: {
+      // For any unhandled or passthrough file-producing tool, copy incoming files to this operation's opDir
+      // so downstream steps never reference files in an upstream directory that is about to be purged.
+      const copiedOutputs: string[] = []
+      for (const f of files) {
+        const base = f.split(/[\\/]/).pop() || 'file'
+        const dest = `${opDir}/${base}`
+        if (f !== dest) {
+          try {
+            const { bytes } = await window.stash.fs.readFileBytes({ path: f })
+            await window.stash.fs.writeFileBytes(dest, bytes)
+            copiedOutputs.push(dest)
+          } catch {
+            copiedOutputs.push(f)
+          }
+        } else {
+          copiedOutputs.push(f)
+        }
+      }
       return {
-        outputFiles: files,
+        outputFiles: copiedOutputs,
         outputText: producesText ? text : undefined,
         opDir,
         isTemp: !isCustomDir

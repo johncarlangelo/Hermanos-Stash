@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import '../../tools'
@@ -311,7 +311,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.3')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.4')
     })
   })
 
@@ -501,6 +501,62 @@ describe('Workflow Pipeline Execution Engine', () => {
         // Node D is the leaf; its output must NOT be cleaned up
         const cleanupDIndex = cleanLog.findIndex((e) => e.action === 'cleanup' && e.dir === '/scratch/images-to-pdf')
         expect(cleanupDIndex).toBe(-1)
+      } finally {
+        setCustomStepExecutor(null)
+        restoreStash()
+      }
+    })
+
+    it('safely handles multi-step document pipelines without premature deletion of upstream artifacts', async () => {
+      const cleanedDirs: string[] = []
+      const activeDirs = new Set<string>()
+      const restoreStash = withMockStashCleanup(async (dir: string) => {
+        cleanedDirs.push(dir)
+        activeDirs.delete(dir)
+      })
+
+      setCustomStepExecutor(async (toolId, files) => {
+        // Assert all input files exist in currently active dirs or external input
+        for (const file of files) {
+          const dir = path.dirname(file)
+          if (dir.startsWith('/scratch/')) {
+            expect(activeDirs.has(dir), `Input directory ${dir} must not be cleaned prematurely`).toBe(true)
+          }
+        }
+        const opDir = `/scratch/${toolId}`
+        activeDirs.add(opDir)
+        return {
+          outputFiles: files.map((f) => `${opDir}/${path.basename(f)}`),
+          opDir,
+          isTemp: true
+        }
+      })
+
+      try {
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-1', toolId: 'pdf-split', position: { x: 0, y: 0 }, params: { range: '1-5' } },
+            { id: 'node-2', toolId: 'pdf-numberer', position: { x: 200, y: 0 }, params: { prefix: 'DOC-' } },
+            { id: 'node-3', toolId: 'pdf-watermark', position: { x: 400, y: 0 }, params: { text: 'CONFIDENTIAL' } },
+            { id: 'node-4', toolId: 'pdf-compress', position: { x: 600, y: 0 }, params: {} }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' },
+            { id: 'e2', fromNodeId: 'node-2', fromPort: 'files', toNodeId: 'node-3', toPort: 'files' },
+            { id: 'e3', fromNodeId: 'node-3', fromPort: 'files', toNodeId: 'node-4', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/contract.pdf'])
+        expect(result.success).toBe(true)
+        expect(result.finalOutputFiles).toEqual(['/scratch/pdf-compress/contract.pdf'])
+
+        // Intermediate scratch directories must be cleaned up
+        expect(cleanedDirs).toContain('/scratch/pdf-split')
+        expect(cleanedDirs).toContain('/scratch/pdf-numberer')
+        expect(cleanedDirs).toContain('/scratch/pdf-watermark')
+        // Terminal node output must NOT be cleaned up
+        expect(cleanedDirs).not.toContain('/scratch/pdf-compress')
       } finally {
         setCustomStepExecutor(null)
         restoreStash()
