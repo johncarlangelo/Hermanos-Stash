@@ -206,6 +206,16 @@ export function WorkflowTemplatesDrawer({
             )
           )}
 
+          {activeTab === 'official' && BUILT_IN_WORKFLOW_TEMPLATES.length === 0 && (
+            <div className="py-12 text-center text-xs text-faint space-y-2">
+              <FolderArchive size={28} className="mx-auto text-faint/50" />
+              <p>No built-in recipes available.</p>
+              <p className="text-[10.5px]">
+                Updated pre-built recipes will be added in an upcoming release.
+              </p>
+            </div>
+          )}
+
           {activeTab === 'user' && userTemplates.length === 0 && (
             <div className="py-12 text-center text-xs text-faint space-y-2">
               <FolderArchive size={28} className="mx-auto text-faint/50" />

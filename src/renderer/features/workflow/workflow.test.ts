@@ -183,15 +183,27 @@ describe('Workflow Topological Sort & DAG Validation', () => {
 })
 
 describe('Workflow Pipeline Execution Engine', () => {
-  it('rejects a legacy recipe containing mixed-output wires before starting any node', async () => {
-    const template = BUILT_IN_WORKFLOW_TEMPLATES[0]
+  it('rejects a legacy graph containing mixed-output wires before starting any node', async () => {
+    const legacyGraph: WorkflowGraph = {
+      nodes: [
+        { id: 'node-1', toolId: 'id-photo-maker', position: { x: 0, y: 0 }, params: {} },
+        { id: 'node-2', toolId: 'image-watermark', position: { x: 200, y: 0 }, params: {} }
+      ],
+      edges: [
+        { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+      ]
+    }
     const started: string[] = []
     await expect(
-      runWorkflowPipeline(template.graph, ['portrait.jpg'], '', {
+      runWorkflowPipeline(legacyGraph, ['portrait.jpg'], '', {
         onNodeStart: (id) => started.push(id)
       })
     ).rejects.toThrow('requires image files')
     expect(started).toEqual([])
+  })
+
+  it('verifies built-in recipes array is cleared pending new verified recipes', () => {
+    expect(BUILT_IN_WORKFLOW_TEMPLATES).toEqual([])
   })
 
   it.each(['icon-pack', 'qr-decoder'])(
@@ -313,7 +325,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.4.0')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.4.1')
     })
   })
 

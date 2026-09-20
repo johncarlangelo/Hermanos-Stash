@@ -427,7 +427,10 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
     - Hardened `execution.ts` with alias-safe parameter resolution (`resolveParamValue`) and added real execution adapters for text utilities (`json-format`, `case-converter`, `base64-codec`, `hash-generator`).
     - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.0` in `version.ts` and added comprehensive unit test suites in `workflow.test.ts`. Verified all 925 tests pass, matrix check passes (0 diffs), typecheck passes, and lint passes with 0 errors.
 - [ ] Follow-up: parameter/format-aware artifact contracts.
-- [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
+- [x] **Legacy Recipe Cleanup & Stale Template Removal (`v0.4.1`)**:
+  - Removed the 4 legacy built-in recipes (`presets.ts`) that predated the directional compatibility matrix (including the legacy Photo ID studio whose mixed-output wire failed preflight checks).
+  - Added clean empty state in `WorkflowTemplatesDrawer.tsx` informing users that updated pre-built recipes matching the matrix will be curated and added.
+  - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.1`, updated unit tests and regenerated matrix documentation. All 929 tests pass.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:
   - **Filter Out Inert / Non-Transforming Tools:** Audit tools that have no I/O capability or pipeline transformation utility (e.g. `mime-lookup` and `http-status` with empty capabilities `{}`, `chmod-calculator`, `cron-explainer`). Evaluate hiding them from the workflow palette drawer (e.g. via `isWorkflowCompatible?: boolean` or requiring at least one input/output port) so inert cards don't clutter the canvas.
   - **Metric / Terminal Sink Nodes:** Clarify the role of inspector/calculator tools like `token-counter` (can act as a read-only terminal sink or pipeline token estimator).
