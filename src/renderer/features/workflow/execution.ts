@@ -180,7 +180,7 @@ export type StepExecutor = (
   text: string,
   params: Record<string, unknown>,
   options?: { outputDir?: string }
-) => Promise<{ outputFiles: string[]; outputText?: string }>
+) => Promise<{ outputFiles: string[]; outputText?: string; opDir?: string; isTemp?: boolean }>
 
 let customExecutor: StepExecutor | null = null
 
@@ -198,7 +198,7 @@ async function executeWithStash(
   text: string,
   params: Record<string, unknown>,
   options?: { outputDir?: string }
-): Promise<{ outputFiles: string[]; outputText?: string }> {
+): Promise<{ outputFiles: string[]; outputText?: string; opDir?: string; isTemp?: boolean }> {
   const toolDef = toolRegistry.get(toolId)
   const producesFiles = toolDef ? toolDef.capabilities.producesFiles : true
   const producesText = toolDef ? toolDef.capabilities.producesText : false
@@ -209,35 +209,39 @@ async function executeWithStash(
       const stat = await window.stash.fs.stat(files[0])
       return {
         outputFiles: [],
-        outputText: `File: ${stat.name}\nSize: ${stat.sizeBytes} bytes\nExtension: ${stat.extension}\nModified: ${new Date(stat.modifiedAtMs).toLocaleString()}`
+        outputText: `File: ${stat.name}\nSize: ${stat.sizeBytes} bytes\nExtension: ${stat.extension}\nModified: ${new Date(stat.modifiedAtMs).toLocaleString()}`,
+        isTemp: false
       }
     }
     if (toolId === 'hash-generator' && files[0]) {
       const res = await window.stash.crypto.hashFile({ path: files[0], algorithm: 'sha256' })
       return {
         outputFiles: [],
-        outputText: `SHA-256: ${res.hex}\nFile: ${files[0]}`
+        outputText: `SHA-256: ${res.hex}\nFile: ${files[0]}`,
+        isTemp: false
       }
     }
     if (toolId === 'image-ocr' && files[0]) {
       const res = await window.stash.processing.ocrImage({ path: files[0] })
       return {
         outputFiles: [],
-        outputText: res.text
+        outputText: res.text,
+        isTemp: false
       }
     }
     const outputText =
       producesText && text.trim().length > 0
         ? `Processed by ${toolDef?.name ?? toolId}:\n${text}`
         : undefined
-    return { outputFiles: [], outputText }
+    return { outputFiles: [], outputText, isTemp: false }
   }
 
   // File-producing tool without inputs
   if (files.length === 0) {
-    return { outputFiles: [], outputText: undefined }
+    return { outputFiles: [], outputText: undefined, isTemp: false }
   }
 
+  const isCustomDir = Boolean(options?.outputDir)
   // Acquire isolated workspace directory for this operation
   const opDir = options?.outputDir ?? (await window.stash.temp.createOperation(`wf-${toolId}`))
 
@@ -251,7 +255,7 @@ async function executeWithStash(
         format,
         quality
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'image-compress': {
       const quality = typeof params.quality === 'number' ? params.quality : 75
@@ -260,7 +264,7 @@ async function executeWithStash(
         outputDir: opDir,
         quality
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'image-watermark': {
       const res = await window.stash.processing.watermarkImages({
@@ -271,7 +275,7 @@ async function executeWithStash(
         opacity: typeof params.opacity === 'number' ? params.opacity : 0.6,
         fontSize: typeof params.fontSize === 'number' ? params.fontSize : 28
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'social-resizer': {
       const res = await window.stash.processing.socialResize({
@@ -279,24 +283,24 @@ async function executeWithStash(
         outputDir: opDir,
         presets: [(params.presetId as string) || 'instagram-square']
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'icon-pack': {
       const res = await window.stash.icons.generatePack({
         path: files[0],
         outputDir: opDir
       })
-      return { outputFiles: res.succeeded.map((s) => s.path) }
+      return { outputFiles: res.succeeded.map((s) => s.path), opDir, isTemp: !isCustomDir }
     }
     case 'images-to-pdf': {
       const targetPdf = `${opDir}/images-to-pdf.pdf`
       await window.stash.pdfs.imagesToPdf({ paths: files, targetPdf })
-      return { outputFiles: [targetPdf] }
+      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-merge': {
       const targetPdf = `${opDir}/merged.pdf`
       await window.stash.pdfs.merge({ paths: files, targetPdf })
-      return { outputFiles: [targetPdf] }
+      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-split': {
       const res = await window.stash.pdfs.split({
@@ -304,7 +308,7 @@ async function executeWithStash(
         outputDir: opDir,
         pageSpec: (params.pageSpec as string) || '1'
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'pdf-rotate': {
       const targetPdf = `${opDir}/rotated.pdf`
@@ -314,12 +318,12 @@ async function executeWithStash(
         angle: (params.angle as 90 | 180 | 270) || 90,
         pageSpec: (params.pageSpec as string) || 'all'
       })
-      return { outputFiles: [targetPdf] }
+      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-compress': {
       const targetPdf = `${opDir}/compressed.pdf`
       await window.stash.pdfs.compress({ path: files[0], targetPdf })
-      return { outputFiles: [targetPdf] }
+      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'pdf-reorder': {
       const targetPdf = `${opDir}/reordered.pdf`
@@ -328,7 +332,7 @@ async function executeWithStash(
         targetPdf,
         pageSpec: (params.pageSpec as string) || '1'
       })
-      return { outputFiles: [targetPdf] }
+      return { outputFiles: [targetPdf], opDir, isTemp: !isCustomDir }
     }
     case 'video-convert': {
       const res = await window.stash.media.convertVideo({
@@ -336,7 +340,7 @@ async function executeWithStash(
         outputDir: opDir,
         format: (params.format as 'mp4' | 'webm' | 'mkv') || 'mp4'
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'video-compress': {
       const res = await window.stash.media.compressVideo({
@@ -344,7 +348,7 @@ async function executeWithStash(
         outputDir: opDir,
         crfQuality: typeof params.crfQuality === 'number' ? params.crfQuality : 28
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'video-to-gif': {
       const res = await window.stash.media.videoToGif({
@@ -353,7 +357,7 @@ async function executeWithStash(
         fps: typeof params.fps === 'number' ? params.fps : 15,
         maxWidth: typeof params.maxWidth === 'number' ? params.maxWidth : 640
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'extract-audio': {
       const res = await window.stash.media.extractAudio({
@@ -361,7 +365,7 @@ async function executeWithStash(
         outputDir: opDir,
         codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'audio-convert': {
       const res = await window.stash.media.convertAudio({
@@ -369,23 +373,25 @@ async function executeWithStash(
         outputDir: opDir,
         codec: (params.codec as 'aac' | 'mp3' | 'wav' | 'flac' | 'opus') || 'mp3'
       })
-      return { outputFiles: res.succeeded.map((s) => s.output) }
+      return { outputFiles: res.succeeded.map((s) => s.output), opDir, isTemp: !isCustomDir }
     }
     case 'zip-create': {
       const targetZip = `${opDir}/archive.zip`
       await window.stash.archives.createZip({ paths: files, targetZip })
-      return { outputFiles: [targetZip] }
+      return { outputFiles: [targetZip], opDir, isTemp: !isCustomDir }
     }
     case 'zip-extract': {
       await window.stash.archives.extractZip({ zipPath: files[0], outputDir: opDir })
       const list = await window.stash.files.listDir(opDir)
       const extractedPaths = list.entries.map((e) => `${opDir}/${e.name}`)
-      return { outputFiles: extractedPaths }
+      return { outputFiles: extractedPaths, opDir, isTemp: !isCustomDir }
     }
     default: {
       return {
         outputFiles: files,
-        outputText: producesText ? text : undefined
+        outputText: producesText ? text : undefined,
+        opDir,
+        isTemp: !isCustomDir
       }
     }
   }
@@ -402,13 +408,13 @@ export async function executeStep(
   text: string,
   params: Record<string, unknown>,
   options?: { outputDir?: string }
-): Promise<{ outputFiles: string[]; outputText?: string }> {
-  if (typeof window !== 'undefined' && window.stash) {
-    return executeWithStash(toolId, files, text, params, options)
-  }
-
+): Promise<{ outputFiles: string[]; outputText?: string; opDir?: string; isTemp?: boolean }> {
   if (customExecutor) {
     return customExecutor(toolId, files, text, params, options)
+  }
+
+  if (typeof window !== 'undefined' && window.stash) {
+    return executeWithStash(toolId, files, text, params, options)
   }
 
   // Fallback for headless environments without StashBridge or registered executor
@@ -485,91 +491,148 @@ export async function runWorkflowPipeline(
   const nodeOutputs = new Map<string, { files: string[]; text?: string }>()
   const nodeResults: WorkflowExecutionResult['nodeResults'] = {}
 
+  // Track downstream consumers to eagerly clean up intermediate directories
+  const remainingConsumers = new Map<string, Set<string>>()
+  for (const edge of graph.edges) {
+    if (!remainingConsumers.has(edge.fromNodeId)) {
+      remainingConsumers.set(edge.fromNodeId, new Set())
+    }
+    remainingConsumers.get(edge.fromNodeId)!.add(edge.toNodeId)
+  }
+
+  const intermediateOpDirs = new Map<string, string>()
+  const uncleanedIntermediateDirs = new Set<string>()
+
   let totalCompleted = 0
   const totalNodes = sortedNodeIds.length
 
-  for (const nodeId of sortedNodeIds) {
-    if (callbacks?.isAborted?.()) {
-      return {
-        success: false,
-        durationMs: Date.now() - startTime,
-        nodeResults,
-        finalOutputFiles: []
+  try {
+    for (const nodeId of sortedNodeIds) {
+      if (callbacks?.isAborted?.()) {
+        return {
+          success: false,
+          durationMs: Date.now() - startTime,
+          nodeResults,
+          finalOutputFiles: []
+        }
       }
-    }
 
-    const node = nodeMap.get(nodeId)!
-    const inEdges = incomingEdges.get(nodeId) || []
+      const node = nodeMap.get(nodeId)!
+      const inEdges = incomingEdges.get(nodeId) || []
 
-    // Collect inputs from upstream nodes
-    let stepInputFiles: string[] = []
-    let stepInputText = ''
+      // Collect inputs from upstream nodes
+      let stepInputFiles: string[] = []
+      let stepInputText = ''
 
-    if (inEdges.length === 0) {
-      // Source node: takes direct node inputs or initial pipeline inputs
-      stepInputFiles =
-        node.inputFiles && node.inputFiles.length > 0 ? [...node.inputFiles] : [...initialFiles]
-      stepInputText =
-        node.inputText !== undefined && node.inputText !== '' ? node.inputText : initialText
-    } else {
-      for (const edge of inEdges) {
-        const upstream = nodeOutputs.get(edge.fromNodeId)
-        if (upstream) {
-          if (edge.fromPort === 'files' && upstream.files.length > 0) {
-            stepInputFiles.push(...upstream.files)
-          }
-          if (edge.fromPort === 'text' && upstream.text) {
-            stepInputText = stepInputText ? `${stepInputText}\n${upstream.text}` : upstream.text
+      if (inEdges.length === 0) {
+        // Source node: takes direct node inputs or initial pipeline inputs
+        stepInputFiles =
+          node.inputFiles && node.inputFiles.length > 0 ? [...node.inputFiles] : [...initialFiles]
+        stepInputText =
+          node.inputText !== undefined && node.inputText !== '' ? node.inputText : initialText
+      } else {
+        for (const edge of inEdges) {
+          const upstream = nodeOutputs.get(edge.fromNodeId)
+          if (upstream) {
+            if (edge.fromPort === 'files' && upstream.files.length > 0) {
+              stepInputFiles.push(...upstream.files)
+            }
+            if (edge.fromPort === 'text' && upstream.text) {
+              stepInputText = stepInputText ? `${stepInputText}\n${upstream.text}` : upstream.text
+            }
           }
         }
       }
+
+      // Deduplicate input files
+      stepInputFiles = Array.from(new Set(stepInputFiles))
+
+      callbacks?.onNodeStart?.(nodeId, stepInputFiles)
+      const nodeStartTime = Date.now()
+
+      try {
+        const { outputFiles, outputText, opDir, isTemp } = await executeStep(
+          node.toolId,
+          stepInputFiles,
+          stepInputText,
+          node.params,
+          { outputDir: callbacks?.outputDir }
+        )
+
+        const nodeDuration = Date.now() - nodeStartTime
+        nodeOutputs.set(nodeId, { files: outputFiles, text: outputText })
+
+        // If this is an intermediate node (has downstream consumers) and produced a temp directory,
+        // track it for eager cleanup once all consumers finish.
+        if (remainingConsumers.has(nodeId) && opDir && isTemp) {
+          intermediateOpDirs.set(nodeId, opDir)
+          uncleanedIntermediateDirs.add(opDir)
+        }
+
+        nodeResults[nodeId] = {
+          status: 'success',
+          inputFiles: stepInputFiles,
+          outputFiles,
+          durationMs: nodeDuration
+        }
+
+        callbacks?.onNodeSuccess?.(nodeId, outputFiles, nodeDuration)
+        totalCompleted++
+        callbacks?.onProgress?.(totalCompleted / Math.max(1, totalNodes))
+
+        // Check if any upstream nodes feeding this node now have zero remaining consumers
+        for (const edge of inEdges) {
+          const upstreamId = edge.fromNodeId
+          const consumers = remainingConsumers.get(upstreamId)
+          if (consumers) {
+            consumers.delete(nodeId)
+            if (consumers.size === 0) {
+              remainingConsumers.delete(upstreamId)
+              const dirToClean = intermediateOpDirs.get(upstreamId)
+              if (dirToClean) {
+                intermediateOpDirs.delete(upstreamId)
+                uncleanedIntermediateDirs.delete(dirToClean)
+                if (typeof window !== 'undefined' && window.stash?.temp?.cleanup) {
+                  try {
+                    await window.stash.temp.cleanup(dirToClean)
+                  } catch (cleanupErr) {
+                    console.warn(`[Workflow] Eager cleanup failed for ${dirToClean}:`, cleanupErr)
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        nodeResults[nodeId] = {
+          status: 'error',
+          inputFiles: stepInputFiles,
+          outputFiles: [],
+          durationMs: Date.now() - nodeStartTime,
+          error: errorMsg
+        }
+        callbacks?.onNodeError?.(nodeId, errorMsg)
+
+        return {
+          success: false,
+          durationMs: Date.now() - startTime,
+          nodeResults,
+          finalOutputFiles: []
+        }
+      }
     }
-
-    // Deduplicate input files
-    stepInputFiles = Array.from(new Set(stepInputFiles))
-
-    callbacks?.onNodeStart?.(nodeId, stepInputFiles)
-    const nodeStartTime = Date.now()
-
-    try {
-      const { outputFiles, outputText } = await executeStep(
-        node.toolId,
-        stepInputFiles,
-        stepInputText,
-        node.params,
-        { outputDir: callbacks?.outputDir }
-      )
-
-      const nodeDuration = Date.now() - nodeStartTime
-      nodeOutputs.set(nodeId, { files: outputFiles, text: outputText })
-
-      nodeResults[nodeId] = {
-        status: 'success',
-        inputFiles: stepInputFiles,
-        outputFiles,
-        durationMs: nodeDuration
+  } finally {
+    // Purge any remaining intermediate directories on error or early abort
+    if (typeof window !== 'undefined' && window.stash?.temp?.cleanup) {
+      for (const dir of uncleanedIntermediateDirs) {
+        try {
+          await window.stash.temp.cleanup(dir)
+        } catch (err) {
+          console.warn(`[Workflow] Finally cleanup failed for ${dir}:`, err)
+        }
       }
-
-      callbacks?.onNodeSuccess?.(nodeId, outputFiles, nodeDuration)
-      totalCompleted++
-      callbacks?.onProgress?.(totalCompleted / Math.max(1, totalNodes))
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err)
-      nodeResults[nodeId] = {
-        status: 'error',
-        inputFiles: stepInputFiles,
-        outputFiles: [],
-        durationMs: Date.now() - nodeStartTime,
-        error: errorMsg
-      }
-      callbacks?.onNodeError?.(nodeId, errorMsg)
-
-      return {
-        success: false,
-        durationMs: Date.now() - startTime,
-        nodeResults,
-        finalOutputFiles: []
-      }
+      uncleanedIntermediateDirs.clear()
     }
   }
 

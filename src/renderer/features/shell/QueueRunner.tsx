@@ -11,7 +11,8 @@ import {
   X,
   ArrowRight,
   Workflow,
-  Clock
+  Clock,
+  FolderOpen
 } from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
@@ -106,6 +107,16 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
     setInputFiles(files)
   }
 
+  const handleRevealPath = async (path: string) => {
+    if (window.stash?.shell?.revealPath) {
+      try {
+        await window.stash.shell.revealPath(path)
+      } catch (err) {
+        console.warn('Failed to reveal path', err)
+      }
+    }
+  }
+
   const canRun = steps.length > 0 && inputFiles.length > 0 && validation.valid && !running
 
   const runQueue = async () => {
@@ -133,82 +144,119 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
 
     let currentFiles = [...inputFiles]
     let allSuccess = true
+    let previousIntermediateDir: string | null = null
+    const uncleanedDirs = new Set<string>()
 
-    for (let i = 0; i < steps.length; i++) {
-      if (aborted) break
+    try {
+      for (let i = 0; i < steps.length; i++) {
+        if (aborted) break
 
-      const step = steps[i]
-      const toolDef = toolRegistry.get(step.toolId)
-      if (!toolDef) {
-        setStepResults((prev) =>
-          prev.map((r, idx) => (idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r))
-        )
-        allSuccess = false
-        break
-      }
-
-      // Check capability
-      if (!toolDef.capabilities.acceptsMultipleFiles && !toolDef.capabilities.supportsBatch) {
-        setStepResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i
-              ? { ...r, status: 'error', error: 'Tool does not support batch processing' }
-              : r
+        const step = steps[i]
+        const toolDef = toolRegistry.get(step.toolId)
+        if (!toolDef) {
+          setStepResults((prev) =>
+            prev.map((r, idx) => (idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r))
           )
-        )
-        allSuccess = false
-        break
-      }
-
-      // Update step status to running
-      setStepResults((prev) =>
-        prev.map((r, idx) =>
-          idx === i
-            ? { ...r, status: 'running', inputFiles: currentFiles, startTime: Date.now() }
-            : r
-        )
-      )
-      setCurrentStepIndex(i)
-
-      try {
-        const stepParams = step.params ?? {}
-        const stepResult = await executeStep(toolDef.id, currentFiles, '', stepParams)
-        const outputFiles = stepResult.outputFiles ?? []
-
-        setStepResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i
-              ? {
-                  ...r,
-                  status: 'success',
-                  outputFiles,
-                  inputFiles: currentFiles,
-                  durationMs: Date.now() - (r.startTime ?? Date.now())
-                }
-              : r
-          )
-        )
-
-        currentFiles = outputFiles
-
-        if (currentFiles.length === 0) {
-          // No outputs to pass to next step
+          allSuccess = false
           break
         }
-      } catch (err) {
+
+        // Check capability
+        if (!toolDef.capabilities.acceptsMultipleFiles && !toolDef.capabilities.supportsBatch) {
+          setStepResults((prev) =>
+            prev.map((r, idx) =>
+              idx === i
+                ? { ...r, status: 'error', error: 'Tool does not support batch processing' }
+                : r
+            )
+          )
+          allSuccess = false
+          break
+        }
+
+        // Update step status to running
         setStepResults((prev) =>
           prev.map((r, idx) =>
             idx === i
-              ? { ...r, status: 'error', error: err instanceof Error ? err.message : String(err) }
+              ? { ...r, status: 'running', inputFiles: currentFiles, startTime: Date.now() }
               : r
           )
         )
-        allSuccess = false
-        break
+        setCurrentStepIndex(i)
+
+        try {
+          const stepParams = step.params ?? {}
+          const stepResult = await executeStep(toolDef.id, currentFiles, '', stepParams)
+          const outputFiles = stepResult.outputFiles ?? []
+
+          // If the previous step was intermediate and created a temporary directory,
+          // it has now been consumed by this step and can be eagerly purged.
+          if (previousIntermediateDir) {
+            uncleanedDirs.delete(previousIntermediateDir)
+            if (typeof window !== 'undefined' && window.stash?.temp?.cleanup) {
+              try {
+                await window.stash.temp.cleanup(previousIntermediateDir)
+              } catch (cleanupErr) {
+                console.warn('Failed to cleanup intermediate directory:', previousIntermediateDir, cleanupErr)
+              }
+            }
+            previousIntermediateDir = null
+          }
+
+          // If this step is intermediate, track its temp directory to clean up after next step consumes it
+          const isIntermediate = i < steps.length - 1
+          if (isIntermediate && stepResult.opDir && stepResult.isTemp) {
+            previousIntermediateDir = stepResult.opDir
+            uncleanedDirs.add(stepResult.opDir)
+          }
+
+          setStepResults((prev) =>
+            prev.map((r, idx) =>
+              idx === i
+                ? {
+                    ...r,
+                    status: 'success',
+                    outputFiles,
+                    inputFiles: currentFiles,
+                    durationMs: Date.now() - (r.startTime ?? Date.now())
+                  }
+                : r
+            )
+          )
+
+          currentFiles = outputFiles
+
+          if (currentFiles.length === 0) {
+            // No outputs to pass to next step
+            break
+          }
+        } catch (err) {
+          setStepResults((prev) =>
+            prev.map((r, idx) =>
+              idx === i
+                ? { ...r, status: 'error', error: err instanceof Error ? err.message : String(err) }
+                : r
+            )
+          )
+          allSuccess = false
+          break
+        }
       }
+    } finally {
+      // Purge any remaining intermediate directories (on abort, error, or completion)
+      if (typeof window !== 'undefined' && window.stash?.temp?.cleanup) {
+        for (const dir of uncleanedDirs) {
+          try {
+            await window.stash.temp.cleanup(dir)
+          } catch (err) {
+            console.warn('Finally cleanup failed for intermediate dir:', dir, err)
+          }
+        }
+        uncleanedDirs.clear()
+      }
+      setRunning(false)
     }
 
-    setRunning(false)
     setOverallProgress(100)
 
     if (allSuccess) {
@@ -548,9 +596,15 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
                           {result.status === 'success' && (
                             <Badge
                               variant="outline"
-                              className="border-ok/40 text-ok text-[10px] font-mono"
+                              className={
+                                i === steps.length - 1
+                                  ? 'border-ok/40 text-ok text-[10px] font-mono'
+                                  : 'border-accent/40 text-accent text-[10px] font-mono'
+                              }
                             >
-                              {result.outputFiles.length} file(s)
+                              {i === steps.length - 1
+                                ? `${result.outputFiles.length} file(s)`
+                                : 'HANDED OFF'}
                             </Badge>
                           )}
                           {result.status === 'error' && (
@@ -570,12 +624,45 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
                         </div>
                       )}
 
-                      {result.outputFiles.length > 0 && (
-                        <div className="text-[11px] text-faint font-mono truncate bg-surface/50 border border-line/50 rounded px-2 py-1">
-                          <span className="text-ok font-semibold">Outputs: </span>
-                          {result.outputFiles.map((f) => f.split(/[\\/]/).pop()).join(', ')}
-                        </div>
-                      )}
+                      {result.outputFiles.length > 0 &&
+                        (i === steps.length - 1 ? (
+                          <div className="text-[11px] text-faint font-mono bg-surface/50 border border-line/50 rounded px-2.5 py-1.5 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-ok font-semibold">
+                                Final Outputs ({result.outputFiles.length}):
+                              </span>
+                            </div>
+                            <div className="space-y-1 max-h-28 overflow-y-auto">
+                              {result.outputFiles.map((file, fIdx) => (
+                                <div key={fIdx} className="flex items-center justify-between gap-2">
+                                  <span className="truncate text-ink" title={file}>
+                                    {file.split(/[\\/]/).pop()}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleRevealPath(file)}
+                                    title="Reveal file in Explorer"
+                                    className="cursor-pointer p-0.5 rounded text-dim hover:text-ink hover:bg-raised transition-colors shrink-0"
+                                  >
+                                    <FolderOpen size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-faint font-mono bg-surface/50 border border-line/50 rounded px-2.5 py-1.5 flex items-center justify-between">
+                            <div>
+                              <span className="text-accent font-semibold">Handoff: </span>
+                              <span>
+                                Passed {result.outputFiles.length} artifact(s) to Step #{result.step + 1}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-faint uppercase tracking-wider font-mono">
+                              Scratch cleaned
+                            </span>
+                          </div>
+                        ))}
                     </li>
                   )
                 })}

@@ -1,13 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import '../../tools'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../../shared/types/tool'
+import type { StashBridge } from '../../../shared/ipc'
 import { autoLayoutGraph, calculateBoundingBox, snapToGrid } from './layout'
 import {
   areFileCategoriesCompatible,
   runWorkflowPipeline,
+  setCustomStepExecutor,
   topologicalSort,
   validateEdge,
   wouldCreateCycle
@@ -309,7 +311,200 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.2')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.3.3')
+    })
+  })
+
+  describe('Workflow Pipeline Intermediate Directory Cleanup', () => {
+    function withMockStashCleanup(cleanupFn: (dir: string) => Promise<void>) {
+      const g = globalThis as unknown as { window?: { stash?: StashBridge } }
+      const originalWindow = g.window
+      g.window = {
+        ...originalWindow,
+        stash: {
+          temp: {
+            cleanup: cleanupFn
+          }
+        } as unknown as StashBridge
+      }
+      return () => {
+        g.window = originalWindow
+      }
+    }
+
+    it('eagerly purges intermediate scratch directories once consumed, leaving only terminal outputs', async () => {
+      const cleanedDirs: string[] = []
+      const restoreStash = withMockStashCleanup(async (dir: string) => {
+        cleanedDirs.push(dir)
+      })
+
+      setCustomStepExecutor(async (toolId, files) => {
+        return {
+          outputFiles: files.map((f) => `/scratch/${toolId}/${path.basename(f)}`),
+          opDir: `/scratch/${toolId}`,
+          isTemp: true
+        }
+      })
+
+      try {
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-1', toolId: 'image-compress', position: { x: 0, y: 0 }, params: {} },
+            { id: 'node-2', toolId: 'image-convert', position: { x: 200, y: 0 }, params: {} },
+            { id: 'node-3', toolId: 'social-resizer', position: { x: 400, y: 0 }, params: {} }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' },
+            { id: 'e2', fromNodeId: 'node-2', fromPort: 'files', toNodeId: 'node-3', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/photo.png'])
+        expect(result.success).toBe(true)
+
+        // Intermediate scratch directories for node-1 and node-2 must be cleaned up
+        expect(cleanedDirs).toContain('/scratch/image-compress')
+        expect(cleanedDirs).toContain('/scratch/image-convert')
+
+        // Leaf/terminal node-3 scratch directory must NOT be cleaned up
+        expect(cleanedDirs).not.toContain('/scratch/social-resizer')
+
+        // Final output files belong to node-3
+        expect(result.finalOutputFiles).toEqual(['/scratch/social-resizer/photo.png'])
+      } finally {
+        setCustomStepExecutor(null)
+        restoreStash()
+      }
+    })
+
+    it('purges all intermediate directories in finally block on pipeline failure', async () => {
+      const cleanedDirs: string[] = []
+      const restoreStash = withMockStashCleanup(async (dir: string) => {
+        cleanedDirs.push(dir)
+      })
+
+      setCustomStepExecutor(async (toolId, files) => {
+        if (toolId === 'image-convert') {
+          throw new Error('Image conversion failed')
+        }
+        return {
+          outputFiles: files.map((f) => `/scratch/${toolId}/${path.basename(f)}`),
+          opDir: `/scratch/${toolId}`,
+          isTemp: true
+        }
+      })
+
+      try {
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-1', toolId: 'image-compress', position: { x: 0, y: 0 }, params: {} },
+            { id: 'node-2', toolId: 'image-convert', position: { x: 200, y: 0 }, params: {} }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/photo.png'])
+        expect(result.success).toBe(false)
+
+        // Intermediate scratch directory from node-1 must be purged in finally
+        expect(cleanedDirs).toContain('/scratch/image-compress')
+      } finally {
+        setCustomStepExecutor(null)
+        restoreStash()
+      }
+    })
+
+    it('never purges user-specified custom output directory', async () => {
+      const cleanedDirs: string[] = []
+      const restoreStash = withMockStashCleanup(async (dir: string) => {
+        cleanedDirs.push(dir)
+      })
+
+      setCustomStepExecutor(async (_toolId, files, _text, _params, options) => {
+        const isCustom = Boolean(options?.outputDir)
+        return {
+          outputFiles: files.map((f) => `${options?.outputDir ?? '/scratch'}/${path.basename(f)}`),
+          opDir: options?.outputDir ?? '/scratch',
+          isTemp: !isCustom
+        }
+      })
+
+      try {
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-1', toolId: 'image-compress', position: { x: 0, y: 0 }, params: {} },
+            { id: 'node-2', toolId: 'image-convert', position: { x: 200, y: 0 }, params: {} }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/photo.png'], '', {
+          outputDir: 'D:/MyExport'
+        })
+        expect(result.success).toBe(true)
+        expect(cleanedDirs).toHaveLength(0)
+      } finally {
+        setCustomStepExecutor(null)
+        restoreStash()
+      }
+    })
+
+    it('handles branching DAG: purges intermediate dir only when ALL downstream branches complete', async () => {
+      const cleanLog: Array<{ action: string; id?: string; dir?: string }> = []
+      const restoreStash = withMockStashCleanup(async (dir: string) => {
+        cleanLog.push({ action: 'cleanup', dir })
+      })
+
+      setCustomStepExecutor(async (toolId, files) => {
+        cleanLog.push({ action: 'execute', id: toolId })
+        return {
+          outputFiles: files.map((f) => `/scratch/${toolId}/${path.basename(f)}`),
+          opDir: `/scratch/${toolId}`,
+          isTemp: true
+        }
+      })
+
+      try {
+        // Node A -> Node B -> Node D
+        // Node A -> Node C -> Node D
+        const graph: WorkflowGraph = {
+          nodes: [
+            { id: 'node-A', toolId: 'image-compress', position: { x: 0, y: 0 }, params: {} },
+            { id: 'node-B', toolId: 'image-convert', position: { x: 200, y: -100 }, params: {} },
+            { id: 'node-C', toolId: 'social-resizer', position: { x: 200, y: 100 }, params: {} },
+            { id: 'node-D', toolId: 'images-to-pdf', position: { x: 400, y: 0 }, params: {} }
+          ],
+          edges: [
+            { id: 'e1', fromNodeId: 'node-A', fromPort: 'files', toNodeId: 'node-B', toPort: 'files' },
+            { id: 'e2', fromNodeId: 'node-A', fromPort: 'files', toNodeId: 'node-C', toPort: 'files' },
+            { id: 'e3', fromNodeId: 'node-B', fromPort: 'files', toNodeId: 'node-D', toPort: 'files' },
+            { id: 'e4', fromNodeId: 'node-C', fromPort: 'files', toNodeId: 'node-D', toPort: 'files' }
+          ]
+        }
+
+        const result = await runWorkflowPipeline(graph, ['/input/photo.png'])
+        expect(result.success).toBe(true)
+
+        // Find index in cleanLog where node-A was cleaned up
+        const cleanupAIndex = cleanLog.findIndex((e) => e.action === 'cleanup' && e.dir === '/scratch/image-compress')
+        // Both node-B (image-convert) and node-C (social-resizer) must have executed BEFORE node-A was cleaned up!
+        const execBIndex = cleanLog.findIndex((e) => e.action === 'execute' && e.id === 'image-convert')
+        const execCIndex = cleanLog.findIndex((e) => e.action === 'execute' && e.id === 'social-resizer')
+
+        expect(cleanupAIndex).toBeGreaterThan(execBIndex)
+        expect(cleanupAIndex).toBeGreaterThan(execCIndex)
+
+        // Node D is the leaf; its output must NOT be cleaned up
+        const cleanupDIndex = cleanLog.findIndex((e) => e.action === 'cleanup' && e.dir === '/scratch/images-to-pdf')
+        expect(cleanupDIndex).toBe(-1)
+      } finally {
+        setCustomStepExecutor(null)
+        restoreStash()
+      }
     })
   })
 

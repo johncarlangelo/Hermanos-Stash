@@ -403,6 +403,13 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
 - [x] Revalidate saved/imported graph connections before any pipeline node starts.
 - [x] Correct Image Slicer to mixed image/ZIP output; verified individual download and ZIP handlers (lines 112-140), regression test and regenerated matrix. Latest gates: 917 tests / 92 files, typecheck, lint and build pass.
 - [x] Follow-up: real processor adapters and linear-queue parity: connected `executeStep` in `execution.ts` and `QueueRunner.tsx` to `window.stash` / real Node processors, replacing output placeholders with actual filesystem processing; verified 16 physical binary outputs in `TEST PIPELINE OUTPUTS/` with zero ghost files.
+- [x] **Intermediate Artifact Cleanup & Terminal-Only Output Persistence (Pipeline Anti-Bloat)**:
+  - **Problem Statement:** In a multi-node pipeline (e.g. 5 chained file-producing tools: Tool 1 → Tool 2 → Tool 3 → Tool 4 → Tool 5), every intermediate step was previously persisting files on disk, generating redundant outputs and bloating user storage.
+  - **Solution & Implementation:**
+    - Modified `executeStep` and `executeWithStash` in `src/renderer/features/workflow/execution.ts` to return operation scratch paths (`opDir`) and managed flags (`isTemp: !isCustomDir`).
+    - Implemented eager and `finally` scratch purging in `runWorkflowPipeline`: tracks downstream consumers for each intermediate DAG node; as soon as all downstream nodes finish consuming intermediate artifacts, that intermediate node's temporary workspace is immediately deleted via `window.stash.temp.cleanup(dir)`. Any intermediate directories left over due to aborts or errors are purged in a `finally` block. Leaf/terminal node outputs and user-specified custom export directories (`options.outputDir`) are strictly preserved.
+    - Updated `QueueRunner.tsx` to eagerly clean up intermediate temporary workspaces as steps complete, badging intermediate steps as `HANDED OFF` (`Passed X artifact(s) to Step #...`) and only exposing the terminal step's output files with a direct "Reveal in Explorer" button.
+    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.3.3` in `version.ts` and added unit test coverage in `workflow.test.ts`. Verified all 921 tests across 92 test files pass, matrix check passes (0 diffs), typecheck passes, and ESLint passes with 0 errors.
 - [ ] Follow-up: parameter/format-aware artifact contracts.
 - [ ] Follow-up: revise the legacy Photo ID recipe (mixed output -> image wire); it now fails preflight rather than silently executing.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:
