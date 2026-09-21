@@ -160,10 +160,12 @@ export function Sidebar() {
 
   const sidebarCollapsed = useWorkspace((s) => s.sidebarCollapsed)
   const setSidebarCollapsed = useWorkspace((s) => s.setSidebarCollapsed)
+  const accordionSections = useWorkspace((s) => s.sidebarAccordionSections)
+  const setAccordionSections = useWorkspace((s) => s.setSidebarAccordionSections)
 
   return (
     <aside
-      className={`glass flex h-full shrink-0 flex-col overflow-y-auto border-r border-line/60 transition-all duration-200 ease-in-out ${
+      className={`glass flex h-full shrink-0 flex-col overflow-y-auto scrollbar-none border-r border-line/60 transition-all duration-200 ease-in-out ${
         sidebarCollapsed
           ? 'w-0 border-r-0 p-0 overflow-hidden opacity-0 pointer-events-none'
           : 'w-56 px-2 pb-2 opacity-100'
@@ -314,7 +316,8 @@ export function Sidebar() {
       {/* Accordion sections for Favorites, Recent, Categories */}
       <Accordion
         type="multiple"
-        defaultValue={['favorites', 'recent', 'categories']}
+        value={accordionSections}
+        onValueChange={(values) => void setAccordionSections(values)}
         className="space-y-2 flex-1"
       >
         {favoriteTools.length > 0 && (

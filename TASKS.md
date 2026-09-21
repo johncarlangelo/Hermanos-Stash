@@ -30,7 +30,7 @@ Legend:
 - [x] Implement motion primitives.
 
 ### Application shell
-- [x] Build persistent sidebar.
+- [x] Build persistent sidebar. *(invisible scrollbar with smooth scrolling; persistent category accordion collapse state in SQLite prefs)*
 - [x] Build main content region.
 - [x] Build tool navigation.
 - [x] Build category navigation.

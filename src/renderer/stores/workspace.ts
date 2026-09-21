@@ -4,6 +4,9 @@ export type WorkspaceWidth = 'wide' | 'standard'
 
 export const WORKSPACE_WIDTH_KEY = 'ui.workspaceWidth'
 export const SPLIT_RATIO_KEY = 'ui.splitRatio'
+export const SIDEBAR_ACCORDION_KEY = 'ui.sidebarAccordion'
+
+export const DEFAULT_SIDEBAR_ACCORDION: string[] = ['favorites', 'recent', 'categories']
 
 export interface WorkspaceState {
   width: WorkspaceWidth
@@ -23,6 +26,8 @@ export interface WorkspaceState {
   sidebarCollapsed: boolean
   setSidebarCollapsed: (collapsed: boolean) => void
   toggleSidebar: () => void
+  sidebarAccordionSections: string[]
+  setSidebarAccordionSections: (sections: string[]) => Promise<void>
 }
 
 export const DEFAULT_SECONDARY_TOOL = 'text-diff'
@@ -35,6 +40,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   splitRatio: 0.5,
   activePane: 'primary',
   sidebarCollapsed: false,
+  sidebarAccordionSections: DEFAULT_SIDEBAR_ACCORDION,
   setSidebarCollapsed: (collapsed: boolean) => set({ sidebarCollapsed: collapsed }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
@@ -42,16 +48,34 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     try {
       const savedWidth = await window.stash.prefs.get<string>(WORKSPACE_WIDTH_KEY)
       const savedRatio = await window.stash.prefs.get<number>(SPLIT_RATIO_KEY)
+      const savedAccordion = await window.stash.prefs.get<string[]>(SIDEBAR_ACCORDION_KEY)
       set({
         width: savedWidth === 'wide' || savedWidth === 'standard' ? savedWidth : 'wide',
         splitRatio:
           typeof savedRatio === 'number' && !isNaN(savedRatio)
             ? Math.min(0.75, Math.max(0.25, savedRatio))
             : 0.5,
+        sidebarAccordionSections: Array.isArray(savedAccordion)
+          ? savedAccordion
+          : DEFAULT_SIDEBAR_ACCORDION,
         loaded: true
       })
     } catch {
-      set({ width: 'wide', splitRatio: 0.5, loaded: true })
+      set({
+        width: 'wide',
+        splitRatio: 0.5,
+        sidebarAccordionSections: DEFAULT_SIDEBAR_ACCORDION,
+        loaded: true
+      })
+    }
+  },
+
+  setSidebarAccordionSections: async (sections: string[]) => {
+    set({ sidebarAccordionSections: sections })
+    try {
+      await window.stash.prefs.set(SIDEBAR_ACCORDION_KEY, sections)
+    } catch {
+      // Non-fatal
     }
   },
 

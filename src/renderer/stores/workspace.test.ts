@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useWorkspace, WORKSPACE_WIDTH_KEY } from './workspace'
+import {
+  useWorkspace,
+  WORKSPACE_WIDTH_KEY,
+  SIDEBAR_ACCORDION_KEY,
+  DEFAULT_SIDEBAR_ACCORDION
+} from './workspace'
 
 const prefsGet = vi.fn()
 const prefsSet = vi.fn()
@@ -72,5 +77,24 @@ describe('useWorkspace Store', () => {
     expect(useWorkspace.getState().activePane).toBe('secondary')
     useWorkspace.getState().setActivePane('primary')
     expect(useWorkspace.getState().activePane).toBe('primary')
+  })
+
+  it('loads saved sidebar accordion sections from prefs', async () => {
+    prefsGet.mockResolvedValue(['favorites'])
+    await useWorkspace.getState().load()
+    expect(useWorkspace.getState().sidebarAccordionSections).toEqual(['favorites'])
+  })
+
+  it('defaults sidebar accordion sections if prefs is empty', async () => {
+    prefsGet.mockResolvedValue(undefined)
+    await useWorkspace.getState().load()
+    expect(useWorkspace.getState().sidebarAccordionSections).toEqual(DEFAULT_SIDEBAR_ACCORDION)
+  })
+
+  it('updates and persists sidebar accordion collapsed state', async () => {
+    prefsSet.mockResolvedValue(undefined)
+    await useWorkspace.getState().setSidebarAccordionSections(['favorites', 'recent'])
+    expect(useWorkspace.getState().sidebarAccordionSections).toEqual(['favorites', 'recent'])
+    expect(prefsSet).toHaveBeenCalledWith(SIDEBAR_ACCORDION_KEY, ['favorites', 'recent'])
   })
 })
