@@ -91,7 +91,9 @@ export const IPC = {
   assetsToggleFavorite: 'assets:toggle-favorite',
   assetsRemove: 'assets:remove',
   assetsCheckExistence: 'assets:check-existence',
-  assetsCleanupMissing: 'assets:cleanup-missing'
+  assetsCleanupMissing: 'assets:cleanup-missing',
+
+  systemCheckDependencies: 'system:check-dependencies'
 } as const
 
 export interface FileFilter {
@@ -684,6 +686,45 @@ export interface AssetFilter {
   offset?: number
 }
 
+export type DependencyStatus = 'ready' | 'missing' | 'optional_offline' | 'degraded'
+export type DependencyCategory = 'media' | 'document' | 'image' | 'storage' | 'ai' | 'runtime'
+
+export interface DependencyItem {
+  id: string
+  name: string
+  category: DependencyCategory
+  status: DependencyStatus
+  version?: string
+  path?: string
+  source?: 'bundled' | 'system' | 'embedded' | 'network'
+  requiredFor: string[]
+  details: string
+  troubleshooting?: string
+}
+
+export interface DependencyReport {
+  checkedAt: string
+  resourcesPath: string
+  platform: {
+    os: string
+    arch: string
+    electron: string
+    node: string
+    chrome: string
+  }
+  summary: {
+    total: number
+    ready: number
+    missing: number
+    optionalOffline: number
+  }
+  items: DependencyItem[]
+}
+
+export interface CheckDependenciesOptions {
+  invalidateCache?: boolean
+}
+
 /** Shape exposed on `window.stash` by the preload bridge. */
 export interface StashBridge {
   app: {
@@ -791,5 +832,8 @@ export interface StashBridge {
     remove(id: number): Promise<void>
     checkExistence(id: number): Promise<{ id: number; exists: boolean }>
     cleanupMissing(): Promise<number>
+  }
+  system: {
+    checkDependencies(options?: CheckDependenciesOptions): Promise<DependencyReport>
   }
 }

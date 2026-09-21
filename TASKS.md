@@ -50,6 +50,7 @@ Legend:
 - [x] Local SQLite persistence.
 - [x] Activity history service.
 - [x] Notification/toast system.
+- [x] System runtime & external dependencies verifier in Settings with live cache-invalidating rescan.
 
 ## Milestone 2 â€” Demonstration tools
 

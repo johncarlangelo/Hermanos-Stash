@@ -40,7 +40,9 @@ import type {
   ArchiveReadEntryResult,
   ArchiveExtractEntryRequest,
   ArchiveExtractEntryResult,
-  AssetFilter
+  AssetFilter,
+  CheckDependenciesOptions,
+  DependencyReport
 } from '../shared/ipc'
 
 /**
@@ -170,6 +172,10 @@ const api: StashBridge = {
     remove: (id: number) => invoke(IPC.assetsRemove, id),
     checkExistence: (id: number) => invoke(IPC.assetsCheckExistence, id),
     cleanupMissing: () => invoke(IPC.assetsCleanupMissing)
+  },
+  system: {
+    checkDependencies: (options?: CheckDependenciesOptions) =>
+      invoke<DependencyReport>(IPC.systemCheckDependencies, options ?? {})
   }
 }
 

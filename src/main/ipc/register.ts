@@ -29,7 +29,8 @@ import type {
   PdfSplitResult,
   PdfSplitSuccess,
   SocialResizeResult,
-  AssetFilter
+  AssetFilter,
+  CheckDependenciesOptions
 } from '../../shared/ipc'
 import { serializeStashError, stashError, type StashError } from '../../shared/errors'
 import {
@@ -42,6 +43,7 @@ import {
 } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
+import { checkAllDependencies } from '../services/dependencies'
 import { ProgressBus } from './progress'
 import { WriteScopeGuard } from './write-scope'
 import {
@@ -635,6 +637,12 @@ export function registerIpc(services: IpcServices): void {
     const target = assertString(raw, 'path')
     // Resolve first so relative renderer paths cannot misdirect the reveal.
     shell.showItemInFolder(path.resolve(target))
+  })
+
+  // --- System Dependencies ------------------------------------------------
+  handle(IPC.systemCheckDependencies, async (_e, raw: unknown) => {
+    const options = (raw ?? {}) as CheckDependenciesOptions
+    return checkAllDependencies(options)
   })
 
   // --- Dialogs ------------------------------------------------------------

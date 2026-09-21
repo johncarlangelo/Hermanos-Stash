@@ -7,8 +7,14 @@ import {
   Sliders,
   Palette,
   Shield,
-  HardDrive
+  HardDrive,
+  Cpu,
+  RotateCw,
+  CheckCircle2,
+  AlertTriangle,
+  Info
 } from 'lucide-react'
+import clsx from 'clsx'
 import { Button } from '../../components/ui/Button'
 import { FieldRow, Select } from '../../components/ui/Inputs'
 import { SuccessNote } from '../../components/ui/Feedback'
@@ -20,6 +26,7 @@ import { DENSITY_PREF_KEY } from '../../accent-runtime'
 import { useWorkspace, WORKSPACE_WIDTH_KEY } from '../../stores/workspace'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { clampZoomFactor, DEFAULT_ZOOM_FACTOR } from '../../../shared/utils/zoom'
+import type { DependencyReport } from '../../../shared/ipc'
 
 interface AppInfo {
   version: string
@@ -45,10 +52,38 @@ export function SettingsView() {
   const [zoom, setZoom] = useState<number>(DEFAULT_ZOOM_FACTOR)
   const [accent, setAccent] = useState<string | null>(null)
   const [density, setDensity] = useState<Density>('comfortable')
+  const [depReport, setDepReport] = useState<DependencyReport | null>(null)
+  const [scanningDeps, setScanningDeps] = useState(false)
   const workspaceWidth = useWorkspace((s) => s.width)
   const setWorkspaceWidth = useWorkspace((s) => s.setWidth)
 
+  const fetchDependencies = async (invalidateCache = false) => {
+    setScanningDeps(true)
+    try {
+      const report = await window.stash?.system?.checkDependencies?.({ invalidateCache })
+      if (report) {
+        setDepReport(report)
+        if (invalidateCache) {
+          toastSuccess('Dependencies verified and up to date')
+        }
+      }
+    } catch (err) {
+      toastError(err)
+    } finally {
+      setScanningDeps(false)
+    }
+  }
+
+  const revealPath = async (targetPath: string) => {
+    try {
+      await window.stash.shell.revealPath(targetPath)
+    } catch (err) {
+      toastError(err)
+    }
+  }
+
   useEffect(() => {
+    void fetchDependencies(false)
     window.stash.app
       .getInfo()
       .then(setInfo)
@@ -451,6 +486,212 @@ export function SettingsView() {
                 {info?.dataFolder ?? '...'}
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Card: System Dependencies & Engines */}
+        <Card className="border-line/70 bg-surface/60 backdrop-blur-md">
+          <CardHeader className="pb-4 border-b border-line/60">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Cpu size={16} className="text-accent" />
+                <CardTitle className="text-sm font-semibold text-ink">
+                  System Dependencies & Engines
+                </CardTitle>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {depReport && (
+                  <span
+                    className={clsx(
+                      'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-mono border',
+                      depReport.summary.missing === 0
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/25'
+                    )}
+                  >
+                    {depReport.summary.missing === 0 ? (
+                      <>
+                        <CheckCircle2 size={12} />
+                        {depReport.summary.ready}/{depReport.summary.total} Operational
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle size={12} />
+                        {depReport.summary.missing} Missing
+                      </>
+                    )}
+                  </span>
+                )}
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void fetchDependencies(true)}
+                  disabled={scanningDeps}
+                  className="gap-1.5 text-xs cursor-pointer h-7"
+                >
+                  <RotateCw
+                    size={12}
+                    className={clsx(scanningDeps && 'animate-spin text-accent')}
+                    aria-hidden
+                  />
+                  {scanningDeps ? 'Rescanning...' : 'Rescan / Refresh'}
+                </Button>
+
+                {depReport?.resourcesPath && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void revealPath(depReport.resourcesPath)}
+                    className="gap-1.5 text-xs cursor-pointer h-7"
+                    title="Open application resources folder"
+                  >
+                    <FolderOpen size={12} aria-hidden />
+                    Resources Folder
+                  </Button>
+                )}
+              </div>
+            </div>
+            <CardDescription className="text-xs text-dim mt-0.5">
+              Live status verifier for media processing (FFmpeg), image pipeline (Sharp), OCR
+              language data, SQLite, and local runtimes
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-4">
+            {depReport?.platform && (
+              <div className="flex items-center justify-between text-[11px] text-faint font-mono border-b border-line/40 pb-3 flex-wrap gap-2">
+                <div>
+                  Platform: <span className="text-dim">{depReport.platform.os}</span> · Node:{' '}
+                  <span className="text-dim">{depReport.platform.node}</span> · Electron:{' '}
+                  <span className="text-dim">{depReport.platform.electron}</span>
+                </div>
+                {depReport.checkedAt && (
+                  <div>
+                    Last scanned:{' '}
+                    <span className="text-dim">
+                      {new Date(depReport.checkedAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {scanningDeps && !depReport ? (
+              <div className="flex items-center justify-center py-8 text-xs text-dim">
+                <RotateCw size={16} className="animate-spin text-accent mr-2" />
+                Scanning system dependencies and binaries...
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {depReport?.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-line/70 bg-surface/40 p-3.5 space-y-2 transition-colors hover:border-line"
+                  >
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-xs text-ink">{item.name}</span>
+                        {item.source && (
+                          <span
+                            className={clsx(
+                              'rounded px-1.5 py-0.5 font-mono text-[10px] border',
+                              item.source === 'bundled' &&
+                                'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                              item.source === 'system' &&
+                                'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                              item.source === 'embedded' &&
+                                'bg-accent/10 text-accent border-accent/20',
+                              item.source === 'network' &&
+                                'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            )}
+                          >
+                            {item.source === 'bundled'
+                              ? 'Bundled'
+                              : item.source === 'system'
+                                ? 'System PATH'
+                                : item.source === 'embedded'
+                                  ? 'Embedded'
+                                  : 'Local Network'}
+                          </span>
+                        )}
+                        {item.version && (
+                          <span className="text-[11px] font-mono text-dim">{item.version}</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {item.status === 'ready' && (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-emerald-400">
+                            <CheckCircle2 size={11} />
+                            Operational
+                          </span>
+                        )}
+                        {item.status === 'missing' && (
+                          <span className="inline-flex items-center gap-1 rounded bg-rose-500/10 border border-rose-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-rose-400">
+                            <AlertTriangle size={11} />
+                            Missing
+                          </span>
+                        )}
+                        {item.status === 'optional_offline' && (
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-amber-400">
+                            <Info size={11} />
+                            Optional Offline
+                          </span>
+                        )}
+                        {item.status === 'degraded' && (
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-amber-400">
+                            <AlertTriangle size={11} />
+                            Degraded
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-dim leading-relaxed">{item.details}</p>
+
+                    {item.path && !item.path.startsWith('http') && (
+                      <div className="flex items-center justify-between gap-2 rounded bg-raised/50 px-2.5 py-1.5 border border-line/50 text-[11px] font-mono">
+                        <span className="truncate text-dim select-all">{item.path}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void revealPath(item.path!)}
+                          className="h-6 px-2 text-[10px] cursor-pointer text-accent hover:text-ink shrink-0"
+                          title="Reveal in Explorer"
+                        >
+                          <FolderOpen size={11} className="mr-1" />
+                          Reveal
+                        </Button>
+                      </div>
+                    )}
+
+                    {item.troubleshooting && (
+                      <div className="rounded border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-[11px] text-amber-300/90 leading-normal flex items-start gap-1.5">
+                        <Info size={13} className="shrink-0 mt-0.5 text-amber-400" />
+                        <span>{item.troubleshooting}</span>
+                      </div>
+                    )}
+
+                    {item.requiredFor && item.requiredFor.length > 0 && (
+                      <div className="pt-1 flex items-center gap-1.5 flex-wrap text-[10px] text-faint">
+                        <span className="font-mono uppercase tracking-wider text-[9px] text-faint">
+                          Required by:
+                        </span>
+                        {item.requiredFor.map((tool) => (
+                          <span
+                            key={tool}
+                            className="rounded bg-raised/80 px-1.5 py-0.5 font-sans text-dim border border-line/40"
+                          >
+                            {tool}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
