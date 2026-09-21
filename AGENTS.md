@@ -56,6 +56,7 @@ Every tool should have:
 - loading/progress state
 - error state
 - cancellation strategy when applicable
+- dependency declaration & scanner registration (`dependencies.ts`) if the tool relies on external binaries, native modules, or local models
 - tests
 - documentation/metadata
 
@@ -123,6 +124,33 @@ Whenever adding a new tool or modifying an existing tool in `src/renderer/tools/
    - Implement real parameter consumption in `src/renderer/features/workflow/execution.ts` using alias fallbacks (`params.key ?? params.alias ?? default`).
    - Tools with standard automatic processing and no configurable parameters must be explicitly defined as parameterless so the drawer renders a clean informative message instead of phantom sliders.
 
+### System Dependencies & Runtime Verifier Contract (`dependencies.ts`, `SettingsView.tsx`)
+
+Whenever introducing a new tool that requires an external CLI binary, system daemon, native C++ module, AI model file, or non-trivial runtime dependency:
+
+1. **Mandatory Scanner Registration (`src/main/services/dependencies.ts`):**
+   - Register the dependency probe in `checkAllDependencies()` in `src/main/services/dependencies.ts`.
+   - Provide accurate, typed metadata:
+     - `id`: unique kebab-case identifier (e.g. `'tesseract'`, `'ffmpeg'`, `'sharp'`).
+     - `name`: human-readable title (e.g. `'FFmpeg & FFprobe'`).
+     - `category`: `'media' | 'document' | 'image' | 'storage' | 'ai' | 'runtime'`.
+     - `status`: `'ready' | 'missing' | 'optional_offline' | 'degraded'`.
+       - Core/bundled utilities must fail-closed to `'missing'` or `'degraded'` if unusable.
+       - Local developer servers or background daemons (e.g. Ollama, LM Studio) that are optional must be marked `'optional_offline'`.
+     - `version`: parsed or detected version string (e.g. `getVersion()`, `lib.version`, `row.ver`).
+     - `path`: local filesystem path or URL endpoint if applicable.
+     - `source`: `'bundled' | 'system' | 'embedded' | 'network'`.
+     - `requiredFor`: array of tool names that consume this dependency (e.g. `['Video Converter', 'Audio Extractor']`).
+     - `details`: concise technical summary of the engine state.
+     - `troubleshooting`: clear, actionable guidance on where to place files (e.g. `resources/<dep>/`) or what terminal command to run.
+2. **Rescan & Cache Invalidation:**
+   - If the dependency resolution relies on an in-memory cache, ensure the cache is invalidated when `options?.invalidateCache` is passed so users clicking **Rescan / Refresh** in Settings immediately detect newly installed or copied files without restarting the app.
+3. **Preload & UI Integration:**
+   - Ensure the dependency scanner is exposed via `window.stash.system.checkDependencies()`.
+   - The Settings view (`SettingsView.tsx`) automatically surfaces the registered item with status badges, version chips, reveal actions, troubleshooting alerts, and dependent tool tags.
+4. **Mandatory Unit Test Coverage (`dependencies.test.ts`):**
+   - Add unit test coverage in `src/main/services/dependencies.test.ts` asserting that the new dependency ID is probed, returned in the report, correctly categorized, and accurately counted in `report.summary`.
+
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
 > [!IMPORTANT]
@@ -166,6 +194,7 @@ After implementation:
 - update `TOOL_CATALOG.md` and `TOOL_SPEC.md` whenever tools are added or modified;
 - update the root `README.md` in the same change whenever a tool is added, removed, renamed, recategorized or materially changed: reconcile headline/badge/catalog/category/shortcut counts against `src/renderer/tools/index.ts`, add or revise its catalog entry, preserve BETA labels, and document prerequisites and known limitations. Update feature sections when Queue Workflow or other user-facing behavior changes; never describe simulated execution as real processing. Verify local Markdown links and catalog totals before committing. This is a required agent checklist step, not an automatically executed hook;
 - verify and register tool compatibility/incompatibility in the Queue Workflow engine (`execution.ts`) and add test coverage in `workflow.test.ts` whenever tools are added or modified;
+- if the tool introduces or modifies an external binary, native C++ binding, AI model file, or runtime daemon, register it in the dependency scanner (`dependencies.ts`) and update test assertions in `dependencies.test.ts`;
 - update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
 - never mark a task complete without evidence.
