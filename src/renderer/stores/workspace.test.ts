@@ -93,8 +93,8 @@ describe('useWorkspace Store', () => {
 
   it('updates and persists sidebar accordion collapsed state', async () => {
     prefsSet.mockResolvedValue(undefined)
-    await useWorkspace.getState().setSidebarAccordionSections(['favorites', 'recent'])
-    expect(useWorkspace.getState().sidebarAccordionSections).toEqual(['favorites', 'recent'])
-    expect(prefsSet).toHaveBeenCalledWith(SIDEBAR_ACCORDION_KEY, ['favorites', 'recent'])
+    await useWorkspace.getState().setSidebarAccordionSections(['categories'])
+    expect(useWorkspace.getState().sidebarAccordionSections).toEqual(['categories'])
+    expect(prefsSet).toHaveBeenCalledWith(SIDEBAR_ACCORDION_KEY, ['categories'])
   })
 })

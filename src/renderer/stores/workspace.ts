@@ -6,7 +6,7 @@ export const WORKSPACE_WIDTH_KEY = 'ui.workspaceWidth'
 export const SPLIT_RATIO_KEY = 'ui.splitRatio'
 export const SIDEBAR_ACCORDION_KEY = 'ui.sidebarAccordion'
 
-export const DEFAULT_SIDEBAR_ACCORDION: string[] = ['favorites', 'recent', 'categories']
+export const DEFAULT_SIDEBAR_ACCORDION: string[] = ['favorites', 'categories']
 
 export interface WorkspaceState {
   width: WorkspaceWidth

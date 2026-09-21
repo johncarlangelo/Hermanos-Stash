@@ -139,9 +139,6 @@ export function Sidebar() {
   const favoriteTools = favorites
     .map((id) => toolRegistry.get(id))
     .filter((t): t is NonNullable<typeof t> => Boolean(t))
-  const recentTools = recents
-    .map((r) => toolRegistry.get(r.toolId))
-    .filter((t): t is NonNullable<typeof t> => Boolean(t))
 
   const toolCount = toolRegistry.count()
 
@@ -313,7 +310,7 @@ export function Sidebar() {
         </nav>
       )}
 
-      {/* Accordion sections for Favorites, Recent, Categories */}
+      {/* Accordion sections for Favorites, Categories */}
       <Accordion
         type="multiple"
         value={accordionSections}
@@ -353,38 +350,6 @@ export function Sidebar() {
                     >
                       <Star size={11} fill="currentColor" />
                     </button>
-                  </li>
-                ))}
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
-        )}
-
-        {recentTools.length > 0 && (
-          <AccordionItem value="recent" className="border-0">
-            <AccordionTrigger className="group hover:bg-surface/50 rounded-sm py-1 px-2 hover:no-underline">
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.1em] text-faint uppercase select-none">
-                <Clock size={9} className="text-faint/80" />
-                Recent
-              </span>
-              <span className="font-mono text-[9.5px] text-faint ml-auto mr-1">
-                {recentTools.length}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pt-0.5 pb-1">
-              <ul className="space-y-px">
-                {recentTools.map((tool) => (
-                  <li key={tool.id}>
-                    <SidebarRow
-                      active={view.type === 'tool' && view.toolId === tool.id}
-                      icon={(() => {
-                        const Icon = getIcon(tool.icon)
-                        return <Icon size={13} />
-                      })()}
-                      label={tool.name}
-                      isBeta={tool.isBeta}
-                      onClick={() => openTool(tool.id)}
-                    />
                   </li>
                 ))}
               </ul>
