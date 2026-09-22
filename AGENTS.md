@@ -150,6 +150,11 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - The Settings view (`SettingsView.tsx`) automatically surfaces the registered item with status badges, version chips, reveal actions, troubleshooting alerts, and dependent tool tags.
 4. **Mandatory Unit Test Coverage (`dependencies.test.ts`):**
    - Add unit test coverage in `src/main/services/dependencies.test.ts` asserting that the new dependency ID is probed, returned in the report, correctly categorized, and accurately counted in `report.summary`.
+5. **1-Click On-Demand Dependency Installer (`installDependency`):**
+   - **Zero installer bloat**: Do NOT bundle heavy binaries (FFmpeg, OCR tessdata, quantized AI models) into the main installer artifact. Keep them on-demand.
+   - **One-by-one installation**: Installations in `SettingsView.tsx` must be triggered individually per dependency item, tracking state via `installingId` to prevent download collisions. Never add a bulk "Install All" button.
+   - **Granular metadata**: Dependencies with automated downloaders must set `installable: true` and specify accurate `downloadSize` (e.g. `'~25 MB'`, `'~4 MB'`).
+   - **Clean extraction & cache invalidation**: Downloads must unpack into isolated `resources/<dep>/` directories (e.g. `resources/ffmpeg/`, `resources/tessdata/`), set executable permissions on non-Windows platforms, and invalidate internal caches (e.g. `resetFfmpegCache()`) so the UI immediately detects the new binary without restarting.
 
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
@@ -190,6 +195,11 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
 4. **Local-First & Privacy Policy**:
    - Router operations default to 100% offline local processing (zero cloud telemetry, zero remote prompts).
    - If an optional cloud decision model (e.g. Jev API) is supported in the future, it must be strictly opt-in via Settings, require explicit user API keys, and fail gracefully to the local engine when offline.
+5. **Decision Engine & Model Architecture (Laya System 1)**:
+   - Researched and established ConvAI Laya (~421M ModernBERT non-autoregressive decision model via `@receptron/laya` / ONNX Runtime) as the primary offline decision architecture.
+   - **Deferred Implementation**: Do NOT implement or bundle model weights until the specific quantization model (INT8 ~450MB vs INT4 ~250MB vs FP16) is finalized by the user/team to preserve installer and disk discipline.
+   - When implemented, model asset weights will hook into the 1-click on-demand dependency downloader under `resources/models/` following the zero-bloat principle.
+
 
 ## Agent behavior
 

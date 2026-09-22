@@ -54,8 +54,26 @@ export function SettingsView() {
   const [density, setDensity] = useState<Density>('comfortable')
   const [depReport, setDepReport] = useState<DependencyReport | null>(null)
   const [scanningDeps, setScanningDeps] = useState(false)
+  const [installingId, setInstallingId] = useState<string | null>(null)
   const workspaceWidth = useWorkspace((s) => s.width)
   const setWorkspaceWidth = useWorkspace((s) => s.setWidth)
+
+  const handleInstall = async (id: string, name: string) => {
+    setInstallingId(id)
+    try {
+      const res = await window.stash?.system?.installDependency?.(id)
+      if (res?.success) {
+        toastSuccess(res.message || `${name} installed successfully`)
+        await fetchDependencies(true)
+      } else {
+        toastError(res?.error || `Failed to install ${name}`)
+      }
+    } catch (err) {
+      toastError(err)
+    } finally {
+      setInstallingId(null)
+    }
+  }
 
   const fetchDependencies = async (invalidateCache = false) => {
     setScanningDeps(true)
@@ -620,7 +638,30 @@ export function SettingsView() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {item.installable &&
+                          (item.status === 'missing' || item.status === 'degraded') && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => void handleInstall(item.id, item.name)}
+                              disabled={installingId !== null}
+                              className="h-6 px-2 text-[10px] cursor-pointer text-accent hover:text-ink shrink-0 gap-1 border-accent/40 bg-accent/10 hover:bg-accent/20"
+                              title={`Download and install ${item.name} locally`}
+                            >
+                              {installingId === item.id ? (
+                                <>
+                                  <RotateCw size={11} className="animate-spin text-accent" />
+                                  Installing...
+                                </>
+                              ) : (
+                                <>
+                                  <Download size={11} className="text-accent" />
+                                  Install {item.downloadSize ? `(${item.downloadSize})` : ''}
+                                </>
+                              )}
+                            </Button>
+                          )}
                         {item.status === 'ready' && (
                           <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-mono font-medium text-emerald-400">
                             <CheckCircle2 size={11} />

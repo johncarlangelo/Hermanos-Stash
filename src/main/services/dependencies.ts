@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite'
 import * as electron from 'electron'
 import { PDFDocument } from 'pdf-lib'
 import sharp from 'sharp'
+import JSZip from 'jszip'
 import type { CheckDependenciesOptions, DependencyItem, DependencyReport } from '../../shared/ipc'
 import { resolveTessdataDir } from '../processing/ocr'
 import { getVersion, resetFfmpegCache, resolveFfmpegBinaries } from './ffmpeg'
@@ -42,8 +43,10 @@ export async function checkAllDependencies(
         source: 'bundled',
         requiredFor: mediaTools,
         details: ffmpegRes.error,
+        installable: true,
+        downloadSize: '~25 MB',
         troubleshooting:
-          'Place ffmpeg.exe and ffprobe.exe in the "resources/ffmpeg" folder of the application or install them on your system PATH.'
+          'Place ffmpeg.exe and ffprobe.exe in the "resources/ffmpeg" folder of the application or click Install.'
       })
     } else {
       let ffmpegVer: string | undefined
@@ -87,7 +90,9 @@ export async function checkAllDependencies(
       status: 'missing',
       requiredFor: mediaTools,
       details: err instanceof Error ? err.message : String(err),
-      troubleshooting: 'Place ffmpeg.exe and ffprobe.exe into resources/ffmpeg/.'
+      installable: true,
+      downloadSize: '~25 MB',
+      troubleshooting: 'Place ffmpeg.exe and ffprobe.exe in the resources/ffmpeg folder or click Install.'
     })
   }
 
@@ -167,8 +172,10 @@ export async function checkAllDependencies(
         source: 'bundled',
         requiredFor: ocrTools,
         details: 'No .traineddata or .traineddata.gz models found in tessdata directory.',
+        installable: true,
+        downloadSize: '~4 MB',
         troubleshooting:
-          'Place eng.traineddata or eng.traineddata.gz in the resources/tessdata directory.'
+          'Place eng.traineddata or eng.traineddata.gz in the resources/tessdata directory or click Install.'
       })
     }
   } catch (err) {
@@ -363,3 +370,89 @@ export async function checkAllDependencies(
     items
   }
 }
+
+/**
+ * 1-click on-demand installer for individual dependencies (FFmpeg, Tesseract, etc.).
+ * Downloads and unpacks dependencies into resources/<dep>/ without bloating the desktop installer.
+ */
+export async function installDependency(
+  id: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const electronApp = (electron as { app?: { getAppPath(): string } }).app
+  const resourcesPath =
+    (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath ||
+    (electronApp ? path.join(electronApp.getAppPath(), 'resources') : path.resolve('resources'))
+
+  if (id === 'ffmpeg') {
+    try {
+      const ffmpegDir = path.join(resourcesPath, 'ffmpeg')
+      await fs.promises.mkdir(ffmpegDir, { recursive: true })
+
+      const isWin = process.platform === 'win32'
+      const isMac = process.platform === 'darwin'
+      const platformKey = isWin ? 'win-64' : isMac ? 'osx-64' : 'linux-64'
+
+      const ffmpegUrl = `https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-${platformKey}.zip`
+      const ffprobeUrl = `https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-${platformKey}.zip`
+
+      const downloadAndExtract = async (url: string) => {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        const arrayBuf = await res.arrayBuffer()
+        const zip = await JSZip.loadAsync(arrayBuf)
+        for (const [filename, entry] of Object.entries(zip.files)) {
+          if (!entry.dir) {
+            const content = await entry.async('nodebuffer')
+            const dest = path.join(ffmpegDir, filename)
+            await fs.promises.writeFile(dest, content)
+            if (!isWin) {
+              await fs.promises.chmod(dest, 0o755)
+            }
+          }
+        }
+      }
+
+      await Promise.all([downloadAndExtract(ffmpegUrl), downloadAndExtract(ffprobeUrl)])
+      resetFfmpegCache()
+
+      return {
+        success: true,
+        message: `FFmpeg and FFprobe binaries installed successfully into ${ffmpegDir}`
+      }
+    } catch (err) {
+      return {
+        success: false,
+        error: `Failed to download/install FFmpeg: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
+  }
+
+  if (id === 'tesseract') {
+    try {
+      const tessDir = path.join(resourcesPath, 'tessdata')
+      await fs.promises.mkdir(tessDir, { recursive: true })
+      const url = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata'
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      const arrayBuf = await res.arrayBuffer()
+      const dest = path.join(tessDir, 'eng.traineddata')
+      await fs.promises.writeFile(dest, Buffer.from(arrayBuf))
+
+      return {
+        success: true,
+        message: `Tesseract English OCR language pack installed successfully into ${tessDir}`
+      }
+    } catch (err) {
+      return {
+        success: false,
+        error: `Failed to download Tesseract language data: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: `Dependency "${id}" does not have an automated 1-click installer.`
+  }
+}
+

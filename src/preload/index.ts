@@ -175,7 +175,12 @@ const api: StashBridge = {
   },
   system: {
     checkDependencies: (options?: CheckDependenciesOptions) =>
-      invoke<DependencyReport>(IPC.systemCheckDependencies, options ?? {})
+      invoke<DependencyReport>(IPC.systemCheckDependencies, options ?? {}),
+    installDependency: (id: string) =>
+      invoke<{ success: boolean; message?: string; error?: string }>(
+        IPC.systemInstallDependency,
+        { id }
+      )
   }
 }
 

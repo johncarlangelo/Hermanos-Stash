@@ -9,7 +9,11 @@ Shipped the initial front-end and interactive routing prototype for **Hermano**,
 - **Central Thinking Orb**: Hand-tuned 64px `ThinkingOrb` positioned prominently in the center of the widget body for greeting and thinking states.
 - **Actionable Tool Recommendation Cards**: Clean cards displaying tool icon, name, category, rationale, and direct `[Open Tool]` navigation.
 - **Multi-Step Pipeline Shortcuts**: Detects composite queries and provides a one-click shortcut into the Queue Workflow canvas.
-- **Verification & Store**: Added `useChatbot` Zustand store with client-side test suite in `chatbot.test.ts` (5/5 tests passing); all 939 project tests pass; zero typecheck, lint, or format issues.
+- **Canonical Tool Routing Matrix (`TOOL_ROUTING.md`)**: Comprehensive intent, confidence threshold (High >85%, Ambiguous 50-85%, Out-of-Scope <50%), and ambiguity cluster mapping across all 78 registered tools.
+- **On-Demand 1-Click Dependency Installer**: Added 1-click on-demand downloader and unpacker in Settings (`SettingsView.tsx`) for missing external binaries (FFmpeg & FFprobe ~25 MB static zip, Tesseract OCR language pack ~4 MB) into `resources/<dep>/`. Keeps installer unbloated while allowing users to install binaries as needed per tool. Added cache invalidation and UI auto-refresh.
+- **Decision Model Architecture (Laya System 1 Research)**: Evaluated ConvAI Laya (~421M ModernBERT non-autoregressive decision model via `@receptron/laya` / ONNX Runtime). Confirmed 100% offline local execution in Node.js/Electron without Python. Implementation deferred pending user/team selection of model quantization (INT8 ~450 MB vs INT4 ~250 MB vs FP16).
+- **Verification & Store**: Added `useChatbot` Zustand store with client-side test suite in `chatbot.test.ts` (5/5 tests passing); expanded `dependencies.test.ts` (4/4 tests passing); all 939 project tests across 94 files pass (100%); zero typecheck, lint, or format issues.
+
 
 ## Root README refresh
 

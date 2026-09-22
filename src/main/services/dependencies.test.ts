@@ -54,4 +54,27 @@ describe('System Dependencies Verifier', () => {
     expect(report.items.length).toBeGreaterThanOrEqual(7)
     expect(report.summary.total).toBe(report.items.length)
   })
+
+  it('rejects automated installation for unknown dependency IDs gracefully', async () => {
+    const { installDependency } = await import('./dependencies')
+    const result = await installDependency('unknown-binary')
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('does not have an automated 1-click installer')
+  })
+
+  it('annotates installable dependencies with installable flag and download size', async () => {
+    const report = await checkAllDependencies()
+    const ffmpegItem = report.items.find((i) => i.id === 'ffmpeg')
+    if (ffmpegItem && (ffmpegItem.status === 'missing' || ffmpegItem.status === 'degraded')) {
+      expect(ffmpegItem.installable).toBe(true)
+      expect(ffmpegItem.downloadSize).toBe('~25 MB')
+    }
+
+    const tessItem = report.items.find((i) => i.id === 'tesseract')
+    if (tessItem && (tessItem.status === 'missing' || tessItem.status === 'degraded')) {
+      expect(tessItem.installable).toBe(true)
+      expect(tessItem.downloadSize).toBe('~4 MB')
+    }
+  })
 })
+

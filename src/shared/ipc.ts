@@ -93,7 +93,8 @@ export const IPC = {
   assetsCheckExistence: 'assets:check-existence',
   assetsCleanupMissing: 'assets:cleanup-missing',
 
-  systemCheckDependencies: 'system:check-dependencies'
+  systemCheckDependencies: 'system:check-dependencies',
+  systemInstallDependency: 'system:install-dependency'
 } as const
 
 export interface FileFilter {
@@ -700,6 +701,8 @@ export interface DependencyItem {
   requiredFor: string[]
   details: string
   troubleshooting?: string
+  installable?: boolean
+  downloadSize?: string
 }
 
 export interface DependencyReport {
@@ -835,5 +838,6 @@ export interface StashBridge {
   }
   system: {
     checkDependencies(options?: CheckDependenciesOptions): Promise<DependencyReport>
+    installDependency(id: string): Promise<{ success: boolean; message?: string; error?: string }>
   }
 }

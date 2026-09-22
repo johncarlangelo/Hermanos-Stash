@@ -332,4 +332,40 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Enables intuitive natural language navigation and multi-step pipeline synthesis across 78+ local utilities (and scaling to 500+) without violating the local-first, privacy-focused desktop application principles.
 
+## ADR-045 — 1-Click On-Demand Dependency Installer for Zero Installer Bloat
+
+**Decision:**
+1. **Lean Base Installer Standard:**
+   - External CLI binaries (FFmpeg, FFprobe), OCR language packs (`eng.traineddata`), and heavy local AI model assets must NOT be bundled into the core Hermanos Stash installer or distributed binary package.
+   - Preserves rapid download speeds, minimal disk consumption, and clean local-first ergonomics for users who only use core text/data/developer tools.
+2. **On-Demand Granular Installation via Settings (`SettingsView.tsx`):**
+   - Provide an individual 1-click `[Install (Size)]` button on missing or degraded dependency cards in Settings.
+   - Strictly prohibit bulk "Install All" actions to avoid parallel network saturation, file locking, or confusion over what was downloaded.
+   - Track installation state per dependency (`installingId`), disabling concurrent downloads while an installation is active.
+3. **Structured Unpack & Runtime Invalidation:**
+   - Download official, clean prebuilt archives (e.g. `ffbinaries/ffbinaries-prebuilt` for FFmpeg/FFprobe ~25 MB static zip; `tesseract-ocr/tessdata_fast` for English OCR ~4 MB).
+   - Unpack files directly into isolated subdirectories in the application's `resources/` path (`resources/ffmpeg/`, `resources/tessdata/`).
+   - Automatically set executable file permissions on POSIX systems (`chmod 0o755`).
+   - Invalidate in-memory caches (e.g. `resetFfmpegCache()`) and trigger an automatic dependency re-scan so the UI updates to `ready` instantly without requiring an app restart.
+
+**Reason:** Keeps installer size minimal and adheres to Stash's modularity principles, while providing users seamless 1-click setup when and if they choose to utilize media and document processing tools.
+
+## ADR-046 — Laya Non-Autoregressive Decision Model Selection & Quantization Deferral
+
+**Decision:**
+1. **Model Selection for Intent Routing:**
+   - Selected ConvAI's **Laya** as the target local decision model architecture for Hermano's intelligent tool router.
+   - Unlike generative autoregressive LLMs (which generate conversational tokens sequentially), Laya is a non-autoregressive "System 1" decision engine (~421M ModernBERT backbone) designed specifically for fast, deterministic intent routing and structured decision classification (`choice`, `noul` confidence).
+   - Runs locally in Node.js/Electron via `@receptron/laya` using ONNX Runtime with zero Python or PyTorch runtime dependencies.
+2. **Quantization Evaluation & Implementation Deferral:**
+   - Defer runtime installation of `@receptron/laya` and model weight downloading until the user and development team benchmark and finalize the model quantization format:
+     - **INT8 Quantization (~450 MB):** Preferred target for desktop utility workstations, providing high decision accuracy with an acceptable on-disk footprint.
+     - **INT4 Quantization (~250 MB):** Ultra-lightweight footprint, but requires verification against ambiguous tool boundaries in `TOOL_ROUTING.md`.
+     - **FP16 Unquantized (~1.7 GB):** Disfavored for default local desktop use due to excessive storage overhead.
+3. **Distribution Mechanism:**
+   - Once the quantization model is selected, its weights will hook directly into the ADR-045 1-click on-demand dependency downloader under `resources/models/laya/`, keeping the core installer completely bloat-free.
+
+**Reason:** Guarantees that intelligent decision routing remains strictly local-first and high-performance without prematurely forcing users to download gigabytes of model weights before quantization is verified.
+
+
 

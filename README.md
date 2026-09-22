@@ -63,10 +63,13 @@ npm install
 npm run dev          # launches the app with hot reload
 ```
 
-**FFmpeg (optional):** place `ffmpeg.exe` + `ffprobe.exe` in `resources/ffmpeg/`
-(or have them on PATH) for FFmpeg-backed video/audio processing. The Local LLM
-Playground separately needs a running model server for real inference; its sandbox
-does not.
+**System Dependencies (On-Demand 1-Click Install):** To keep the application installer
+lean and lightweight, heavy external binaries are not bundled into the download. In **Settings**,
+Hermanos Stash provides 1-click on-demand installation for missing dependencies:
+- **FFmpeg & FFprobe (~25 MB):** Installs prebuilt static binaries into `resources/ffmpeg/` for video & audio processing tools.
+- **Tesseract OCR Language Data (~4 MB):** Downloads `eng.traineddata` into `resources/tessdata/` for local OCR extraction.
+- **Local LLM Providers:** Optionally connect to existing local servers like Ollama or LM Studio.
+
 
 ### Keyboard shortcuts
 
@@ -322,7 +325,9 @@ Verification is treated as part of correctness here:
 | [`TASKS.md`](TASKS.md) | Task board |
 | [`PROGRESS.md`](PROGRESS.md) | Current state and evidence |
 | [`DECISIONS.md`](DECISIONS.md) | Architecture decision records |
+| [`TOOL_ROUTING.md`](TOOL_ROUTING.md) | Decision router intent matrix, ambiguity index, and confidence tiers |
 | [`VERIFICATION_LOG.md`](VERIFICATION_LOG.md) | Per-tool verification evidence |
+
 
 ## Status
 

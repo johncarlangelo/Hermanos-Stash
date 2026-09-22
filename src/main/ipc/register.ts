@@ -43,7 +43,7 @@ import {
 } from '../services/stores'
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
-import { checkAllDependencies } from '../services/dependencies'
+import { checkAllDependencies, installDependency } from '../services/dependencies'
 import { ProgressBus } from './progress'
 import { WriteScopeGuard } from './write-scope'
 import {
@@ -643,6 +643,12 @@ export function registerIpc(services: IpcServices): void {
   handle(IPC.systemCheckDependencies, async (_e, raw: unknown) => {
     const options = (raw ?? {}) as CheckDependenciesOptions
     return checkAllDependencies(options)
+  })
+
+  handle(IPC.systemInstallDependency, async (_e, raw: unknown) => {
+    const req = (raw ?? {}) as { id?: unknown }
+    const id = assertString(req.id, 'id')
+    return installDependency(id)
   })
 
   // --- Dialogs ------------------------------------------------------------

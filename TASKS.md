@@ -459,15 +459,23 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Design tool recommendation cards with icons, category labels, descriptions, and direct `[Open Tool]` navigation.
   - [x] Implement composite pipeline detection linking directly into Queue Workflow (`[Open Queue]`).
   - [x] Add unit test suite in `chatbot.test.ts` (5/5 tests passing) and verify full test suite (939 tests passing).
+- [x] **Canonical Tool Routing Matrix (`TOOL_ROUTING.md`)**:
+  - Established canonical semantic profile matrix across all 78 registered tools.
+  - Specified 3-tier confidence model (High >85%, Ambiguous 50-85%, Out of Scope <50%), ambiguity clusters, and Queue Workflow composite recipes.
+- [x] **On-Demand 1-Click Dependency Installer (`SettingsView.tsx`, `dependencies.ts`)**:
+  - Added 1-click on-demand download & unpack flow for external binaries (`ffmpeg` ~25MB prebuilt static binaries, `tesseract` ~4MB fast OCR model) into `resources/<dep>/`.
+  - Enforced anti-bloat principle: installer does NOT bundle heavy external binaries; users install them individually as needed per tool.
+  - Isolated installation states (`installingId`), preventing bulk download collisions.
+  - Added cache invalidation (`resetFfmpegCache()`) and auto-refresh in Settings upon completion.
+  - Added unit test coverage in `dependencies.test.ts` (all 4 tests passing).
 - [ ] **Phase 2: Decision Model Architecture & Evaluation**
-  - [ ] Evaluate candidate decision engines:
-    - *Option A: Local-First ONNX Embedding Vector Router* (e.g. `all-MiniLM-L6-v2` or `bge-micro`, ~20MB, runs 100% offline via `@xenova/transformers` or ONNX Runtime with zero API dependencies).
-    - *Option B: Local Small Language Model (SLM) Router* (e.g. 1B-3B parameter model running through local Ollama/LM Studio endpoints via Tool #78 infrastructure).
-    - *Option C: Jev / Cloud Decision API* (opt-in cloud API integration with user-provided API key stored in SQLite preferences).
-  - [ ] Define structured tool metadata schema for decision routing (`problemDomains`, `symptoms`, `inputFormats`, `outputFormats`, `parameters`).
+  - [x] Research Laya decision model architecture: ConvAI ModernBERT ~421M non-autoregressive decision model via `@receptron/laya` / ONNX Runtime. Verified it runs 100% offline in Node.js/Electron without Python/PyTorch.
+  - [ ] Evaluate Laya model quantization options (INT8 ~450MB vs INT4 ~250MB vs FP16 ~1.7GB) to balance intent decision accuracy against disk footprint before downloading or implementing weights.
+  - [ ] Implement Laya decision routing engine once model quantization is finalized, hooking weights into the 1-click on-demand downloader under `resources/models/`.
   - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
   - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
   - [ ] Add unit and integration tests covering semantic routing accuracy and pipeline construction.
+
 
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
