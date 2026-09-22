@@ -185,7 +185,7 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - The decision routing logic (`routeQueryToTools` or future decision engine service) must remain completely decoupled from the UI. Swapping the decision backend (e.g. local ONNX embeddings, local SLM, or future Jev decision API) must never require altering `ChatbotWidget.tsx`.
 3. **Problem Routing vs. Keyword Search Distinction**:
    - Hermano is **not** a search bar; fuzzy keyword search already exists in Command Palette (`Ctrl+K`).
-   - Hermano's core responsibility is **intent classification**, **multi-step pipeline synthesis** (connecting to Queue Workflow), and **parameter pre-configuration** from user problem statements.
+   - Hermano's core responsibility is **intent classification**, **multi-step pipeline synthesis** (connecting to Queue Workflow), and **parameter pre-configuration** from user problem statements, adhering strictly to the semantic profiles, confidence tiers, and ambiguity clusters defined in `TOOL_ROUTING.md`.
    - Output tool cards must be clean and actionable: showing tool icon, title, category, concise rationale, and direct `[Open Tool]` navigation, without distracting confidence percentage clutter.
 4. **Local-First & Privacy Policy**:
    - Router operations default to 100% offline local processing (zero cloud telemetry, zero remote prompts).
