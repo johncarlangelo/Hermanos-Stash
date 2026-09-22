@@ -368,8 +368,20 @@ describe('Workflow Pipeline Execution Engine', () => {
             { id: 'node-3', toolId: 'social-resizer', position: { x: 400, y: 0 }, params: {} }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' },
-            { id: 'e2', fromNodeId: 'node-2', fromPort: 'files', toNodeId: 'node-3', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-1',
+              fromPort: 'files',
+              toNodeId: 'node-2',
+              toPort: 'files'
+            },
+            {
+              id: 'e2',
+              fromNodeId: 'node-2',
+              fromPort: 'files',
+              toNodeId: 'node-3',
+              toPort: 'files'
+            }
           ]
         }
 
@@ -415,7 +427,13 @@ describe('Workflow Pipeline Execution Engine', () => {
             { id: 'node-2', toolId: 'image-convert', position: { x: 200, y: 0 }, params: {} }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-1',
+              fromPort: 'files',
+              toNodeId: 'node-2',
+              toPort: 'files'
+            }
           ]
         }
 
@@ -452,7 +470,13 @@ describe('Workflow Pipeline Execution Engine', () => {
             { id: 'node-2', toolId: 'image-convert', position: { x: 200, y: 0 }, params: {} }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-1',
+              fromPort: 'files',
+              toNodeId: 'node-2',
+              toPort: 'files'
+            }
           ]
         }
 
@@ -493,10 +517,34 @@ describe('Workflow Pipeline Execution Engine', () => {
             { id: 'node-D', toolId: 'images-to-pdf', position: { x: 400, y: 0 }, params: {} }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-A', fromPort: 'files', toNodeId: 'node-B', toPort: 'files' },
-            { id: 'e2', fromNodeId: 'node-A', fromPort: 'files', toNodeId: 'node-C', toPort: 'files' },
-            { id: 'e3', fromNodeId: 'node-B', fromPort: 'files', toNodeId: 'node-D', toPort: 'files' },
-            { id: 'e4', fromNodeId: 'node-C', fromPort: 'files', toNodeId: 'node-D', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-A',
+              fromPort: 'files',
+              toNodeId: 'node-B',
+              toPort: 'files'
+            },
+            {
+              id: 'e2',
+              fromNodeId: 'node-A',
+              fromPort: 'files',
+              toNodeId: 'node-C',
+              toPort: 'files'
+            },
+            {
+              id: 'e3',
+              fromNodeId: 'node-B',
+              fromPort: 'files',
+              toNodeId: 'node-D',
+              toPort: 'files'
+            },
+            {
+              id: 'e4',
+              fromNodeId: 'node-C',
+              fromPort: 'files',
+              toNodeId: 'node-D',
+              toPort: 'files'
+            }
           ]
         }
 
@@ -504,16 +552,24 @@ describe('Workflow Pipeline Execution Engine', () => {
         expect(result.success).toBe(true)
 
         // Find index in cleanLog where node-A was cleaned up
-        const cleanupAIndex = cleanLog.findIndex((e) => e.action === 'cleanup' && e.dir === '/scratch/image-compress')
+        const cleanupAIndex = cleanLog.findIndex(
+          (e) => e.action === 'cleanup' && e.dir === '/scratch/image-compress'
+        )
         // Both node-B (image-convert) and node-C (social-resizer) must have executed BEFORE node-A was cleaned up!
-        const execBIndex = cleanLog.findIndex((e) => e.action === 'execute' && e.id === 'image-convert')
-        const execCIndex = cleanLog.findIndex((e) => e.action === 'execute' && e.id === 'social-resizer')
+        const execBIndex = cleanLog.findIndex(
+          (e) => e.action === 'execute' && e.id === 'image-convert'
+        )
+        const execCIndex = cleanLog.findIndex(
+          (e) => e.action === 'execute' && e.id === 'social-resizer'
+        )
 
         expect(cleanupAIndex).toBeGreaterThan(execBIndex)
         expect(cleanupAIndex).toBeGreaterThan(execCIndex)
 
         // Node D is the leaf; its output must NOT be cleaned up
-        const cleanupDIndex = cleanLog.findIndex((e) => e.action === 'cleanup' && e.dir === '/scratch/images-to-pdf')
+        const cleanupDIndex = cleanLog.findIndex(
+          (e) => e.action === 'cleanup' && e.dir === '/scratch/images-to-pdf'
+        )
         expect(cleanupDIndex).toBe(-1)
       } finally {
         setCustomStepExecutor(null)
@@ -534,7 +590,10 @@ describe('Workflow Pipeline Execution Engine', () => {
         for (const file of files) {
           const dir = path.dirname(file)
           if (dir.startsWith('/scratch/')) {
-            expect(activeDirs.has(dir), `Input directory ${dir} must not be cleaned prematurely`).toBe(true)
+            expect(
+              activeDirs.has(dir),
+              `Input directory ${dir} must not be cleaned prematurely`
+            ).toBe(true)
           }
         }
         const opDir = `/scratch/${toolId}`
@@ -549,15 +608,48 @@ describe('Workflow Pipeline Execution Engine', () => {
       try {
         const graph: WorkflowGraph = {
           nodes: [
-            { id: 'node-1', toolId: 'pdf-split', position: { x: 0, y: 0 }, params: { range: '1-5' } },
-            { id: 'node-2', toolId: 'pdf-numberer', position: { x: 200, y: 0 }, params: { prefix: 'DOC-' } },
-            { id: 'node-3', toolId: 'pdf-watermark', position: { x: 400, y: 0 }, params: { text: 'CONFIDENTIAL' } },
+            {
+              id: 'node-1',
+              toolId: 'pdf-split',
+              position: { x: 0, y: 0 },
+              params: { range: '1-5' }
+            },
+            {
+              id: 'node-2',
+              toolId: 'pdf-numberer',
+              position: { x: 200, y: 0 },
+              params: { prefix: 'DOC-' }
+            },
+            {
+              id: 'node-3',
+              toolId: 'pdf-watermark',
+              position: { x: 400, y: 0 },
+              params: { text: 'CONFIDENTIAL' }
+            },
             { id: 'node-4', toolId: 'pdf-compress', position: { x: 600, y: 0 }, params: {} }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' },
-            { id: 'e2', fromNodeId: 'node-2', fromPort: 'files', toNodeId: 'node-3', toPort: 'files' },
-            { id: 'e3', fromNodeId: 'node-3', fromPort: 'files', toNodeId: 'node-4', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-1',
+              fromPort: 'files',
+              toNodeId: 'node-2',
+              toPort: 'files'
+            },
+            {
+              id: 'e2',
+              fromNodeId: 'node-2',
+              fromPort: 'files',
+              toNodeId: 'node-3',
+              toPort: 'files'
+            },
+            {
+              id: 'e3',
+              fromNodeId: 'node-3',
+              fromPort: 'files',
+              toNodeId: 'node-4',
+              toPort: 'files'
+            }
           ]
         }
 
@@ -616,7 +708,9 @@ describe('Workflow Pipeline Execution Engine', () => {
 
       const videoFields = getToolParamFields('video-convert')
       expect(videoFields.some((f) => f.key === 'format')).toBe(true)
-      expect(videoFields.some((f) => f.key === 'crfQuality' && f.aliases?.includes('crf'))).toBe(true)
+      expect(videoFields.some((f) => f.key === 'crfQuality' && f.aliases?.includes('crf'))).toBe(
+        true
+      )
 
       const socialFields = getToolParamFields('social-resizer')
       expect(socialFields.some((f) => f.key === 'presetId')).toBe(true)
@@ -640,9 +734,9 @@ describe('Workflow Pipeline Execution Engine', () => {
       expect(resolveParamValue({ watermarkText: 'legacy text' }, textField)).toBe('legacy text')
 
       // 3. Prioritize canonical key when explicitly set
-      expect(resolveParamValue({ text: 'canonical text', watermark: 'ignored alias' }, textField)).toBe(
-        'canonical text'
-      )
+      expect(
+        resolveParamValue({ text: 'canonical text', watermark: 'ignored alias' }, textField)
+      ).toBe('canonical text')
     })
 
     it('prioritizes user-customized alias over default or recipe preset string', () => {
@@ -654,9 +748,9 @@ describe('Workflow Pipeline Execution Engine', () => {
       ).toBe('test output')
 
       // When canonical holds default 'CONFIDENTIAL' and alias holds user input 'test output'
-      expect(
-        resolveParamValue({ text: 'CONFIDENTIAL', watermark: 'test output' }, textField)
-      ).toBe('test output')
+      expect(resolveParamValue({ text: 'CONFIDENTIAL', watermark: 'test output' }, textField)).toBe(
+        'test output'
+      )
 
       // When canonical was genuinely customized by user, canonical wins
       expect(
@@ -666,13 +760,19 @@ describe('Workflow Pipeline Execution Engine', () => {
 
     it('executes text transformation tools end-to-end with configured parameters', async () => {
       // 1. Case Converter
-      const caseUpper = await executeStep('case-converter', [], 'hello world', { caseMode: 'upper' })
+      const caseUpper = await executeStep('case-converter', [], 'hello world', {
+        caseMode: 'upper'
+      })
       expect(caseUpper.outputText).toBe('HELLO WORLD')
 
-      const caseSnake = await executeStep('case-converter', [], 'hello world', { caseMode: 'snake' })
+      const caseSnake = await executeStep('case-converter', [], 'hello world', {
+        caseMode: 'snake'
+      })
       expect(caseSnake.outputText).toBe('hello_world')
 
-      const caseCamel = await executeStep('case-converter', [], 'hello world', { caseMode: 'camel' })
+      const caseCamel = await executeStep('case-converter', [], 'hello world', {
+        caseMode: 'camel'
+      })
       expect(caseCamel.outputText).toBe('helloWorld')
 
       // 2. JSON Formatter
@@ -683,18 +783,26 @@ describe('Workflow Pipeline Execution Engine', () => {
       expect(jsonMinify.outputText).toBe('{"a":1}')
 
       // 3. Base64 Codec
-      const b64Encoded = await executeStep('base64-codec', [], 'Hello Hermanos', { direction: 'encode' })
+      const b64Encoded = await executeStep('base64-codec', [], 'Hello Hermanos', {
+        direction: 'encode'
+      })
       expect(b64Encoded.outputText).toBe(btoa('Hello Hermanos'))
 
-      const b64Decoded = await executeStep('base64-codec', [], btoa('Hello Hermanos'), { direction: 'decode' })
+      const b64Decoded = await executeStep('base64-codec', [], btoa('Hello Hermanos'), {
+        direction: 'decode'
+      })
       expect(b64Decoded.outputText).toBe('Hello Hermanos')
 
       // 4. YAML <-> JSON
-      const yamlRes = await executeStep('yaml-json', [], 'name: Stash\ncount: 42', { direction: 'yaml-to-json' })
+      const yamlRes = await executeStep('yaml-json', [], 'name: Stash\ncount: 42', {
+        direction: 'yaml-to-json'
+      })
       expect(JSON.parse(yamlRes.outputText || '{}')).toEqual({ name: 'Stash', count: 42 })
 
       // 5. CSV <-> JSON
-      const csvRes = await executeStep('csv-json', [], 'id,name\n1,Alpha\n2,Beta', { direction: 'csv-to-json' })
+      const csvRes = await executeStep('csv-json', [], 'id,name\n1,Alpha\n2,Beta', {
+        direction: 'csv-to-json'
+      })
       expect(JSON.parse(csvRes.outputText || '[]')).toEqual([
         { id: '1', name: 'Alpha' },
         { id: '2', name: 'Beta' }
@@ -718,11 +826,27 @@ describe('Workflow Pipeline Execution Engine', () => {
       try {
         const graph: WorkflowGraph = {
           nodes: [
-            { id: 'node-1', toolId: 'pdf-split', position: { x: 0, y: 0 }, params: { range: '1-2' } },
-            { id: 'node-2', toolId: 'pdf-watermark', position: { x: 200, y: 0 }, params: { text: 'STRICTLY PRIVATE', watermark: 'test output' } }
+            {
+              id: 'node-1',
+              toolId: 'pdf-split',
+              position: { x: 0, y: 0 },
+              params: { range: '1-2' }
+            },
+            {
+              id: 'node-2',
+              toolId: 'pdf-watermark',
+              position: { x: 200, y: 0 },
+              params: { text: 'STRICTLY PRIVATE', watermark: 'test output' }
+            }
           ],
           edges: [
-            { id: 'e1', fromNodeId: 'node-1', fromPort: 'files', toNodeId: 'node-2', toPort: 'files' }
+            {
+              id: 'e1',
+              fromNodeId: 'node-1',
+              fromPort: 'files',
+              toNodeId: 'node-2',
+              toPort: 'files'
+            }
           ]
         }
 

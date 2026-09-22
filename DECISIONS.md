@@ -311,8 +311,67 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Prevents frustrating, inadvertent zooming in/out of the workflow canvas while users are browsing tool lists, scrolling parameters, or searching through Stash assets in overlay panels.
 
+## ADR-044 — Hermano: AI Copilot & Tool Decision Router Architecture
 
+**Decision:**
+1. **Separation of Presentation & Intelligence:**
+   - Implement `ChatbotWidget.tsx` strictly as a front-end presentation layer powered by the `thinking-orbs` canvas library.
+   - The widget renders a 32px floating trigger orb at bottom-right (`bottom-9 right-6`), a 64px central orb in the chat body, and a docked non-draggable modal window (`w-[390px] sm:w-[420px] h-[530px]`).
+   - All state and query evaluation flows exclusively through `useChatbot` in `src/renderer/stores/chatbot.ts`.
+2. **Problem-Driven Routing vs. Redundant Keyword Search:**
+   - Explicitly avoid recreating a duplicate search bar; fuzzy keyword search already exists in the Command Palette (`Ctrl+K`).
+   - Hermano focuses on intent classification, multi-step pipeline synthesis (connecting directly to the Queue Workflow visual canvas), and natural-language parameter extraction.
+3. **Pluggable Decision Engine Backend:**
+   - Keep the decision router interface modular so the underlying engine can be swapped seamlessly between:
+     - Local-First ONNX Embedding Vector Router (100% offline, zero API costs, zero external dependencies).
+     - Local Small Language Model (SLM) router via local endpoints (Ollama / LM Studio).
+     - Optional Cloud Decision Engine (e.g. Jev API) with user-provided API key stored in SQLite preferences.
+4. **Actionable Recommendations:**
+   - Recommendations render clean, actionable cards with tool icon, name, category, rationale, and a 1-click `[Open Tool]` navigation button.
+   - Strip distracting percentage scores to reduce visual clutter and keep recommendations clean and focused.
 
+**Reason:** Enables intuitive natural language navigation and multi-step pipeline synthesis across 78+ local utilities (and scaling to 500+) without violating the local-first, privacy-focused desktop application principles.
+
+## ADR-045 — 1-Click On-Demand Dependency Installer for Zero Installer Bloat
+
+**Decision:**
+1. **Lean Base Installer Standard:**
+   - External CLI binaries (FFmpeg, FFprobe), OCR language packs (`eng.traineddata`), and heavy local AI model assets must NOT be bundled into the core Hermanos Stash installer or distributed binary package.
+   - Preserves rapid download speeds, minimal disk consumption, and clean local-first ergonomics for users who only use core text/data/developer tools.
+2. **On-Demand Granular Installation via Settings (`SettingsView.tsx`):**
+   - Provide an individual 1-click `[Install (Size)]` button on missing or degraded dependency cards in Settings.
+   - Strictly prohibit bulk "Install All" actions to avoid parallel network saturation, file locking, or confusion over what was downloaded.
+   - Track installation state per dependency (`installingId`), disabling concurrent downloads while an installation is active.
+3. **Structured Unpack & Runtime Invalidation:**
+   - Download official, clean prebuilt archives (e.g. `ffbinaries/ffbinaries-prebuilt` for FFmpeg/FFprobe ~25 MB static zip; `tesseract-ocr/tessdata_fast` for English OCR ~4 MB).
+   - Unpack files directly into isolated subdirectories in the application's `resources/` path (`resources/ffmpeg/`, `resources/tessdata/`).
+   - Automatically set executable file permissions on POSIX systems (`chmod 0o755`).
+   - Invalidate in-memory caches (e.g. `resetFfmpegCache()`) and trigger an automatic dependency re-scan so the UI updates to `ready` instantly without requiring an app restart.
+
+**Reason:** Keeps installer size minimal and adheres to Stash's modularity principles, while providing users seamless 1-click setup when and if they choose to utilize media and document processing tools.
+
+## ADR-046 — Path B Semantic Bi-Encoder Decision Engine (MiniLM) and Idle Resource Lifecycle
+
+**Decision:**
+1. **Model Selection & Architecture (Path B Bi-Encoder):**
+   - Adopted **`all-MiniLM-L6-v2`** (~22.7 MB INT8 ONNX, ~23.4 MB total with tokenizer) via `@xenova/transformers` as Hermano's offline semantic decision router, replacing the heavy 400MB ModernBERT/Laya architecture.
+   - Operates as a bi-encoder: vectorizes natural language user queries into 384-dimensional dense vectors in ~10 ms.
+   - Computes cosine similarity (dot product of L2-normalized vectors) against a static precomputed index of all 78 registered tools in <1 ms.
+   - Tool embeddings (~294 KB JSON) are precomputed at build time and bundled with the application in `src/shared/assets/tool-embeddings.json`. Adding future tools up to 500+ requires zero model retraining.
+2. **On-Demand Lifecycle & 3-Minute Idle Watchdog:**
+   - **Zero Startup Overhead:** The model pipeline is strictly NOT loaded at application launch. Desktop startup remains instantaneous (<500 ms).
+   - **Lazy Initialization:** The pipeline is initialized only on-demand when the user opens Hermano and submits a query.
+   - **3-Minute Idle Eviction:** An idle watchdog timer automatically terminates and unloads the session (`unloadModel()`) after 3 minutes of inactivity (or when the widget closes), releasing all ~40–60 MB of RAM back to the operating system.
+   - **Zero Background CPU:** When waiting for user input, the model consumes 0.0% CPU cycles.
+3. **1-Click On-Demand Installation & Graceful Fallback:**
+   - Registered as an optional AI dependency in `dependencies.ts` (`minilm-model`, ~23 MB).
+   - Can be downloaded with 1-click in Settings into `resources/models/Xenova/all-MiniLM-L6-v2/`.
+   - When the model is not installed or offline, Hermano seamlessly falls back to client-side heuristics so the copilot never breaks.
+4. **Conversational Guards & Intent Pre-Filters:**
+   - Intercepts greetings (`"hello"`, `"hi"`), system test queries (`"test"`, `"help"`), and keyboard mash (`"dfsdagfdg"`, consonant clusters, `< 0.35` similarity) before tool vector scoring.
+   - Returns warm, actionable copilot responses and guidance without presenting phantom tool cards.
+
+**Reason:** Delivers true semantic problem routing and 3-tier confidence classification with Raycast-grade responsiveness (<10 ms), zero background battery drain, minimal RAM usage, zero installer bloat, and polished human-like conversational handling.
 
 
 

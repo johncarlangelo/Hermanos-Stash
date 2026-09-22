@@ -150,6 +150,11 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - The Settings view (`SettingsView.tsx`) automatically surfaces the registered item with status badges, version chips, reveal actions, troubleshooting alerts, and dependent tool tags.
 4. **Mandatory Unit Test Coverage (`dependencies.test.ts`):**
    - Add unit test coverage in `src/main/services/dependencies.test.ts` asserting that the new dependency ID is probed, returned in the report, correctly categorized, and accurately counted in `report.summary`.
+5. **1-Click On-Demand Dependency Installer (`installDependency`):**
+   - **Zero installer bloat**: Do NOT bundle heavy binaries (FFmpeg, OCR tessdata, quantized AI models) into the main installer artifact. Keep them on-demand.
+   - **One-by-one installation**: Installations in `SettingsView.tsx` must be triggered individually per dependency item, tracking state via `installingId` to prevent download collisions. Never add a bulk "Install All" button.
+   - **Granular metadata**: Dependencies with automated downloaders must set `installable: true` and specify accurate `downloadSize` (e.g. `'~25 MB'`, `'~4 MB'`).
+   - **Clean extraction & cache invalidation**: Downloads must unpack into isolated `resources/<dep>/` directories (e.g. `resources/ffmpeg/`, `resources/tessdata/`), set executable permissions on non-Windows platforms, and invalidate internal caches (e.g. `resetFfmpegCache()`) so the UI immediately detects the new binary without restarting.
 
 ### Feature Semantic Versioning (Queue Workflow View [BETA])
 
@@ -171,6 +176,37 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - Update the version test in `src/renderer/features/workflow/workflow.test.ts`.
    - Verify tests and linting (`npm test`, `npm run lint`).
    - Stage and commit with the appropriate Conventional Commit scope (e.g. `fix(queue): ...` for patch, `feat(queue): ...` for minor).
+
+### Hermano Copilot & Tool Decision Router Contract (`ChatbotWidget.tsx`, `chatbot.ts`)
+
+1. **Presentation & Widget Standard**:
+   - **Floating Trigger Orb**: Docked bottom-right (`fixed bottom-9 right-6 z-40`, 12px above StatusBar). Renders `<ThinkingOrb size={32} theme="dark" />` inside a comfortable dark frosted button. No distracting pulsing dots when closed.
+   - **Modal Window**: Non-draggable modal docked bottom-right (`w-[390px] sm:w-[420px] h-[530px]`), dark-only glass styling matching `DESIGN.md`.
+   - **Central Thinking Orb**: Hand-tuned 64px `<ThinkingOrb size={64} theme="dark" />` placed prominently in the center of the widget body (both in the empty greeting state and during the thinking/routing state). Never crammed into the top header bar.
+   - **Keyboard Navigation**: `Ctrl + /` globally toggles Hermano; `Escape` closes it; `Enter` sends the query.
+   - **Canonical Header Badge**: Uses standard `ROUTER · BETA` pill (`text-amber-400 bg-amber-500/15 border-amber-500/30`).
+2. **Modular Architecture & Boundary Isolation**:
+   - `ChatbotWidget.tsx` is strictly a presentation component; it consumes `useChatbot` from `src/renderer/stores/chatbot.ts`.
+   - The decision routing logic (`routeQueryToTools` or future decision engine service) must remain completely decoupled from the UI. Swapping the decision backend (e.g. local ONNX embeddings, local SLM, or future Jev decision API) must never require altering `ChatbotWidget.tsx`.
+3. **Problem Routing vs. Keyword Search Distinction**:
+   - Hermano is **not** a search bar; fuzzy keyword search already exists in Command Palette (`Ctrl+K`).
+   - Hermano's core responsibility is **intent classification**, **multi-step pipeline synthesis** (connecting to Queue Workflow), and **parameter pre-configuration** from user problem statements, adhering strictly to the semantic profiles, confidence tiers, and ambiguity clusters defined in `TOOL_ROUTING.md`.
+   - Output tool cards must be clean and actionable: showing tool icon, title, category, concise rationale, and direct `[Open Tool]` navigation, without distracting confidence percentage clutter.
+4. **Local-First & Privacy Policy**:
+   - Router operations default to 100% offline local processing (zero cloud telemetry, zero remote prompts).
+   - If an optional cloud decision model (e.g. Jev API) is supported in the future, it must be strictly opt-in via Settings, require explicit user API keys, and fail gracefully to the local engine when offline.
+5. **Decision Engine & Model Architecture (Path B Bi-Encoder MiniLM)**:
+   - Adopted **`all-MiniLM-L6-v2`** (~22.7 MB INT8 ONNX) as the official offline semantic decision engine for Hermano problem routing.
+   - Vectorizes queries into 384-dimensional dense vectors in ~10 ms and matches them against precomputed tool vectors via cosine similarity in <1 ms.
+   - Precomputed embeddings for all 78 registered tools are permanently bundled in `src/shared/assets/tool-embeddings.json` (~294 KB).
+   - The model binary is installable on-demand via Settings 1-click installer (`resources/models/Xenova/all-MiniLM-L6-v2/`). When uninstalled, Hermano gracefully falls back to client-side heuristics.
+6. **Resource Discipline & Idle Eviction Lifecycle**:
+   - **Zero Startup Overhead:** The model is NEVER initialized on app launch. App startup remains instantaneous.
+   - **Lazy Loading:** Initializes only when Hermano receives a query.
+   - **3-Minute Idle Eviction:** If no queries occur for 3 minutes (or when the widget is closed), the ONNX session unloads (`unloadModel()`), immediately releasing its ~40–60 MB RAM back to the operating system.
+   - **Zero Background CPU:** When idle, model resource consumption is 0.0%.
+
+
 
 ## Agent behavior
 

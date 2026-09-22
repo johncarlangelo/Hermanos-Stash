@@ -155,7 +155,9 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
         const toolDef = toolRegistry.get(step.toolId)
         if (!toolDef) {
           setStepResults((prev) =>
-            prev.map((r, idx) => (idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r))
+            prev.map((r, idx) =>
+              idx === i ? { ...r, status: 'error', error: 'Tool not found' } : r
+            )
           )
           allSuccess = false
           break
@@ -197,7 +199,11 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
               try {
                 await window.stash.temp.cleanup(previousIntermediateDir)
               } catch (cleanupErr) {
-                console.warn('Failed to cleanup intermediate directory:', previousIntermediateDir, cleanupErr)
+                console.warn(
+                  'Failed to cleanup intermediate directory:',
+                  previousIntermediateDir,
+                  cleanupErr
+                )
               }
             }
             previousIntermediateDir = null
@@ -655,7 +661,8 @@ export function QueueRunner({ initialPresetId, onEditPreset }: QueueRunnerProps 
                             <div>
                               <span className="text-accent font-semibold">Handoff: </span>
                               <span>
-                                Passed {result.outputFiles.length} artifact(s) to Step #{result.step + 1}
+                                Passed {result.outputFiles.length} artifact(s) to Step #
+                                {result.step + 1}
                               </span>
                             </div>
                             <span className="text-[10px] text-faint uppercase tracking-wider font-mono">

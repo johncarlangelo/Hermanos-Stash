@@ -42,8 +42,10 @@ import type {
   ArchiveExtractEntryResult,
   AssetFilter,
   CheckDependenciesOptions,
-  DependencyReport
+  DependencyReport,
+  SemanticRouteResult
 } from '../shared/ipc'
+
 
 /**
  * Secure preload bridge. Only the narrow, typed surface below is exposed to
@@ -175,8 +177,19 @@ const api: StashBridge = {
   },
   system: {
     checkDependencies: (options?: CheckDependenciesOptions) =>
-      invoke<DependencyReport>(IPC.systemCheckDependencies, options ?? {})
+      invoke<DependencyReport>(IPC.systemCheckDependencies, options ?? {}),
+    installDependency: (id: string) =>
+      invoke<{ success: boolean; message?: string; error?: string }>(
+        IPC.systemInstallDependency,
+        { id }
+      )
+  },
+  chatbot: {
+    semanticRoute: (query: string) =>
+      invoke<SemanticRouteResult>(IPC.chatbotSemanticRoute, { query }),
+    unloadModel: () => invoke<void>(IPC.chatbotUnloadModel)
   }
 }
+
 
 contextBridge.exposeInMainWorld('stash', api)

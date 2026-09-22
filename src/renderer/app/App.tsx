@@ -23,6 +23,7 @@ import { UsageDashboard } from '../features/shell/UsageDashboard'
 import { GalleryView } from '../features/gallery/GalleryView'
 import { DropRouter } from '../features/shell/DropRouter'
 import { QuickSwitch } from '../features/shell/QuickSwitch'
+import { ChatbotWidget } from '../features/chatbot/ChatbotWidget'
 import { Toaster } from '../components/ui/Toaster'
 import { RootErrorBoundary } from '../components/RootErrorBoundary'
 import { getIcon } from '../components/icons'
@@ -246,6 +247,7 @@ export default function App() {
           <CommandPalette />
           <DropRouter />
           <QuickSwitch />
+          <ChatbotWidget />
           <Toaster />
         </div>
         <StatusBar />

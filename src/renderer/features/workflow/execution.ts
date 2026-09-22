@@ -363,10 +363,7 @@ async function executeWithStash(
     }
     case 'image-watermark': {
       const text = String(
-        params.text ??
-        params.watermarkText ??
-        params.watermark ??
-        'Hermanos Stash'
+        params.text ?? params.watermarkText ?? params.watermark ?? 'Hermanos Stash'
       )
       const position = (params.position as WatermarkPosition) || 'bottom-right'
       const opacity = typeof params.opacity === 'number' ? params.opacity : 0.6
@@ -442,7 +439,11 @@ async function executeWithStash(
       const outputFiles: string[] = []
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx]
-        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `numbered-${idx + 1}`
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.pdf$/i, '') || `numbered-${idx + 1}`
         const targetPdf = `${opDir}/${base}-numbered.pdf`
         const { bytes } = await window.stash.fs.readFileBytes({ path: file })
         const prefix =
@@ -466,13 +467,9 @@ async function executeWithStash(
               ? params.startingNumber
               : DEFAULT_NUMBERING_CONFIG.startNumber
         const fontSize =
-          typeof params.fontSize === 'number'
-            ? params.fontSize
-            : DEFAULT_NUMBERING_CONFIG.fontSize
+          typeof params.fontSize === 'number' ? params.fontSize : DEFAULT_NUMBERING_CONFIG.fontSize
         const colorHex =
-          typeof params.colorHex === 'string'
-            ? params.colorHex
-            : DEFAULT_NUMBERING_CONFIG.colorHex
+          typeof params.colorHex === 'string' ? params.colorHex : DEFAULT_NUMBERING_CONFIG.colorHex
         const pageRangeText =
           (params.pageRangeText as string) ||
           (params.pageRanges as string) ||
@@ -505,7 +502,11 @@ async function executeWithStash(
       const outputFiles: string[] = []
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx]
-        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `watermarked-${idx + 1}`
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.pdf$/i, '') || `watermarked-${idx + 1}`
         const targetPdf = `${opDir}/${base}-watermarked.pdf`
         const { bytes } = await window.stash.fs.readFileBytes({ path: file })
         const watermarkAlias =
@@ -522,7 +523,7 @@ async function executeWithStash(
           watermarkAlias !== canonicalText &&
           (canonicalText === 'CONFIDENTIAL' || canonicalText === 'STRICTLY PRIVATE')
             ? watermarkAlias
-            : canonicalText ?? watermarkAlias ?? 'CONFIDENTIAL'
+            : (canonicalText ?? watermarkAlias ?? 'CONFIDENTIAL')
         const rotationDegrees =
           typeof params.rotationDegrees === 'number'
             ? params.rotationDegrees
@@ -530,17 +531,11 @@ async function executeWithStash(
               ? params.rotation
               : DEFAULT_WATERMARK_CONFIG.rotationDegrees
         const fontSize =
-          typeof params.fontSize === 'number'
-            ? params.fontSize
-            : DEFAULT_WATERMARK_CONFIG.fontSize
+          typeof params.fontSize === 'number' ? params.fontSize : DEFAULT_WATERMARK_CONFIG.fontSize
         const opacity =
-          typeof params.opacity === 'number'
-            ? params.opacity
-            : DEFAULT_WATERMARK_CONFIG.opacity
+          typeof params.opacity === 'number' ? params.opacity : DEFAULT_WATERMARK_CONFIG.opacity
         const colorHex =
-          typeof params.colorHex === 'string'
-            ? params.colorHex
-            : DEFAULT_WATERMARK_CONFIG.colorHex
+          typeof params.colorHex === 'string' ? params.colorHex : DEFAULT_WATERMARK_CONFIG.colorHex
         const tiled = Boolean(params.tiled)
         const pageRangeText =
           (params.pageRangeText as string) ||
@@ -573,12 +568,13 @@ async function executeWithStash(
       const outputFiles: string[] = []
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx]
-        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `rotated-${idx + 1}`
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.pdf$/i, '') || `rotated-${idx + 1}`
         const targetPdf = `${opDir}/${base}-rotated.pdf`
-        const angle =
-          (params.angle as 90 | 180 | 270) ||
-          (params.rotation as 90 | 180 | 270) ||
-          90
+        const angle = (params.angle as 90 | 180 | 270) || (params.rotation as 90 | 180 | 270) || 90
         const pageSpec =
           (params.pageSpec as string) ||
           (params.pageRanges as string) ||
@@ -598,7 +594,11 @@ async function executeWithStash(
       const outputFiles: string[] = []
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx]
-        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `compressed-${idx + 1}`
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.pdf$/i, '') || `compressed-${idx + 1}`
         const targetPdf = `${opDir}/${base}-compressed.pdf`
         await window.stash.pdfs.compress({ path: file, targetPdf })
         outputFiles.push(targetPdf)
@@ -609,7 +609,11 @@ async function executeWithStash(
       const outputFiles: string[] = []
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx]
-        const base = file.split(/[\\/]/).pop()?.replace(/\.pdf$/i, '') || `reordered-${idx + 1}`
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.pdf$/i, '') || `reordered-${idx + 1}`
         const targetPdf = `${opDir}/${base}-reordered.pdf`
         await window.stash.pdfs.reorder({
           path: file,

@@ -1,5 +1,23 @@
 # Hermanos Stash — Progress
 
+## Milestone 12 — Hermano: AI Copilot & Local Decision Router (Branch: `feature/chatbot-integration`)
+
+Shipped the initial front-end and interactive routing prototype for **Hermano**, an AI Copilot and decision router designed to navigate Stash's 78 tools and future 500+ utilities:
+- **ThinkingOrb Canvas Integration**: Installed zero-dependency `thinking-orbs` (`^0.3.2`) with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`) and dark theme tuning.
+- **Floating Trigger Button**: Docked at bottom-right (`bottom-9 right-6`, 32px ThinkingOrb) with frosted dark card styling, hover glow, and `Ctrl + /` keyboard shortcut.
+- **Docked Modal Presentation**: Non-draggable modal (`w-[390px] sm:w-[420px] h-[530px]`, dark glassmorphism, canonical `ROUTER · BETA` badge).
+- **Central Thinking Orb**: Hand-tuned 64px `ThinkingOrb` positioned prominently in the center of the widget body for greeting and thinking states.
+- **Actionable Tool Recommendation Cards**: Clean cards displaying tool icon, name, category, rationale, and direct `[Open Tool]` navigation.
+- **Multi-Step Pipeline Shortcuts**: Detects composite queries and provides a one-click shortcut into the Queue Workflow canvas.
+- **Canonical Tool Routing Matrix (`TOOL_ROUTING.md`)**: Comprehensive intent, confidence threshold (High >85%, Ambiguous 50-85%, Out-of-Scope <50%), and ambiguity cluster mapping across all 78 registered tools.
+- **On-Demand 1-Click Dependency Installer**: Added 1-click on-demand downloader and unpacker in Settings (`SettingsView.tsx`) for missing external binaries (FFmpeg & FFprobe ~25 MB static zip, Tesseract OCR language pack ~4 MB, MiniLM model ~23 MB) into `resources/<dep>/`. Keeps installer unbloated while allowing users to install binaries as needed per tool. Added cache invalidation and UI auto-refresh.
+- **Path B Semantic Bi-Encoder Decision Engine (MiniLM)**: Implemented `all-MiniLM-L6-v2` (~22.7 MB INT8 ONNX) via `@xenova/transformers`. Precomputed 384-d normalized vectors for all 78 registered tools into static `tool-embeddings.json` (~294 KB). Vectorizes user queries in ~10 ms and matches them against tools via cosine similarity in <1 ms with 3-tier confidence classification and multi-step pipeline detection.
+- **Strict On-Demand Lifecycle & 3-Min Idle Eviction**: Model is cold on boot (<500ms startup); initializes on-demand on first query (~40-60 MB RAM); and an idle watchdog automatically unloads the session after 3 minutes of inactivity, releasing 100% of its memory back to the OS.
+- **Conversational Guards & Intent Pre-Filters**: Implemented `conversational-guards.ts` covering greetings (`"hello"`, `"hi"`), system health checks (`"test"`, `"help"`), and low-entropy keyboard mash/gibberish (`"dfsdagfdg"`, `< 0.35` similarity), returning warm guidance and file prompts without phantom tool cards.
+- **Verification & Store**: Wired IPC `chatbot:semantic-route` and `chatbot:unload-model` into `useChatbot` with automatic heuristic fallback; verified with dedicated test suites in `semantic-router.test.ts` (8/8), `dependencies.test.ts` (4/4), `conversational-guards.test.ts` (27/27), and `chatbot.test.ts` (8/8); all 979 project tests across 96 files pass (100%); zero typecheck, lint, or format issues.
+
+
+
 ## Root README refresh
 
 README now lists all 78 tools with reconciled category counts, Queue Workflow BETA (including simulated execution and legacy recipe limitations), and Local LLM Playground & Benchmark BETA with server prerequisites and explicitly simulated sandbox metrics. Removed stale test-count badges and fixed the clone-directory command. AGENTS.md now requires README updates with tool/feature changes. Catalog counts and local links verified; matrix freshness check passed with changed=0. Initial independent documentation review scored 4/5 and identified an overstated LUFS/FFmpeg claim. Source confirms peak/RMS dBFS gain adjustment; README now states this explicitly and distinguishes five FFmpeg-backed tools from two Web Audio tools. Narrow independent re-review scored 5/5 with no remaining blockers or major findings. Documentation-only changes; no runtime behavior altered.

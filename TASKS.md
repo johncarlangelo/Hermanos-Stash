@@ -446,6 +446,42 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Introduce semantic domain classification helpers (`TOOL_FILE_DOMAINS` in `tool-domains.ts`) to strictly enforce valid media inputs regardless of top-level sidebar category.
   - [x] Expand test suite in `workflow.test.ts` to assert all valid links and reject all invalid cross-domain pairings.
 
+## Milestone 12 — Hermano: AI Copilot & Local Decision Router (Branch: `feature/chatbot-integration`)
+
+**Goal:** Integrate "Hermano", an intelligent decision routing copilot with the `thinking-orbs` library, designed to navigate, diagnose, and construct multi-tool execution pipelines across 78+ (and scaling to 500+) local utilities without relying on cloud APIs or simple keyword search bars.
+
+- [x] **Phase 1: Front-End Widget & Presentation Layer (`ChatbotWidget.tsx`, `chatbot.ts`)**
+  - [x] Install and configure `thinking-orbs` (`^0.3.2`) with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`) and dark theme tuning.
+  - [x] Create bottom-right floating trigger button (`bottom-9 right-6`, 32px ThinkingOrb) with hover effects and keyboard shortcut (`Ctrl + /`).
+  - [x] Implement non-draggable floating modal window (`w-[390px] sm:w-[420px] h-[530px]`, dark glassmorphism, canonical `ROUTER · BETA` badge).
+  - [x] Place prominent 64px `ThinkingOrb` in the center of the widget body (greeting and thinking states).
+  - [x] Build conversational message bubbles, prompt suggestion chips, and interactive query input.
+  - [x] Design tool recommendation cards with icons, category labels, descriptions, and direct `[Open Tool]` navigation.
+  - [x] Implement composite pipeline detection linking directly into Queue Workflow (`[Open Queue]`).
+  - [x] Add unit test suite in `chatbot.test.ts` (5/5 tests passing) and verify full test suite (939 tests passing).
+- [x] **Canonical Tool Routing Matrix (`TOOL_ROUTING.md`)**:
+  - Established canonical semantic profile matrix across all 78 registered tools.
+  - Specified 3-tier confidence model (High >85%, Ambiguous 50-85%, Out of Scope <50%), ambiguity clusters, and Queue Workflow composite recipes.
+- [x] **On-Demand 1-Click Dependency Installer (`SettingsView.tsx`, `dependencies.ts`)**:
+  - Added 1-click on-demand download & unpack flow for external binaries (`ffmpeg` ~25MB prebuilt static binaries, `tesseract` ~4MB fast OCR model) into `resources/<dep>/`.
+  - Enforced anti-bloat principle: installer does NOT bundle heavy external binaries; users install them individually as needed per tool.
+  - Isolated installation states (`installingId`), preventing bulk download collisions.
+  - Added cache invalidation (`resetFfmpegCache()`) and auto-refresh in Settings upon completion.
+  - Added unit test coverage in `dependencies.test.ts` (all 4 tests passing).
+- [x] **Phase 2: Semantic Decision Model Architecture (Path B Bi-Encoder MiniLM)**
+  - [x] Evaluated Laya vs. MiniLM architectures: adopted `all-MiniLM-L6-v2` (~22.7 MB INT8 ONNX) for 95% smaller footprint, 10ms execution, and zero background CPU usage.
+  - [x] Precomputed normalized 384-d vectors for all 78 registered tools from `TOOL_ROUTING.md` into static `tool-embeddings.json` (~294 KB).
+  - [x] Implemented `src/main/services/semantic-router.ts`: computes cosine similarity, applies 3-tier confidence classification, ambiguity index detection, and composite pipeline synthesis.
+  - [x] Implemented 3-minute idle eviction watchdog: automatically unloads model from RAM after 3 minutes of inactivity or widget dismissal.
+  - [x] Added 1-click on-demand installer in Settings (`minilm-model`, ~23 MB) with graceful heuristic fallback when uninstalled.
+  - [x] Added conversational guards & intent pre-filters (`src/shared/utils/conversational-guards.ts`) handling greetings, system checks, and keyboard mash/gibberish with warm, guidance-oriented responses.
+  - [x] Added IPC channels and hooked `useChatbot` store with unit tests in `semantic-router.test.ts`, `chatbot.test.ts`, `conversational-guards.test.ts`, and `dependencies.test.ts` (full suite 979 tests passing).
+- [ ] **Phase 3: Natural Language Parameter Extraction & Dynamic Graph Generation**
+  - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
+  - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
+
+
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*
