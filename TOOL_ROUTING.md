@@ -56,7 +56,37 @@ When users query broad verbs without specifying file domains, Hermano must NOT g
 
 ---
 
-## 3. Tool Decision Profiles (All 78 Tools)
+## 3. Conversational Guards & Intent Pre-Filters
+
+To ensure Hermano feels intuitive, responsive, and human rather than rejecting non-tool queries as cold errors, the router applies conversational pre-filters before tool vector matching:
+
+### 1. Greetings & Salutations
+- **Triggers:** `"hello"`, `"hi"`, `"hey"`, `"hey there"`, `"good morning"`, `"good afternoon"`, `"good evening"`, `"howdy"`, `"sup"`, `"yo"`.
+- **Classification:** Conversational Greeting (`tier: out_of_scope`, `recommendedTools: []`).
+- **Response:**
+  > "Hey there! 👋 I'm Hermano, your workstation copilot. Tell me what you're working on—like **'convert audio to mp3'**, **'extract pages from a PDF'**, or **'format this JSON'**—and I'll guide you to the right tool or build a pipeline!"
+
+### 2. System Health & Capability Probes
+- **Triggers:** `"test"`, `"testing"`, `"help"`, `"ping"`, `"who are you"`, `"what can you do"`, `"what is this"`.
+- **Classification:** System Ready (`tier: out_of_scope`, `recommendedTools: []`).
+- **Response:**
+  > "All systems go! ⚡ What task can I help you tackle today? You can describe any file, document, image, or developer workflow (or press **Ctrl+K** to search all 78 tools)."
+
+### 3. Keyboard Mash & Gibberish
+- **Triggers:** High-consonant keyboard spam (`"dfsdagfdg"`), home-row runs (`"asdfasdf"`, `"qwertyuiop"`), repeated character spam (`"aaaaaa"`, `"????"`), or vector similarity `< 0.35` across all 78 tools.
+- **Classification:** Unparseable Input (`tier: out_of_scope`, `recommendedTools: []`).
+- **Response:**
+  > "I didn't quite catch that! Try describing the file you have or what you'd like to do with it (e.g. **'remove metadata from photo'** or **'generate qr code'**)."
+
+### 4. General Out-of-Scope (Non-Utility Questions)
+- **Triggers:** Coherent queries completely outside the scope of Stash desktop utilities (`"what is the weather"`, `"bake a cake"`, `"capital of France"`).
+- **Classification:** Out of Scope (`tier: out_of_scope`, `recommendedTools: []`).
+- **Response:**
+  > "I couldn't find a matching tool in Stash for that task. Stash is designed for local file processing, media conversion, documents, and developer utilities. Try describing your file format and goal, or search all 78 tools using **Ctrl+K**."
+
+---
+
+## 4. Tool Decision Profiles (All 78 Tools)
 
 ### Category: Files & Storage (`files`)
 

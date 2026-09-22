@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import type { OrbState } from 'thinking-orbs'
 import { toolRegistry } from '../../shared/tool-registry/registry'
 import type { ToolDefinition } from '../../shared/types/tool'
+import {
+  detectConversationalIntent,
+  isGibberish,
+  CONVERSATIONAL_RESPONSES
+} from '../../shared/utils/conversational-guards'
 
 export interface RecommendedToolItem {
   id: string
@@ -44,7 +49,40 @@ function routeQueryToTools(query: string): {
   explanation: string
   canCreatePipeline: boolean
 } {
-  const q = query.toLowerCase().trim()
+  const clean = query.trim()
+  if (!clean) {
+    return {
+      recommendedTools: [],
+      explanation: 'Please enter a task or question to find the right tool.',
+      canCreatePipeline: false
+    }
+  }
+
+  // Pre-filter conversational queries (greetings, system health/test, keyboard mash)
+  const conversational = detectConversationalIntent(clean)
+  if (conversational === 'greeting') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.greeting,
+      canCreatePipeline: false
+    }
+  }
+  if (conversational === 'system_check') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.systemCheck,
+      canCreatePipeline: false
+    }
+  }
+  if (conversational === 'gibberish') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.gibberish,
+      canCreatePipeline: false
+    }
+  }
+
+  const q = clean.toLowerCase()
 
   // Intent checks for multi-step workflows
   const matchedTools: Array<{ tool: ToolDefinition; confidence: number }> = []
@@ -108,8 +146,9 @@ function routeQueryToTools(query: string): {
   // Fallback if no direct search match found
   return {
     recommendedTools: [],
-    explanation:
-      "I couldn't identify a high-confidence tool match for that query. Try describing your input and desired output (e.g. 'compress video' or 'split a 50-page PDF').",
+    explanation: isGibberish(clean)
+      ? CONVERSATIONAL_RESPONSES.gibberish
+      : CONVERSATIONAL_RESPONSES.outOfScope,
     canCreatePipeline: false
   }
 }

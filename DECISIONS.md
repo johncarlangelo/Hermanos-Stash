@@ -367,8 +367,11 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
    - Registered as an optional AI dependency in `dependencies.ts` (`minilm-model`, ~23 MB).
    - Can be downloaded with 1-click in Settings into `resources/models/Xenova/all-MiniLM-L6-v2/`.
    - When the model is not installed or offline, Hermano seamlessly falls back to client-side heuristics so the copilot never breaks.
+4. **Conversational Guards & Intent Pre-Filters:**
+   - Intercepts greetings (`"hello"`, `"hi"`), system test queries (`"test"`, `"help"`), and keyboard mash (`"dfsdagfdg"`, consonant clusters, `< 0.35` similarity) before tool vector scoring.
+   - Returns warm, actionable copilot responses and guidance without presenting phantom tool cards.
 
-**Reason:** Delivers true semantic problem routing and 3-tier confidence classification with Raycast-grade responsiveness (<10 ms), zero background battery drain, minimal RAM usage, and zero installer bloat.
+**Reason:** Delivers true semantic problem routing and 3-tier confidence classification with Raycast-grade responsiveness (<10 ms), zero background battery drain, minimal RAM usage, zero installer bloat, and polished human-like conversational handling.
 
 
 

@@ -5,6 +5,11 @@ import { env, pipeline } from '@xenova/transformers'
 import type { SemanticRouteMatch, SemanticRouteResult } from '../../shared/ipc'
 import { toolRegistry } from '../../shared/tool-registry/registry'
 import precomputedEmbeddingsRaw from '../../shared/assets/tool-embeddings.json'
+import {
+  detectConversationalIntent,
+  isGibberish,
+  CONVERSATIONAL_RESPONSES
+} from '../../shared/utils/conversational-guards'
 
 interface PrecomputedEntry {
   id: string
@@ -178,6 +183,33 @@ export async function semanticRoute(query: string): Promise<SemanticRouteResult>
     }
   }
 
+  // Pre-filter conversational queries (greetings, system health/test, obvious keyboard mash)
+  const conversational = detectConversationalIntent(clean)
+  if (conversational === 'greeting') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.greeting,
+      tier: 'out_of_scope',
+      canCreatePipeline: false
+    }
+  }
+  if (conversational === 'system_check') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.systemCheck,
+      tier: 'out_of_scope',
+      canCreatePipeline: false
+    }
+  }
+  if (conversational === 'gibberish') {
+    return {
+      recommendedTools: [],
+      explanation: CONVERSATIONAL_RESPONSES.gibberish,
+      tier: 'out_of_scope',
+      canCreatePipeline: false
+    }
+  }
+
   const qLower = clean.toLowerCase()
   const extractor = await getExtractor()
 
@@ -336,11 +368,20 @@ export async function semanticRoute(query: string): Promise<SemanticRouteResult>
         }
       }
 
-      // Tier 3: Out of Scope
+      // Tier 3: Low Score / Gibberish or Out of Scope
+      if (top.score < 0.35 || isGibberish(clean)) {
+        return {
+          recommendedTools: [],
+          explanation: CONVERSATIONAL_RESPONSES.gibberish,
+          tier: 'out_of_scope',
+          canCreatePipeline: false,
+          modelActive: true
+        }
+      }
+
       return {
         recommendedTools: [],
-        explanation:
-          "I couldn't find a matching tool in Stash for that task. Try describing your file format and goal, or search all 78 tools using Ctrl+K.",
+        explanation: CONVERSATIONAL_RESPONSES.outOfScope,
         tier: 'out_of_scope',
         canCreatePipeline: false,
         modelActive: true
@@ -475,8 +516,9 @@ export async function semanticRoute(query: string): Promise<SemanticRouteResult>
 
   return {
     recommendedTools: [],
-    explanation:
-      "I couldn't identify a matching tool for that query. Try describing your task (e.g. 'compress video' or 'split a PDF').",
+    explanation: isGibberish(clean)
+      ? CONVERSATIONAL_RESPONSES.gibberish
+      : CONVERSATIONAL_RESPONSES.outOfScope,
     tier: 'out_of_scope',
     canCreatePipeline: false,
     modelActive: false

@@ -74,4 +74,40 @@ describe('useChatbot Store', () => {
     const toolIds = botMsg.recommendedTools?.map((t) => t.id)
     expect(toolIds).toContain('json-format')
   })
+
+  it('responds warmly to greetings like "hello"', async () => {
+    await useChatbot.getState().sendUserQuery('hello')
+
+    const messages = useChatbot.getState().messages
+    expect(messages.length).toBe(2)
+
+    const botMsg = messages[1]
+    expect(botMsg.sender).toBe('assistant')
+    expect(botMsg.text).toContain("Hey there! 👋 I'm Hermano")
+    expect(botMsg.recommendedTools).toHaveLength(0)
+  })
+
+  it('responds with system ready status on "test"', async () => {
+    await useChatbot.getState().sendUserQuery('test')
+
+    const messages = useChatbot.getState().messages
+    expect(messages.length).toBe(2)
+
+    const botMsg = messages[1]
+    expect(botMsg.sender).toBe('assistant')
+    expect(botMsg.text).toContain('All systems go! ⚡')
+    expect(botMsg.recommendedTools).toHaveLength(0)
+  })
+
+  it('catches keyboard mash / gibberish with friendly re-prompt', async () => {
+    await useChatbot.getState().sendUserQuery('dfsdagfdg')
+
+    const messages = useChatbot.getState().messages
+    expect(messages.length).toBe(2)
+
+    const botMsg = messages[1]
+    expect(botMsg.sender).toBe('assistant')
+    expect(botMsg.text).toContain("I didn't quite catch that!")
+    expect(botMsg.recommendedTools).toHaveLength(0)
+  })
 })

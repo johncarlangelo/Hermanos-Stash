@@ -16,6 +16,7 @@ describe('Semantic Router Service', () => {
     expect(toolIds).toContain('video-compress')
   })
 
+
   it('routes PDF bates stamp query to pdf-numberer or watermark', async () => {
     const res = await semanticRoute('add bates numbers and stamp confidential watermark on pdf')
     expect(res.recommendedTools.length).toBeGreaterThanOrEqual(1)
@@ -23,6 +24,27 @@ describe('Semantic Router Service', () => {
     const hasMatch = toolIds.includes('pdf-numberer') || toolIds.includes('pdf-watermark')
     expect(hasMatch).toBe(true)
     expect(res.canCreatePipeline).toBe(true)
+  })
+
+  it('handles greeting queries with friendly copilot introduction', async () => {
+    const res = await semanticRoute('hello')
+    expect(res.tier).toBe('out_of_scope')
+    expect(res.recommendedTools).toHaveLength(0)
+    expect(res.explanation).toContain("Hey there! 👋 I'm Hermano")
+  })
+
+  it('handles test/system-check queries with helpful guidance', async () => {
+    const res = await semanticRoute('test')
+    expect(res.tier).toBe('out_of_scope')
+    expect(res.recommendedTools).toHaveLength(0)
+    expect(res.explanation).toContain('All systems go! ⚡')
+  })
+
+  it('handles gibberish and keyboard mash queries with catch-that message', async () => {
+    const res = await semanticRoute('dfsdagfdg')
+    expect(res.tier).toBe('out_of_scope')
+    expect(res.recommendedTools).toHaveLength(0)
+    expect(res.explanation).toContain("I didn't quite catch that!")
   })
 
   it('supports explicit model unload', () => {

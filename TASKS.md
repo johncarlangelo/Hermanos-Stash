@@ -474,7 +474,8 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Implemented `src/main/services/semantic-router.ts`: computes cosine similarity, applies 3-tier confidence classification, ambiguity index detection, and composite pipeline synthesis.
   - [x] Implemented 3-minute idle eviction watchdog: automatically unloads model from RAM after 3 minutes of inactivity or widget dismissal.
   - [x] Added 1-click on-demand installer in Settings (`minilm-model`, ~23 MB) with graceful heuristic fallback when uninstalled.
-  - [x] Added IPC channels and hooked `useChatbot` store with unit tests in `semantic-router.test.ts`, `chatbot.test.ts`, and `dependencies.test.ts` (14/14 tests passing, full suite 946 tests passing).
+  - [x] Added conversational guards & intent pre-filters (`src/shared/utils/conversational-guards.ts`) handling greetings, system checks, and keyboard mash/gibberish with warm, guidance-oriented responses.
+  - [x] Added IPC channels and hooked `useChatbot` store with unit tests in `semantic-router.test.ts`, `chatbot.test.ts`, `conversational-guards.test.ts`, and `dependencies.test.ts` (full suite 979 tests passing).
 - [ ] **Phase 3: Natural Language Parameter Extraction & Dynamic Graph Generation**
   - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
   - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
