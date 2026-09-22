@@ -450,7 +450,8 @@ export function WorkflowNodeDetailDrawer({
             <div className="rounded-lg border border-line/80 bg-surface/30 p-3 space-y-3.5">
               {paramFields.length === 0 ? (
                 <div className="py-2 text-center text-[11px] text-faint">
-                  This tool operates with standard automatic processing and has no configurable options.
+                  This tool operates with standard automatic processing and has no configurable
+                  options.
                 </div>
               ) : (
                 paramFields.map((field) => {
@@ -472,7 +473,9 @@ export function WorkflowNodeDetailDrawer({
                           type="text"
                           placeholder={field.placeholder || ''}
                           value={String(currentValue ?? '')}
-                          onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                          onChange={(e) =>
+                            handleParamChange(field.key, e.target.value, field.aliases)
+                          }
                           className="w-full rounded border border-line bg-base px-2.5 py-1 text-[11px] text-ink outline-none focus:border-accent"
                         />
                       )}
@@ -485,7 +488,9 @@ export function WorkflowNodeDetailDrawer({
                           max={field.max}
                           step={field.step || 1}
                           value={
-                            currentValue !== undefined && currentValue !== null && currentValue !== ''
+                            currentValue !== undefined &&
+                            currentValue !== null &&
+                            currentValue !== ''
                               ? Number(currentValue)
                               : ''
                           }
@@ -538,13 +543,17 @@ export function WorkflowNodeDetailDrawer({
                           <input
                             type="color"
                             value={String(currentValue ?? field.defaultValue ?? '#000000')}
-                            onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                            onChange={(e) =>
+                              handleParamChange(field.key, e.target.value, field.aliases)
+                            }
                             className="h-6 w-8 cursor-pointer rounded border border-line bg-base p-0.5"
                           />
                           <input
                             type="text"
                             value={String(currentValue ?? field.defaultValue ?? '')}
-                            onChange={(e) => handleParamChange(field.key, e.target.value, field.aliases)}
+                            onChange={(e) =>
+                              handleParamChange(field.key, e.target.value, field.aliases)
+                            }
                             className="flex-1 rounded border border-line bg-base px-2 py-1 font-mono text-[11px] text-ink outline-none focus:border-accent"
                           />
                         </div>
@@ -555,7 +564,9 @@ export function WorkflowNodeDetailDrawer({
                           <input
                             type="checkbox"
                             checked={Boolean(currentValue ?? field.defaultValue ?? false)}
-                            onChange={(e) => handleParamChange(field.key, e.target.checked, field.aliases)}
+                            onChange={(e) =>
+                              handleParamChange(field.key, e.target.checked, field.aliases)
+                            }
                             className="accent-accent"
                           />
                           <span>{field.hint || field.label}</span>

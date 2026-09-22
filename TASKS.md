@@ -446,6 +446,29 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Introduce semantic domain classification helpers (`TOOL_FILE_DOMAINS` in `tool-domains.ts`) to strictly enforce valid media inputs regardless of top-level sidebar category.
   - [x] Expand test suite in `workflow.test.ts` to assert all valid links and reject all invalid cross-domain pairings.
 
+## Milestone 12 — Hermano: AI Copilot & Local Decision Router (Branch: `feature/chatbot-integration`)
+
+**Goal:** Integrate "Hermano", an intelligent decision routing copilot with the `thinking-orbs` library, designed to navigate, diagnose, and construct multi-tool execution pipelines across 78+ (and scaling to 500+) local utilities without relying on cloud APIs or simple keyword search bars.
+
+- [x] **Phase 1: Front-End Widget & Presentation Layer (`ChatbotWidget.tsx`, `chatbot.ts`)**
+  - [x] Install and configure `thinking-orbs` (`^0.3.2`) with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`) and dark theme tuning.
+  - [x] Create bottom-right floating trigger button (`bottom-9 right-6`, 32px ThinkingOrb) with hover effects and keyboard shortcut (`Ctrl + /`).
+  - [x] Implement non-draggable floating modal window (`w-[390px] sm:w-[420px] h-[530px]`, dark glassmorphism, canonical `ROUTER · BETA` badge).
+  - [x] Place prominent 64px `ThinkingOrb` in the center of the widget body (greeting and thinking states).
+  - [x] Build conversational message bubbles, prompt suggestion chips, and interactive query input.
+  - [x] Design tool recommendation cards with icons, category labels, descriptions, and direct `[Open Tool]` navigation.
+  - [x] Implement composite pipeline detection linking directly into Queue Workflow (`[Open Queue]`).
+  - [x] Add unit test suite in `chatbot.test.ts` (5/5 tests passing) and verify full test suite (939 tests passing).
+- [ ] **Phase 2: Decision Model Architecture & Evaluation**
+  - [ ] Evaluate candidate decision engines:
+    - *Option A: Local-First ONNX Embedding Vector Router* (e.g. `all-MiniLM-L6-v2` or `bge-micro`, ~20MB, runs 100% offline via `@xenova/transformers` or ONNX Runtime with zero API dependencies).
+    - *Option B: Local Small Language Model (SLM) Router* (e.g. 1B-3B parameter model running through local Ollama/LM Studio endpoints via Tool #78 infrastructure).
+    - *Option C: Jev / Cloud Decision API* (opt-in cloud API integration with user-provided API key stored in SQLite preferences).
+  - [ ] Define structured tool metadata schema for decision routing (`problemDomains`, `symptoms`, `inputFormats`, `outputFormats`, `parameters`).
+  - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
+  - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
+  - [ ] Add unit and integration tests covering semantic routing accuracy and pipeline construction.
+
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 
 **Goal:** Decouple Hermanos Stash's signature UI/UX design language and local-first Electron engine into a clean, reusable application boilerplate template for upcoming Hermanos desktop applications. *(Planned — do not implement yet until overall app build is finalized)*

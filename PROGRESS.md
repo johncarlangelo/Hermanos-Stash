@@ -1,5 +1,16 @@
 # Hermanos Stash — Progress
 
+## Milestone 12 — Hermano: AI Copilot & Local Decision Router (Branch: `feature/chatbot-integration`)
+
+Shipped the initial front-end and interactive routing prototype for **Hermano**, an AI Copilot and decision router designed to navigate Stash's 78 tools and future 500+ utilities:
+- **ThinkingOrb Canvas Integration**: Installed zero-dependency `thinking-orbs` (`^0.3.2`) with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`) and dark theme tuning.
+- **Floating Trigger Button**: Docked at bottom-right (`bottom-9 right-6`, 32px ThinkingOrb) with frosted dark card styling, hover glow, and `Ctrl + /` keyboard shortcut.
+- **Docked Modal Presentation**: Non-draggable modal (`w-[390px] sm:w-[420px] h-[530px]`, dark glassmorphism, canonical `ROUTER · BETA` badge).
+- **Central Thinking Orb**: Hand-tuned 64px `ThinkingOrb` positioned prominently in the center of the widget body for greeting and thinking states.
+- **Actionable Tool Recommendation Cards**: Clean cards displaying tool icon, name, category, rationale, and direct `[Open Tool]` navigation.
+- **Multi-Step Pipeline Shortcuts**: Detects composite queries and provides a one-click shortcut into the Queue Workflow canvas.
+- **Verification & Store**: Added `useChatbot` Zustand store with client-side test suite in `chatbot.test.ts` (5/5 tests passing); all 939 project tests pass; zero typecheck, lint, or format issues.
+
 ## Root README refresh
 
 README now lists all 78 tools with reconciled category counts, Queue Workflow BETA (including simulated execution and legacy recipe limitations), and Local LLM Playground & Benchmark BETA with server prerequisites and explicitly simulated sandbox metrics. Removed stale test-count badges and fixed the clone-directory command. AGENTS.md now requires README updates with tool/feature changes. Catalog counts and local links verified; matrix freshness check passed with changed=0. Initial independent documentation review scored 4/5 and identified an overstated LUFS/FFmpeg claim. Source confirms peak/RMS dBFS gain adjustment; README now states this explicitly and distinguishes five FFmpeg-backed tools from two Web Audio tools. Narrow independent re-review scored 5/5 with no remaining blockers or major findings. Documentation-only changes; no runtime behavior altered.

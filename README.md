@@ -73,7 +73,8 @@ does not.
 | Keys | Action |
 |---|---|
 | `Ctrl K` | Command palette — fuzzy-search all 78 tools |
-| `Esc` | Back to workspace |
+| `Ctrl /` | Toggle Hermano (Copilot & Decision Router) |
+| `Esc` | Back to workspace / close modals |
 | `Ctrl 1–5` | Open your first five favorites |
 | Drag file → window background | Find matching tools |
 
@@ -245,6 +246,16 @@ npm run workflow:matrix:check  # Run validation; fail on missing/stale artifacts
 
 These are developer/agent commands, not required at app startup. AGENTS.md mandates
 them for tool integration; there is no automatic Git hook or CI job installed.
+
+## Hermano — Local Copilot & Decision Router (BETA)
+
+Click the animated floating orb at the bottom-right of the window (or press `Ctrl /`) to open **Hermano**, Stash's intelligent decision router:
+
+- **ThinkingOrb Integration:** Powered by the lightweight `thinking-orbs` canvas library with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`).
+- **Problem-Driven Routing:** Instead of memorizing tool names, describe your goal (e.g. *"I have a 100-page PDF, how do I add bates numbers and watermark each page?"*).
+- **Direct Navigation:** Jump straight to recommended tools with a single click.
+- **Workflow Synthesis:** Automatically identifies multi-step tasks and offers a one-click shortcut into the Visual Queue canvas.
+- **100% Local-First:** Runs entirely inside the local desktop application without cloud requirements or telemetry.
 
 ## Tool #78: Local LLM Playground & Benchmark — BETA
 

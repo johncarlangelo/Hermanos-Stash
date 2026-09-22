@@ -311,9 +311,25 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Prevents frustrating, inadvertent zooming in/out of the workflow canvas while users are browsing tool lists, scrolling parameters, or searching through Stash assets in overlay panels.
 
+## ADR-044 — Hermano: AI Copilot & Tool Decision Router Architecture
 
+**Decision:**
+1. **Separation of Presentation & Intelligence:**
+   - Implement `ChatbotWidget.tsx` strictly as a front-end presentation layer powered by the `thinking-orbs` canvas library.
+   - The widget renders a 32px floating trigger orb at bottom-right (`bottom-9 right-6`), a 64px central orb in the chat body, and a docked non-draggable modal window (`w-[390px] sm:w-[420px] h-[530px]`).
+   - All state and query evaluation flows exclusively through `useChatbot` in `src/renderer/stores/chatbot.ts`.
+2. **Problem-Driven Routing vs. Redundant Keyword Search:**
+   - Explicitly avoid recreating a duplicate search bar; fuzzy keyword search already exists in the Command Palette (`Ctrl+K`).
+   - Hermano focuses on intent classification, multi-step pipeline synthesis (connecting directly to the Queue Workflow visual canvas), and natural-language parameter extraction.
+3. **Pluggable Decision Engine Backend:**
+   - Keep the decision router interface modular so the underlying engine can be swapped seamlessly between:
+     - Local-First ONNX Embedding Vector Router (100% offline, zero API costs, zero external dependencies).
+     - Local Small Language Model (SLM) router via local endpoints (Ollama / LM Studio).
+     - Optional Cloud Decision Engine (e.g. Jev API) with user-provided API key stored in SQLite preferences.
+4. **Actionable Recommendations:**
+   - Recommendations render clean, actionable cards with tool icon, name, category, rationale, and a 1-click `[Open Tool]` navigation button.
+   - Strip distracting percentage scores to reduce visual clutter and keep recommendations clean and focused.
 
-
-
+**Reason:** Enables intuitive natural language navigation and multi-step pipeline synthesis across 78+ local utilities (and scaling to 500+) without violating the local-first, privacy-focused desktop application principles.
 
 

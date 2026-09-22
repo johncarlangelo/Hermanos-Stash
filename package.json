@@ -50,6 +50,7 @@
     "sql-formatter": "^15.8.2",
     "tailwind-merge": "^3.6.0",
     "tesseract.js": "^7.0.0",
+    "thinking-orbs": "^0.3.2",
     "unzipper": "^0.12.5",
     "zustand": "^5.0.15"
   },

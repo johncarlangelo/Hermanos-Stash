@@ -172,6 +172,25 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - Verify tests and linting (`npm test`, `npm run lint`).
    - Stage and commit with the appropriate Conventional Commit scope (e.g. `fix(queue): ...` for patch, `feat(queue): ...` for minor).
 
+### Hermano Copilot & Tool Decision Router Contract (`ChatbotWidget.tsx`, `chatbot.ts`)
+
+1. **Presentation & Widget Standard**:
+   - **Floating Trigger Orb**: Docked bottom-right (`fixed bottom-9 right-6 z-40`, 12px above StatusBar). Renders `<ThinkingOrb size={32} theme="dark" />` inside a comfortable dark frosted button. No distracting pulsing dots when closed.
+   - **Modal Window**: Non-draggable modal docked bottom-right (`w-[390px] sm:w-[420px] h-[530px]`), dark-only glass styling matching `DESIGN.md`.
+   - **Central Thinking Orb**: Hand-tuned 64px `<ThinkingOrb size={64} theme="dark" />` placed prominently in the center of the widget body (both in the empty greeting state and during the thinking/routing state). Never crammed into the top header bar.
+   - **Keyboard Navigation**: `Ctrl + /` globally toggles Hermano; `Escape` closes it; `Enter` sends the query.
+   - **Canonical Header Badge**: Uses standard `ROUTER · BETA` pill (`text-amber-400 bg-amber-500/15 border-amber-500/30`).
+2. **Modular Architecture & Boundary Isolation**:
+   - `ChatbotWidget.tsx` is strictly a presentation component; it consumes `useChatbot` from `src/renderer/stores/chatbot.ts`.
+   - The decision routing logic (`routeQueryToTools` or future decision engine service) must remain completely decoupled from the UI. Swapping the decision backend (e.g. local ONNX embeddings, local SLM, or future Jev decision API) must never require altering `ChatbotWidget.tsx`.
+3. **Problem Routing vs. Keyword Search Distinction**:
+   - Hermano is **not** a search bar; fuzzy keyword search already exists in Command Palette (`Ctrl+K`).
+   - Hermano's core responsibility is **intent classification**, **multi-step pipeline synthesis** (connecting to Queue Workflow), and **parameter pre-configuration** from user problem statements.
+   - Output tool cards must be clean and actionable: showing tool icon, title, category, concise rationale, and direct `[Open Tool]` navigation, without distracting confidence percentage clutter.
+4. **Local-First & Privacy Policy**:
+   - Router operations default to 100% offline local processing (zero cloud telemetry, zero remote prompts).
+   - If an optional cloud decision model (e.g. Jev API) is supported in the future, it must be strictly opt-in via Settings, require explicit user API keys, and fail gracefully to the local engine when offline.
+
 ## Agent behavior
 
 Before substantial implementation:
