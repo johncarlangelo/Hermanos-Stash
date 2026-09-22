@@ -68,7 +68,9 @@ lean and lightweight, heavy external binaries are not bundled into the download.
 Hermanos Stash provides 1-click on-demand installation for missing dependencies:
 - **FFmpeg & FFprobe (~25 MB):** Installs prebuilt static binaries into `resources/ffmpeg/` for video & audio processing tools.
 - **Tesseract OCR Language Data (~4 MB):** Downloads `eng.traineddata` into `resources/tessdata/` for local OCR extraction.
+- **MiniLM Semantic Decision Router (~23 MB):** Downloads quantized ONNX vector model (`all-MiniLM-L6-v2`) into `resources/models/` for 100% offline Hermano intent routing.
 - **Local LLM Providers:** Optionally connect to existing local servers like Ollama or LM Studio.
+
 
 
 ### Keyboard shortcuts
@@ -255,10 +257,14 @@ them for tool integration; there is no automatic Git hook or CI job installed.
 Click the animated floating orb at the bottom-right of the window (or press `Ctrl /`) to open **Hermano**, Stash's intelligent decision router:
 
 - **ThinkingOrb Integration:** Powered by the lightweight `thinking-orbs` canvas library with hand-tuned animated states (`listening`, `searching`, `solving`, `breathing`).
+- **Offline Semantic Decision Engine (MiniLM):** Powered by the lightweight quantized `all-MiniLM-L6-v2` ONNX model (**~22.7 MB** download size, ~23.4 MB total with tokenizer). Vectorizes natural-language queries into 384-dimensional dense space in ~10 ms, matching against precomputed tool vectors via cosine similarity in <1 ms.
 - **Problem-Driven Routing:** Instead of memorizing tool names, describe your goal (e.g. *"I have a 100-page PDF, how do I add bates numbers and watermark each page?"*).
+- **Zero Background Overhead & 3-Min Idle Eviction:** The model is NEVER loaded at startup. It initializes on-demand only when a query is sent and consumes **~40–60 MB of RAM**. If inactive for 3 minutes (or when the widget is closed), the session automatically unloads and releases all RAM back to the operating system.
+- **3-Tier Confidence Routing:** Adheres to [`TOOL_ROUTING.md`](TOOL_ROUTING.md) with High Confidence (>85%), Ambiguity Clusters (50–85% with clarifying questions), and Out-of-Scope graceful fallbacks.
 - **Direct Navigation:** Jump straight to recommended tools with a single click.
 - **Workflow Synthesis:** Automatically identifies multi-step tasks and offers a one-click shortcut into the Visual Queue canvas.
 - **100% Local-First:** Runs entirely inside the local desktop application without cloud requirements or telemetry.
+
 
 ## Tool #78: Local LLM Playground & Benchmark — BETA
 

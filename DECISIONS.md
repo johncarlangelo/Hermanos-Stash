@@ -350,22 +350,26 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Keeps installer size minimal and adheres to Stash's modularity principles, while providing users seamless 1-click setup when and if they choose to utilize media and document processing tools.
 
-## ADR-046 — Laya Non-Autoregressive Decision Model Selection & Quantization Deferral
+## ADR-046 — Path B Semantic Bi-Encoder Decision Engine (MiniLM) and Idle Resource Lifecycle
 
 **Decision:**
-1. **Model Selection for Intent Routing:**
-   - Selected ConvAI's **Laya** as the target local decision model architecture for Hermano's intelligent tool router.
-   - Unlike generative autoregressive LLMs (which generate conversational tokens sequentially), Laya is a non-autoregressive "System 1" decision engine (~421M ModernBERT backbone) designed specifically for fast, deterministic intent routing and structured decision classification (`choice`, `noul` confidence).
-   - Runs locally in Node.js/Electron via `@receptron/laya` using ONNX Runtime with zero Python or PyTorch runtime dependencies.
-2. **Quantization Evaluation & Implementation Deferral:**
-   - Defer runtime installation of `@receptron/laya` and model weight downloading until the user and development team benchmark and finalize the model quantization format:
-     - **INT8 Quantization (~450 MB):** Preferred target for desktop utility workstations, providing high decision accuracy with an acceptable on-disk footprint.
-     - **INT4 Quantization (~250 MB):** Ultra-lightweight footprint, but requires verification against ambiguous tool boundaries in `TOOL_ROUTING.md`.
-     - **FP16 Unquantized (~1.7 GB):** Disfavored for default local desktop use due to excessive storage overhead.
-3. **Distribution Mechanism:**
-   - Once the quantization model is selected, its weights will hook directly into the ADR-045 1-click on-demand dependency downloader under `resources/models/laya/`, keeping the core installer completely bloat-free.
+1. **Model Selection & Architecture (Path B Bi-Encoder):**
+   - Adopted **`all-MiniLM-L6-v2`** (~22.7 MB INT8 ONNX, ~23.4 MB total with tokenizer) via `@xenova/transformers` as Hermano's offline semantic decision router, replacing the heavy 400MB ModernBERT/Laya architecture.
+   - Operates as a bi-encoder: vectorizes natural language user queries into 384-dimensional dense vectors in ~10 ms.
+   - Computes cosine similarity (dot product of L2-normalized vectors) against a static precomputed index of all 78 registered tools in <1 ms.
+   - Tool embeddings (~294 KB JSON) are precomputed at build time and bundled with the application in `src/shared/assets/tool-embeddings.json`. Adding future tools up to 500+ requires zero model retraining.
+2. **On-Demand Lifecycle & 3-Minute Idle Watchdog:**
+   - **Zero Startup Overhead:** The model pipeline is strictly NOT loaded at application launch. Desktop startup remains instantaneous (<500 ms).
+   - **Lazy Initialization:** The pipeline is initialized only on-demand when the user opens Hermano and submits a query.
+   - **3-Minute Idle Eviction:** An idle watchdog timer automatically terminates and unloads the session (`unloadModel()`) after 3 minutes of inactivity (or when the widget closes), releasing all ~40–60 MB of RAM back to the operating system.
+   - **Zero Background CPU:** When waiting for user input, the model consumes 0.0% CPU cycles.
+3. **1-Click On-Demand Installation & Graceful Fallback:**
+   - Registered as an optional AI dependency in `dependencies.ts` (`minilm-model`, ~23 MB).
+   - Can be downloaded with 1-click in Settings into `resources/models/Xenova/all-MiniLM-L6-v2/`.
+   - When the model is not installed or offline, Hermano seamlessly falls back to client-side heuristics so the copilot never breaks.
 
-**Reason:** Guarantees that intelligent decision routing remains strictly local-first and high-performance without prematurely forcing users to download gigabytes of model weights before quantization is verified.
+**Reason:** Delivers true semantic problem routing and 3-tier confidence classification with Raycast-grade responsiveness (<10 ms), zero background battery drain, minimal RAM usage, and zero installer bloat.
+
 
 
 

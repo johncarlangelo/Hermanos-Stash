@@ -340,20 +340,59 @@ export async function checkAllDependencies(
     })
   }
 
-  // Calculate summary metrics
-  const total = items.length
-  const ready = items.filter((i) => i.status === 'ready').length
-  const missing = items.filter((i) => i.status === 'missing' || i.status === 'degraded').length
-  const optionalOffline = items.filter((i) => i.status === 'optional_offline').length
-
   const electronApp = (electron as { app?: { getAppPath(): string } }).app
   const resourcesPath =
     (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath ||
     (electronApp ? path.join(electronApp.getAppPath(), 'resources') : path.resolve('resources'))
 
+  // 8. MiniLM Semantic Decision Router (Path B)
+  const routerTools = ['Hermano Copilot', 'Tool Decision Router']
+  const minilmModelFile = path.join(
+    resourcesPath,
+    'models',
+    'Xenova',
+    'all-MiniLM-L6-v2',
+    'onnx',
+    'model_quantized.onnx'
+  )
+  if (fs.existsSync(minilmModelFile)) {
+    items.push({
+      id: 'minilm-model',
+      name: 'MiniLM Semantic Decision Router',
+      category: 'ai',
+      status: 'ready',
+      version: 'all-MiniLM-L6-v2 (23 MB INT8)',
+      source: 'bundled',
+      requiredFor: routerTools,
+      details: 'Quantized 384-dimensional vector embedding engine for Hermano intent routing.'
+    })
+  } else {
+    items.push({
+      id: 'minilm-model',
+      name: 'MiniLM Semantic Decision Router',
+      category: 'ai',
+      status: 'missing',
+      source: 'bundled',
+      requiredFor: routerTools,
+      details: 'Semantic vector model not installed. Hermano uses keyword fallback.',
+      installable: true,
+      downloadSize: '~23 MB',
+      troubleshooting:
+        'Click Install to download the 23 MB local semantic model into resources/models/.'
+    })
+  }
+
+  // Calculate summary metrics
+
+  const total = items.length
+  const ready = items.filter((i) => i.status === 'ready').length
+  const missing = items.filter((i) => i.status === 'missing' || i.status === 'degraded').length
+  const optionalOffline = items.filter((i) => i.status === 'optional_offline').length
+
   return {
     checkedAt: new Date().toISOString(),
     resourcesPath,
+
     platform: {
       os: `${process.platform} (${process.arch})`,
       arch: process.arch,
@@ -450,9 +489,54 @@ export async function installDependency(
     }
   }
 
+  if (id === 'minilm-model') {
+    try {
+      const modelDir = path.join(resourcesPath, 'models', 'Xenova', 'all-MiniLM-L6-v2')
+      const onnxDir = path.join(modelDir, 'onnx')
+      await fs.promises.mkdir(onnxDir, { recursive: true })
+
+      const files = [
+        {
+          url: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json',
+          dest: path.join(modelDir, 'config.json')
+        },
+        {
+          url: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json',
+          dest: path.join(modelDir, 'tokenizer.json')
+        },
+        {
+          url: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json',
+          dest: path.join(modelDir, 'tokenizer_config.json')
+        },
+        {
+          url: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx',
+          dest: path.join(onnxDir, 'model_quantized.onnx')
+        }
+      ]
+
+      for (const item of files) {
+        const res = await fetch(item.url)
+        if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${item.url}`)
+        const arrayBuf = await res.arrayBuffer()
+        await fs.promises.writeFile(item.dest, Buffer.from(arrayBuf))
+      }
+
+      return {
+        success: true,
+        message: 'MiniLM semantic model (~23 MB) downloaded and installed successfully.'
+      }
+    } catch (err) {
+      return {
+        success: false,
+        error: `Failed to download MiniLM model: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
+  }
+
   return {
     success: false,
     error: `Dependency "${id}" does not have an automated 1-click installer.`
   }
 }
+
 

@@ -28,6 +28,8 @@ describe('System Dependencies Verifier', () => {
     expect(ids).toContain('tesseract')
     expect(ids).toContain('archives')
     expect(ids).toContain('ollama')
+    expect(ids).toContain('minilm-model')
+
 
     // Sharp, SQLite, PDF vector engine, and Archives should be operational
     const sharpItem = report.items.find((i) => i.id === 'sharp')
@@ -75,6 +77,15 @@ describe('System Dependencies Verifier', () => {
       expect(tessItem.installable).toBe(true)
       expect(tessItem.downloadSize).toBe('~4 MB')
     }
+
+    const minilmItem = report.items.find((i) => i.id === 'minilm-model')
+    expect(minilmItem).toBeDefined()
+    expect(minilmItem?.category).toBe('ai')
+    if (minilmItem && (minilmItem.status === 'missing' || minilmItem.status === 'degraded')) {
+      expect(minilmItem.installable).toBe(true)
+      expect(minilmItem.downloadSize).toBe('~23 MB')
+    }
   })
 })
+
 

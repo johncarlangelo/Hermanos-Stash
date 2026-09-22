@@ -119,8 +119,19 @@ export const useChatbot = create<ChatbotState>((set, get) => ({
   orbState: 'solving',
   messages: [],
 
-  setIsOpen: (isOpen) => set({ isOpen }),
-  toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
+  setIsOpen: (isOpen) => {
+    set({ isOpen })
+    if (!isOpen && typeof window !== 'undefined') {
+      window.stash?.chatbot?.unloadModel?.().catch(() => {})
+    }
+  },
+  toggleOpen: () => {
+    const next = !get().isOpen
+    set({ isOpen: next })
+    if (!next && typeof window !== 'undefined') {
+      window.stash?.chatbot?.unloadModel?.().catch(() => {})
+    }
+  },
   setOrbState: (orbState) => set({ orbState }),
 
   addMessage: (msg) => {
@@ -164,10 +175,32 @@ export const useChatbot = create<ChatbotState>((set, get) => ({
       isThinking: true
     })
 
-    // 4. Simulate brief local decision evaluation (<300ms for smooth feel)
-    await new Promise((resolve) => setTimeout(resolve, 350))
+    let recommendedTools: RecommendedToolItem[] = []
+    let explanation = ''
+    let canCreatePipeline = false
 
-    const { recommendedTools, explanation, canCreatePipeline } = routeQueryToTools(clean)
+    try {
+      if (typeof window !== 'undefined' && window.stash?.chatbot?.semanticRoute) {
+        const res = await window.stash.chatbot.semanticRoute(clean)
+        if (res && res.recommendedTools) {
+          recommendedTools = res.recommendedTools
+          explanation = res.explanation
+          canCreatePipeline = res.canCreatePipeline
+        }
+      }
+    } catch (err) {
+      console.warn('Semantic route IPC failed, falling back to local heuristic:', err)
+    }
+
+
+    // 4. Fall back to client heuristic if IPC returned empty or wasn't available
+    if (recommendedTools.length === 0 && !explanation) {
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      const fallback = routeQueryToTools(clean)
+      recommendedTools = fallback.recommendedTools
+      explanation = fallback.explanation
+      canCreatePipeline = fallback.canCreatePipeline
+    }
 
     // 5. Update with actual recommendation
     updateMessage(thinkingId, {
@@ -181,3 +214,4 @@ export const useChatbot = create<ChatbotState>((set, get) => ({
     setOrbState('listening')
   }
 }))
+

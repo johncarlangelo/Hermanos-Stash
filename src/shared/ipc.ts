@@ -94,8 +94,12 @@ export const IPC = {
   assetsCleanupMissing: 'assets:cleanup-missing',
 
   systemCheckDependencies: 'system:check-dependencies',
-  systemInstallDependency: 'system:install-dependency'
+  systemInstallDependency: 'system:install-dependency',
+
+  chatbotSemanticRoute: 'chatbot:semantic-route',
+  chatbotUnloadModel: 'chatbot:unload-model'
 } as const
+
 
 export interface FileFilter {
   name: string
@@ -840,4 +844,29 @@ export interface StashBridge {
     checkDependencies(options?: CheckDependenciesOptions): Promise<DependencyReport>
     installDependency(id: string): Promise<{ success: boolean; message?: string; error?: string }>
   }
+  chatbot: {
+    semanticRoute(query: string): Promise<SemanticRouteResult>
+    unloadModel(): Promise<void>
+  }
 }
+
+export interface SemanticRouteMatch {
+  id: string
+  name: string
+  description?: string
+  confidence: number // 0.0 to 1.0 (cosine similarity or calibrated probability)
+  category?: string
+  icon?: string
+  rationale?: string
+}
+
+export interface SemanticRouteResult {
+  recommendedTools: SemanticRouteMatch[]
+  explanation: string
+  tier: 'high' | 'ambiguous' | 'out_of_scope'
+  canCreatePipeline: boolean
+  clarifyingQuestion?: string
+  cluster?: string
+  modelActive?: boolean
+}
+

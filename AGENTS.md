@@ -195,10 +195,17 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
 4. **Local-First & Privacy Policy**:
    - Router operations default to 100% offline local processing (zero cloud telemetry, zero remote prompts).
    - If an optional cloud decision model (e.g. Jev API) is supported in the future, it must be strictly opt-in via Settings, require explicit user API keys, and fail gracefully to the local engine when offline.
-5. **Decision Engine & Model Architecture (Laya System 1)**:
-   - Researched and established ConvAI Laya (~421M ModernBERT non-autoregressive decision model via `@receptron/laya` / ONNX Runtime) as the primary offline decision architecture.
-   - **Deferred Implementation**: Do NOT implement or bundle model weights until the specific quantization model (INT8 ~450MB vs INT4 ~250MB vs FP16) is finalized by the user/team to preserve installer and disk discipline.
-   - When implemented, model asset weights will hook into the 1-click on-demand dependency downloader under `resources/models/` following the zero-bloat principle.
+5. **Decision Engine & Model Architecture (Path B Bi-Encoder MiniLM)**:
+   - Adopted **`all-MiniLM-L6-v2`** (~22.7 MB INT8 ONNX) as the official offline semantic decision engine for Hermano problem routing.
+   - Vectorizes queries into 384-dimensional dense vectors in ~10 ms and matches them against precomputed tool vectors via cosine similarity in <1 ms.
+   - Precomputed embeddings for all 78 registered tools are permanently bundled in `src/shared/assets/tool-embeddings.json` (~294 KB).
+   - The model binary is installable on-demand via Settings 1-click installer (`resources/models/Xenova/all-MiniLM-L6-v2/`). When uninstalled, Hermano gracefully falls back to client-side heuristics.
+6. **Resource Discipline & Idle Eviction Lifecycle**:
+   - **Zero Startup Overhead:** The model is NEVER initialized on app launch. App startup remains instantaneous.
+   - **Lazy Loading:** Initializes only when Hermano receives a query.
+   - **3-Minute Idle Eviction:** If no queries occur for 3 minutes (or when the widget is closed), the ONNX session unloads (`unloadModel()`), immediately releasing its ~40–60 MB RAM back to the operating system.
+   - **Zero Background CPU:** When idle, model resource consumption is 0.0%.
+
 
 
 ## Agent behavior

@@ -44,7 +44,9 @@ import {
 import { TempWorkspaceManager } from '../services/temp-workspace'
 import { getVersion, resolveFfmpegBinaries } from '../services/ffmpeg'
 import { checkAllDependencies, installDependency } from '../services/dependencies'
+import { semanticRoute, unloadModel } from '../services/semantic-router'
 import { ProgressBus } from './progress'
+
 import { WriteScopeGuard } from './write-scope'
 import {
   assertNumber,
@@ -650,6 +652,19 @@ export function registerIpc(services: IpcServices): void {
     const id = assertString(req.id, 'id')
     return installDependency(id)
   })
+
+  // --- Hermano Chatbot Semantic Decision Router --------------------------
+  handle(IPC.chatbotSemanticRoute, async (_e, raw: unknown) => {
+    const req = (raw ?? {}) as { query?: unknown }
+    const query = assertString(req.query, 'query')
+    return semanticRoute(query)
+  })
+
+  handle(IPC.chatbotUnloadModel, async () => {
+    unloadModel()
+    return { success: true }
+  })
+
 
   // --- Dialogs ------------------------------------------------------------
   handle(IPC.dialogOpenFile, async (_e: unknown, raw: unknown) => {
