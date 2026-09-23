@@ -72,6 +72,7 @@ function createWindow(zoomFactor: number): void {
   })
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow?.maximize()
     mainWindow?.show()
   })
 
