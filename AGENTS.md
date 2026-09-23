@@ -201,10 +201,14 @@ Whenever introducing a new tool that requires an external CLI binary, system dae
    - Precomputed embeddings for all 78 registered tools are permanently bundled in `src/shared/assets/tool-embeddings.json` (~294 KB).
    - The model binary is installable on-demand via Settings 1-click installer (`resources/models/Xenova/all-MiniLM-L6-v2/`). When uninstalled, Hermano gracefully falls back to client-side heuristics.
 6. **Resource Discipline & Idle Eviction Lifecycle**:
-   - **Zero Startup Overhead:** The model is NEVER initialized on app launch. App startup remains instantaneous.
-   - **Lazy Loading:** Initializes only when Hermano receives a query.
    - **3-Minute Idle Eviction:** If no queries occur for 3 minutes (or when the widget is closed), the ONNX session unloads (`unloadModel()`), immediately releasing its ~40–60 MB RAM back to the operating system.
    - **Zero Background CPU:** When idle, model resource consumption is 0.0%.
+7. **Mandatory Catalog Parity & Regression Verification (`router:check`, Tool #79+)**:
+   - Whenever introducing a new tool, renaming an existing tool, or deleting a tool in `src/renderer/tools/index.ts`:
+     - **Specification Parity:** Add a canonical entry in `TOOL_ROUTING.md` containing `#### `<id>` — <Name>`, `- **Core Intent:**`, and `- **User Triggers:**` (with at least 2 distinct problem-space prompts).
+     - **Embedding Regeneration:** Run `npm run router:embeddings` to compute the 384-dimensional normalized MiniLM vector and commit the updated `src/shared/assets/tool-embeddings.json`.
+     - **Automated Check:** Run `npm run router:check` before completing any tool change. This check verifies 100% parity across `index.ts`, `TOOL_ROUTING.md`, `tool-embeddings.json`, and ambiguity clusters, rejecting any orphaned or missing entries.
+     - **Test Coverage:** Ensure `src/main/services/semantic-router.test.ts` passes (`npm test`).
 
 
 
@@ -231,6 +235,7 @@ After implementation:
 - update the root `README.md` in the same change whenever a tool is added, removed, renamed, recategorized or materially changed: reconcile headline/badge/catalog/category/shortcut counts against `src/renderer/tools/index.ts`, add or revise its catalog entry, preserve BETA labels, and document prerequisites and known limitations. Update feature sections when Queue Workflow or other user-facing behavior changes; never describe simulated execution as real processing. Verify local Markdown links and catalog totals before committing. This is a required agent checklist step, not an automatically executed hook;
 - verify and register tool compatibility/incompatibility in the Queue Workflow engine (`execution.ts`) and add test coverage in `workflow.test.ts` whenever tools are added or modified;
 - if the tool introduces or modifies an external binary, native C++ binding, AI model file, or runtime daemon, register it in the dependency scanner (`dependencies.ts`) and update test assertions in `dependencies.test.ts`;
+- if a tool is added, removed, or renamed, update its entry in `TOOL_ROUTING.md`, run `npm run router:embeddings` to regenerate vectors, and verify catalog parity with `npm run router:check`;
 - update `PROGRESS.md` and `TASKS.md`;
 - record meaningful architectural decisions in `DECISIONS.md`;
 - never mark a task complete without evidence.

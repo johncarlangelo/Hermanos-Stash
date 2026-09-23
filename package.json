@@ -18,6 +18,8 @@
     "workflow:matrix": "node scripts/generate-compatibility-doc.mjs",
     "workflow:matrix:check": "node scripts/generate-compatibility-doc.mjs --check",
     "workflow:test:real": "node scripts/test-workflow-real-execution.mjs",
+    "router:check": "node scripts/check-routing-parity.mjs",
+    "router:embeddings": "node scripts/generate-tool-embeddings.mjs",
     "test:watch": "vitest",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"

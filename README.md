@@ -310,6 +310,7 @@ Verification is treated as part of correctness here:
 
 - **Vitest unit/integration tests**, including suites that generate real PDFs,
   images and videos at runtime and assert on actual outputs.
+- **Hermano Decision Router Parity Check** (`npm run router:check`) — verifies 100% catalog coverage across tool registry, semantic problem routing specification, and offline neural embeddings.
 - **Two CDP harnesses** launch the production build and drive the *real* DOM —
   clicking favorites, navigating views, dragging actual files — asserting
   behavior rather than boot success alone.

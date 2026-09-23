@@ -476,7 +476,13 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [x] Added 1-click on-demand installer in Settings (`minilm-model`, ~23 MB) with graceful heuristic fallback when uninstalled.
   - [x] Added conversational guards & intent pre-filters (`src/shared/utils/conversational-guards.ts`) handling greetings, system checks, and keyboard mash/gibberish with warm, guidance-oriented responses.
   - [x] Added IPC channels and hooked `useChatbot` store with unit tests in `semantic-router.test.ts`, `chatbot.test.ts`, `conversational-guards.test.ts`, and `dependencies.test.ts` (full suite 979 tests passing).
-- [ ] **Phase 3: Natural Language Parameter Extraction & Dynamic Graph Generation**
+- [x] **Phase 3: Router Diagnostic Stress Testing & Automated Catalog Parity Verification**
+  - [x] Created headless stress test evaluation harness (`test-results/run-stress-test.test.ts`) covering 122 queries across 7 intent categories.
+  - [x] Diagnosed and resolved false ambiguities: implemented domain-aware ambiguity gating, word-boundary cluster keyword matching, format affinity mapping, and trigger calibration in `TOOL_ROUTING.md`, achieving 100.0% clean pass rate (122/122) in 2.6 ms average latency.
+  - [x] Built standalone CLI verification script (`scripts/check-routing-parity.mjs`, `npm run router:check`) asserting 100% parity across tool catalog registry, `TOOL_ROUTING.md`, and precomputed neural embeddings.
+  - [x] Added automated vitest regression suite asserting catalog parity and format-specific routing in `semantic-router.test.ts`.
+  - [x] Codified the Hermano Tool Decision Parity Contract in `AGENTS.md` and updated `README.md`.
+- [ ] **Phase 4: Natural Language Parameter Extraction & Dynamic Graph Generation**
   - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
   - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
 
