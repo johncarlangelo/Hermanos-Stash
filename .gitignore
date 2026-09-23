@@ -96,3 +96,7 @@ scratch/
 .playwright-mcp/
 .hermes/
 TEST PIPELINE OUTPUTS/
+
+# On-demand Downloaded Models & Heavy Binaries
+resources/models/
+resources/ffmpeg/

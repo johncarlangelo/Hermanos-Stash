@@ -156,7 +156,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `pdf-compress` — PDF Optimizer
 - **Core Intent:** Shrink PDF document file size using object stream compression while preserving text vectors.
-- **User Triggers:** "pdf too large to email", "reduce pdf size", "shrink document under 5MB", "compress pdf".
+- **User Triggers:** "pdf too large to email", "reduce pdf size", "shrink document under 5MB", "compress pdf", "compress each page", "compress pdf pages".
 - **Disambiguation:** If compressing images or videos, route to `image-compress` or `video-compress`.
 
 #### `pdf-reorder` — PDF Page Reorderer
@@ -232,7 +232,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `image-convert` — Image Converter
 - **Core Intent:** Batch convert images between PNG, JPEG, WebP, AVIF, and TIFF formats.
-- **User Triggers:** "convert png to webp", "turn heic/avif into jpeg", "batch image format converter", "change photo format".
+- **User Triggers:** "convert png to jpg", "convert jpg to png", "png to jpeg", "convert png to webp", "turn heic/avif into jpeg", "batch image format converter", "change photo format".
 
 #### `image-compress` — Image Compressor
 - **Core Intent:** Shrink image file size with quality tuning and optional downscaling.
@@ -292,7 +292,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `json-format` — JSON Formatter & Validator
 - **Core Intent:** Pretty-print, minify, and validate JSON payloads with exact line/column syntax error pinpoints.
-- **User Triggers:** "format messy json", "validate json syntax", "minify json string", "fix json error on line 4".
+- **User Triggers:** "format messy json", "format json data", "pretty print json", "validate json syntax", "minify json string", "fix json error on line 4".
 
 #### `base64-codec` — Base64 Encoder / Decoder
 - **Core Intent:** UTF-8 safe text encoding and decoding to/from standard Base64.
@@ -316,7 +316,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `text-cases` — Case Converter & Statistics
 - **Core Intent:** Transform text casing (camelCase, snake_case, kebab-case, Title Case) with word & character counts.
-- **User Triggers:** "convert text to camelcase", "snake case converter", "count words and characters".
+- **User Triggers:** "convert text to camelcase", "convert text to camelcase or kebab-case", "snake case converter", "count words and characters".
 
 #### `html-entities` — HTML Entities & Slug Generator
 - **Core Intent:** Escape/unescape HTML special characters and generate clean SEO URL slugs.
@@ -366,7 +366,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `timestamp-converter` — Unix Timestamp Converter
 - **Core Intent:** Convert epoch timestamps (seconds & milliseconds) to human dates, ISO 8601, and local time.
-- **User Triggers:** "convert unix timestamp to date", "epoch to date", "what date is this timestamp".
+- **User Triggers:** "convert unix timestamp to date", "convert unix epoch timestamp to iso date", "epoch to date", "what date is this timestamp".
 
 #### `qr-generator` — QR Code Studio
 - **Core Intent:** Generate high-resolution vector and PNG QR codes with error correction and styling.
@@ -378,7 +378,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `color-converter` — Color Palette & Converter
 - **Core Intent:** Convert color spaces between HEX, RGB, HSL, HSV, CMYK with contrast checking.
-- **User Triggers:** "hex to rgb converter", "convert hsl to hex", "check contrast ratio".
+- **User Triggers:** "hex to rgb converter", "convert hex color to hsl and rgb", "convert hsl to hex", "check contrast ratio".
 
 #### `regex-tester` — Regular Expression Tester
 - **Core Intent:** Test regex patterns with match groups, capture flags, and real-time syntax highlighting.
@@ -414,7 +414,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `curl-converter` — cURL ⇄ Code Generator
 - **Core Intent:** Translate cURL commands into JavaScript Fetch, Axios, Python Requests, Go, Rust, and PHP.
-- **User Triggers:** "convert curl to python requests", "curl to javascript fetch", "turn curl into code".
+- **User Triggers:** "convert curl to python requests", "convert curl command to fetch code", "curl to javascript fetch", "turn curl into code".
 
 #### `json-schema` — JSON Schema Validator & Generator
 - **Core Intent:** Generate Draft-07 JSON Schemas from JSON objects and validate instances against schemas.
@@ -446,7 +446,7 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 
 #### `token-counter` — Token & Context Studio
 - **Core Intent:** Offline BPE tokenizer, visual context window utilization gauge, and multi-model API cost estimator.
-- **User Triggers:** "how many tokens is this prompt", "token count for gpt-4o", "check context window fit", "calculate api cost".
+- **User Triggers:** "how many tokens is this prompt", "token count for gpt-4o", "count tiktoken cl100k tokens for chatgpt", "check context window fit", "calculate api cost".
 
 #### `local-llm-playground` — Local LLM Playground & Benchmark [BETA]
 - **Core Intent:** Chat interface and hardware benchmark for local Ollama and LM Studio endpoints with real-time tok/s telemetry.
