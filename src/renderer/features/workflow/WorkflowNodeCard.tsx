@@ -18,6 +18,7 @@ import { NODE_WIDTH } from './layout'
 interface WorkflowNodeCardProps {
   node: WorkflowNode
   selected: boolean
+  isDragging?: boolean
   hasIncomingFileEdge?: boolean
   hasIncomingTextEdge?: boolean
   wireStatus?: 'compatible' | 'incompatible' | 'source' | null
@@ -43,6 +44,7 @@ interface WorkflowNodeCardProps {
 export const WorkflowNodeCard = memo(function WorkflowNodeCard({
   node,
   selected,
+  isDragging = false,
   hasIncomingFileEdge = false,
   hasIncomingTextEdge = false,
   wireStatus = null,
@@ -116,7 +118,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
       id={`node-${node.id}`}
       data-dropzone="workflow-node"
       style={{
-        transform: `translate(${node.position.x}px, ${node.position.y}px)`,
+        transform: `translate3d(${node.position.x}px, ${node.position.y}px, 0)`,
         width: NODE_WIDTH
       }}
       onClick={(e) => {
@@ -151,11 +153,15 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
           onDropWireOnCard?.(node.id)
         }
       }}
-      className={`absolute pointer-events-auto select-none rounded-xl border transition-all duration-150 backdrop-blur-md ${
+      className={`absolute pointer-events-auto select-none rounded-xl border will-change-transform ${
+        isDragging
+          ? 'transition-none shadow-2xl z-30 ring-2 ring-accent backdrop-blur-none bg-surface/98'
+          : 'transition-[border-color,box-shadow,background-color,opacity] duration-150 backdrop-blur-md'
+      } ${
         wireStatus === 'compatible'
           ? 'border-emerald-500/80 shadow-[0_0_24px_rgba(16,185,129,0.3)] bg-surface/95 z-20 ring-2 ring-emerald-500/60 cursor-pointer'
           : wireStatus === 'incompatible'
-            ? 'border-line/40 opacity-40 grayscale-[25%] shadow-none bg-surface/60 z-10 hover:border-danger/70 hover:opacity-80 transition-all cursor-not-allowed'
+            ? 'border-line/40 opacity-40 grayscale-[25%] shadow-none bg-surface/60 z-10 hover:border-danger/70 hover:opacity-80 cursor-not-allowed'
             : wireStatus === 'source'
               ? 'border-accent shadow-[0_0_24px_-4px_var(--color-accent-glow)] bg-surface/95 z-20 ring-2 ring-accent'
               : isDragOver
@@ -182,7 +188,9 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
       {/* Node Header */}
       <div
         onPointerDown={(e) => onStartDrag(node.id, e)}
-        className="flex items-center justify-between border-b border-line/50 px-3 py-2 cursor-grab active:cursor-grabbing rounded-t-xl bg-raised/40"
+        className={`flex items-center justify-between border-b border-line/50 px-3 py-2 rounded-t-xl bg-raised/40 ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab active:cursor-grabbing'
+        }`}
       >
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-line bg-base/80 text-accent">

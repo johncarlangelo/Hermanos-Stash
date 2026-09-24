@@ -105,7 +105,7 @@ export const WorkflowEdgeRenderer = memo(function WorkflowEdgeRenderer({
               stroke={isSelected ? '#ef4444' : color}
               strokeWidth={isSelected ? 6 : 4}
               strokeOpacity={isSelected ? 0.6 : 0.3}
-              filter="url(#wire-glow)"
+              filter={isSelected || sourceNodeRunning ? 'url(#wire-glow)' : undefined}
               className={`transition-opacity duration-150 ${
                 isSelected || sourceNodeRunning
                   ? 'opacity-100'

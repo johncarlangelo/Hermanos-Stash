@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, FolderArchive, Plus, Settings2, Trash2, Workflow } from 'lucide-react'
 import type {
   PortType,
@@ -9,6 +9,7 @@ import type {
   WorkflowTemplate
 } from './types'
 import {
+  GRID_SIZE,
   NODE_HEIGHT,
   NODE_WIDTH,
   autoLayoutGraph,
@@ -56,6 +57,13 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     startY: number
     initialNodePos: { x: number; y: number }
   } | null>(null)
+  const [activeDraggingNodeId, setActiveDraggingNodeId] = useState<string | null>(null)
+
+  // rAF throttling refs for instant 60/120/144fps interaction
+  const rafIdRef = useRef<number | null>(null)
+  const pendingPanPosRef = useRef<{ clientX: number; clientY: number } | null>(null)
+  const pendingNodeDragPosRef = useRef<{ clientX: number; clientY: number } | null>(null)
+  const pendingWirePosRef = useRef<{ clientX: number; clientY: number } | null>(null)
 
   // Wire Connection state
   const [draggingWire, setDraggingWire] = useState<{
@@ -138,44 +146,107 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
   // Master pointer move handler for canvas pan, node drag, and wire drag
   const handleCanvasPointerMove = (e: React.PointerEvent) => {
     if (isPanningRef.current) {
-      setPan({
-        x: e.clientX - panStartRef.current.x,
-        y: e.clientY - panStartRef.current.y
-      })
+      pendingPanPosRef.current = { clientX: e.clientX, clientY: e.clientY }
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null
+          if (!isPanningRef.current || !pendingPanPosRef.current) return
+          setPan({
+            x: pendingPanPosRef.current.clientX - panStartRef.current.x,
+            y: pendingPanPosRef.current.clientY - panStartRef.current.y
+          })
+        })
+      }
       return
     }
 
     if (draggingNodeRef.current) {
-      const { nodeId, startX, startY, initialNodePos } = draggingNodeRef.current
-      const deltaX = (e.clientX - startX) / zoom
-      const deltaY = (e.clientY - startY) / zoom
+      pendingNodeDragPosRef.current = { clientX: e.clientX, clientY: e.clientY }
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null
+          if (!draggingNodeRef.current || !pendingNodeDragPosRef.current) return
+          const { nodeId, startX, startY, initialNodePos } = draggingNodeRef.current
+          const { clientX, clientY } = pendingNodeDragPosRef.current
+          const deltaX = (clientX - startX) / zoom
+          const deltaY = (clientY - startY) / zoom
 
-      setGraph((prev) => ({
-        ...prev,
-        nodes: prev.nodes.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                position: {
-                  x: snapToGrid(initialNodePos.x + deltaX),
-                  y: snapToGrid(initialNodePos.y + deltaY)
-                }
-              }
-            : n
-        )
-      }))
+          const newX = snapToGrid(initialNodePos.x + deltaX)
+          const newY = snapToGrid(initialNodePos.y + deltaY)
+
+          setGraph((prev) => {
+            const currentNode = prev.nodes.find((n) => n.id === nodeId)
+            if (currentNode && currentNode.position.x === newX && currentNode.position.y === newY) {
+              return prev
+            }
+            return {
+              ...prev,
+              nodes: prev.nodes.map((n) =>
+                n.id === nodeId
+                  ? {
+                      ...n,
+                      position: { x: newX, y: newY }
+                    }
+                  : n
+              )
+            }
+          })
+        })
+      }
       return
     }
 
     if (draggingWire) {
-      const canvasPos = clientToCanvasCoord(e.clientX, e.clientY)
-      setDraggingWire((prev) => (prev ? { ...prev, currentPos: canvasPos } : null))
+      pendingWirePosRef.current = { clientX: e.clientX, clientY: e.clientY }
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null
+          if (!pendingWirePosRef.current) return
+          const canvasPos = clientToCanvasCoord(
+            pendingWirePosRef.current.clientX,
+            pendingWirePosRef.current.clientY
+          )
+          setDraggingWire((prev) => (prev ? { ...prev, currentPos: canvasPos } : null))
+        })
+      }
     }
   }
 
   const handleCanvasPointerUp = () => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = null
+    }
+
+    // Flush final drag position if there was a pending move
+    if (draggingNodeRef.current && pendingNodeDragPosRef.current) {
+      const { nodeId, startX, startY, initialNodePos } = draggingNodeRef.current
+      const { clientX, clientY } = pendingNodeDragPosRef.current
+      const deltaX = (clientX - startX) / zoom
+      const deltaY = (clientY - startY) / zoom
+      const finalX = snapToGrid(initialNodePos.x + deltaX)
+      const finalY = snapToGrid(initialNodePos.y + deltaY)
+
+      setGraph((prev) => {
+        const currentNode = prev.nodes.find((n) => n.id === nodeId)
+        if (currentNode && currentNode.position.x === finalX && currentNode.position.y === finalY) {
+          return prev
+        }
+        return {
+          ...prev,
+          nodes: prev.nodes.map((n) =>
+            n.id === nodeId ? { ...n, position: { x: finalX, y: finalY } } : n
+          )
+        }
+      })
+    }
+
     isPanningRef.current = false
     draggingNodeRef.current = null
+    pendingNodeDragPosRef.current = null
+    pendingPanPosRef.current = null
+    pendingWirePosRef.current = null
+    setActiveDraggingNodeId(null)
     if (draggingWire) {
       setDraggingWire(null)
     }
@@ -185,8 +256,16 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
   useEffect(() => {
     const handleGlobalPointerUp = () => {
       if (isPanningRef.current || draggingNodeRef.current || draggingWire) {
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current)
+          rafIdRef.current = null
+        }
         isPanningRef.current = false
         draggingNodeRef.current = null
+        pendingNodeDragPosRef.current = null
+        pendingPanPosRef.current = null
+        pendingWirePosRef.current = null
+        setActiveDraggingNodeId(null)
         if (draggingWire) {
           setDraggingWire(null)
         }
@@ -194,7 +273,13 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     }
 
     window.addEventListener('pointerup', handleGlobalPointerUp)
-    return () => window.removeEventListener('pointerup', handleGlobalPointerUp)
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp)
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+        rafIdRef.current = null
+      }
+    }
   }, [draggingWire])
 
   // Zoom handlers
@@ -301,18 +386,23 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     setSelectedNodeId(newId)
   }, [])
 
-  const handleStartNodeDrag = (nodeId: string, e: React.PointerEvent) => {
-    e.stopPropagation()
-    const node = graph.nodes.find((n) => n.id === nodeId)
-    if (!node) return
-    setSelectedNodeId(nodeId)
-    draggingNodeRef.current = {
-      nodeId,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialNodePos: { ...node.position }
-    }
-  }
+  const handleStartNodeDrag = useCallback(
+    (nodeId: string, e: React.PointerEvent) => {
+      e.stopPropagation()
+      const node = graph.nodes.find((n) => n.id === nodeId)
+      if (!node) return
+      setSelectedNodeId(nodeId)
+      setActiveDraggingNodeId(nodeId)
+      draggingNodeRef.current = {
+        nodeId,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialNodePos: { ...node.position }
+      }
+      pendingNodeDragPosRef.current = { clientX: e.clientX, clientY: e.clientY }
+    },
+    [graph.nodes]
+  )
 
   // Wiring actions
   const handleStartWire = (
@@ -731,6 +821,29 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     handleDuplicateNode
   ])
 
+  const handleOpenDetails = useCallback((id: string) => {
+    setInspectingNodeId(id)
+  }, [])
+
+  const handleContextMenu = useCallback((id: string, e: React.MouseEvent) => {
+    setContextMenu({ x: e.clientX, y: e.clientY, nodeId: id })
+    setSelectedNodeId(id)
+  }, [])
+
+  const incomingEdgeMap = useMemo(() => {
+    const map = new Map<string, { files: boolean; text: boolean }>()
+    for (const edge of graph.edges) {
+      let entry = map.get(edge.toNodeId)
+      if (!entry) {
+        entry = { files: false, text: false }
+        map.set(edge.toNodeId, entry)
+      }
+      if (edge.fromPort === 'files') entry.files = true
+      if (edge.fromPort === 'text') entry.text = true
+    }
+    return map
+  }, [graph.edges])
+
   return (
     <div
       ref={canvasRef}
@@ -747,7 +860,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       className="relative h-full w-full overflow-hidden bg-shell select-none cursor-default"
       style={{
         backgroundImage: `radial-gradient(circle, var(--color-line) 1px, transparent 1px)`,
-        backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+        backgroundSize: `${GRID_SIZE * zoom}px ${GRID_SIZE * zoom}px`,
         backgroundPosition: `${pan.x}px ${pan.y}px`
       }}
     >
@@ -793,9 +906,9 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         {/* Node Cards Layer (cards themselves have pointer-events-auto) */}
         <div className="pointer-events-none">
           {graph.nodes.map((node) => {
-            const incomingEdges = graph.edges.filter((e) => e.toNodeId === node.id)
-            const hasIncomingFileEdge = incomingEdges.some((e) => e.fromPort === 'files')
-            const hasIncomingTextEdge = incomingEdges.some((e) => e.fromPort === 'text')
+            const incoming = incomingEdgeMap.get(node.id)
+            const hasIncomingFileEdge = incoming?.files ?? false
+            const hasIncomingTextEdge = incoming?.text ?? false
 
             let wireStatus: 'compatible' | 'incompatible' | 'source' | null = null
             let wireReason: string | undefined = undefined
@@ -843,17 +956,15 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                 key={node.id}
                 node={node}
                 selected={selectedNodeId === node.id}
+                isDragging={activeDraggingNodeId === node.id}
                 hasIncomingFileEdge={hasIncomingFileEdge}
                 hasIncomingTextEdge={hasIncomingTextEdge}
                 wireStatus={wireStatus}
                 wireReason={wireReason}
                 activeWirePort={draggingWire?.fromPort}
                 onSelect={setSelectedNodeId}
-                onOpenDetails={(id) => setInspectingNodeId(id)}
-                onContextMenu={(id, e) => {
-                  setContextMenu({ x: e.clientX, y: e.clientY, nodeId: id })
-                  setSelectedNodeId(id)
-                }}
+                onOpenDetails={handleOpenDetails}
+                onContextMenu={handleContextMenu}
                 onDelete={handleDeleteNode}
                 onDuplicate={handleDuplicateNode}
                 onUpdateInputs={handleUpdateNodeInputs}
