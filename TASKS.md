@@ -436,6 +436,13 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - **Filter Out Inert / Non-Transforming Tools:** Audit tools that have no I/O capability or pipeline transformation utility (e.g. `mime-lookup` and `http-status` with empty capabilities `{}`, `chmod-calculator`, `cron-explainer`). Evaluate hiding them from the workflow palette drawer (e.g. via `isWorkflowCompatible?: boolean` or requiring at least one input/output port) so inert cards don't clutter the canvas.
   - **Metric / Terminal Sink Nodes:** Clarify the role of inspector/calculator tools like `token-counter` (can act as a read-only terminal sink or pipeline token estimator).
   - **Local LLM & Prompt Pipeline Integration:** Define a non-interactive step-execution contract for `prompt-library` (source node feeding prompt text) and `local-llm-playground` (pipeline node that accepts prompt text/context and outputs generated text via local Ollama/LM Studio endpoints, e.g. for `PDF -> Text -> Local LLM Summary -> Markdown-to-PDF` pipelines).
+- [ ] **Interactive Radial Chord Compatibility Explorer / Interop Graph (Future UX Feature)**:
+  - **Concept & Problem:** The 6,594-line `COMPATIBILITY_MATRIX.md` (6,084 tool pairs, 24,336 combinations) is thorough for CI assertions but difficult for human pipeline planning. Replace manual matrix lookup with an interactive radial chord diagram (fragrance note wheel / ribbon network style).
+  - **Clustering & Anti-Hairball Design:** Group the outer circumference into 7 primary media/data domains (`image`, `document`, `audio`, `video`, `archive`, `text`, `universal/any`) rather than 78 raw nodes to avoid visual clutter (~1,600 intersecting lines).
+  - **Interactive Micro-HUD:** Hovering chords dims unrelated connections and displays source/target tool pairing, domain transition (`e.g. video → audio`), valid port types (files vs. text), and compatibility/rejection reasons in a center HUD.
+  - **Tool Search / Spotlight:** Allow selecting a specific tool from a quick search to isolate only its direct inbound and outbound compatible cables.
+  - **Placement:** Accessible via a "Compatibility Map" modal/drawer in `WorkflowToolbar.tsx` or context inspection directly from any selected node on the `WorkflowCanvas`.
+  - **Implementation Strategy:** Lightweight, zero-dependency SVG paths using cubic Bézier ribbons matching the Stash dark workstation palette (`#12141a`, `#16181d`, muted amber/cyan/purple accents).
 - [-] **Exhaustive Tool Compatibility & Incompatibility Audit Checklist (`execution.ts`, `workflow.test.ts`)**:
   - [x] Audit all 78 registered tools against actual file input/output implementations.
   - [x] Replace UI-category inference with explicit directional domains; reject unknown domains.
