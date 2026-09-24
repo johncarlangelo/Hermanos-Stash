@@ -392,6 +392,13 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Independent Feature Semantic Versioning Contract (`version.ts`, `AGENTS.md`, `DECISIONS.md ADR-040`)**: `QUEUE_WORKFLOW_VERSION = '0.2.6'` with mandatory SemVer bump on every push (patch for UI/UX/bug fixes, minor for features, major for schema breaking/BETA graduation).
 
 ### Completed Queue Workflow Features
+- [x] **Shift+Scroll Horizontal Side Scrolling & Trackpad Tilt (`v0.4.4`)**:
+  - **Problem Statement:** Navigating wide horizontal DAG graphs required dragging with canvas panning; users expected standard Figma/creative app `Shift + Wheel` side-scrolling.
+  - **Solution & Implementation:**
+    - Updated `handleWheel` in `WorkflowCanvas.tsx` to detect `e.shiftKey` or native horizontal wheel tilt (`e.deltaX`).
+    - Handled Windows/Chromium wheel remapping (where Shift+Wheel can populate `deltaX` or `deltaY`) and smoothly translated scroll amounts into horizontal `pan.x` offsets.
+    - Preserved cursor-centered zoom for unshifted wheel events, and prevented unintended zoom scaling during side-scroll.
+    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.4`, regenerated matrix documentation, and verified all 984 vitest tests pass.
 - [x] **Cursor-Anchored Zooming & Figma-Style Viewport Centering (`v0.4.3`)**:
   - **Problem Statement:** Zooming in/out with the mouse wheel or trackpad pinch scaled toward the top-left (0, 0), causing elements under the cursor to drift away across the screen.
   - **Solution & Mathematics:**

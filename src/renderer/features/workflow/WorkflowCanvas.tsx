@@ -298,6 +298,19 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     e.preventDefault()
     if (!canvasRef.current) return
 
+    // Shift + Scroll (or native horizontal wheel / trackpad scroll) => Side Scroll (horizontal pan)
+    if (e.shiftKey || (!e.ctrlKey && Math.abs(e.deltaX) > 0 && Math.abs(e.deltaY) === 0)) {
+      // On Windows / Chromium, Shift+Wheel often remaps deltaY to deltaX automatically.
+      const scrollAmount = Math.abs(e.deltaX) > 0 ? e.deltaX : e.deltaY
+      if (scrollAmount !== 0) {
+        setPan((prev) => ({
+          ...prev,
+          x: prev.x - scrollAmount
+        }))
+      }
+      return
+    }
+
     // Trackpad pinch-to-zoom (e.ctrlKey) vs standard mouse wheel
     const zoomFactor = e.ctrlKey
       ? Math.exp(-e.deltaY * 0.01)
