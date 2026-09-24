@@ -282,7 +282,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     }
   }, [draggingWire])
 
-  // Zoom handlers
+  // Zoom handlers (cursor-centered zoom like Figma)
   const handleWheel = (e: React.WheelEvent) => {
     // Prevent zooming canvas when scrolling inside drawers, modals, toolbars, or context menus
     const target = e.target as HTMLElement | null
@@ -296,9 +296,76 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     }
 
     e.preventDefault()
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92
-    setZoom((curr) => Math.min(2.0, Math.max(0.3, curr * zoomFactor)))
+    if (!canvasRef.current) return
+
+    // Trackpad pinch-to-zoom (e.ctrlKey) vs standard mouse wheel
+    const zoomFactor = e.ctrlKey
+      ? Math.exp(-e.deltaY * 0.01)
+      : e.deltaY < 0
+        ? 1.08
+        : 0.92
+
+    const newZoom = Math.min(2.0, Math.max(0.3, zoom * zoomFactor))
+    if (newZoom === zoom) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+    const cursorX = e.clientX - rect.left
+    const cursorY = e.clientY - rect.top
+
+    // The canvas coordinate under the mouse cursor before zooming:
+    const canvasPointX = (cursorX - pan.x) / zoom
+    const canvasPointY = (cursorY - pan.y) / zoom
+
+    // Solve for new pan so canvasPoint remains anchored precisely at cursor (cursorX, cursorY):
+    const newPanX = cursorX - canvasPointX * newZoom
+    const newPanY = cursorY - canvasPointY * newZoom
+
+    setZoom(newZoom)
+    setPan({ x: newPanX, y: newPanY })
   }
+
+  const handleZoomCenter = useCallback(
+    (direction: 'in' | 'out') => {
+      if (!canvasRef.current) return
+      const rect = canvasRef.current.getBoundingClientRect()
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+
+      const zoomFactor = direction === 'in' ? 1.15 : 0.85
+      const newZoom = Math.min(2.0, Math.max(0.3, zoom * zoomFactor))
+      if (newZoom === zoom) return
+
+      const canvasPointX = (centerX - pan.x) / zoom
+      const canvasPointY = (centerY - pan.y) / zoom
+
+      const newPanX = centerX - canvasPointX * newZoom
+      const newPanY = centerY - canvasPointY * newZoom
+
+      setZoom(newZoom)
+      setPan({ x: newPanX, y: newPanY })
+    },
+    [pan, zoom]
+  )
+
+  const handleResetZoom = useCallback(() => {
+    if (!canvasRef.current) {
+      setZoom(1.0)
+      return
+    }
+    const rect = canvasRef.current.getBoundingClientRect()
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    const newZoom = 1.0
+    const canvasPointX = (centerX - pan.x) / zoom
+    const canvasPointY = (centerY - pan.y) / zoom
+
+    const newPanX = centerX - canvasPointX * newZoom
+    const newPanY = centerY - canvasPointY * newZoom
+
+    setZoom(newZoom)
+    setPan({ x: newPanX, y: newPanY })
+  }, [pan, zoom])
 
   // Add tool from palette
   const handleAddTool = (toolId: string) => {
@@ -877,9 +944,9 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         onOpenSaveModal={() => setSaveModalOpen(true)}
         onAutoLayout={handleAutoLayout}
         onFitView={handleFitView}
-        onZoomIn={() => setZoom((z) => Math.min(2.0, z + 0.1))}
-        onZoomOut={() => setZoom((z) => Math.max(0.3, z - 0.1))}
-        onResetZoom={() => setZoom(1.0)}
+        onZoomIn={() => handleZoomCenter('in')}
+        onZoomOut={() => handleZoomCenter('out')}
+        onResetZoom={handleResetZoom}
         zoom={zoom}
         onClearCanvas={handleClearCanvas}
         onSwitchToLinearView={onSwitchToLinearView}

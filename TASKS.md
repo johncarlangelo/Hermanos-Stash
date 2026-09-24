@@ -392,6 +392,13 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Independent Feature Semantic Versioning Contract (`version.ts`, `AGENTS.md`, `DECISIONS.md ADR-040`)**: `QUEUE_WORKFLOW_VERSION = '0.2.6'` with mandatory SemVer bump on every push (patch for UI/UX/bug fixes, minor for features, major for schema breaking/BETA graduation).
 
 ### Completed Queue Workflow Features
+- [x] **Cursor-Anchored Zooming & Figma-Style Viewport Centering (`v0.4.3`)**:
+  - **Problem Statement:** Zooming in/out with the mouse wheel or trackpad pinch scaled toward the top-left (0, 0), causing elements under the cursor to drift away across the screen.
+  - **Solution & Mathematics:**
+    - Upgraded `handleWheel` in `WorkflowCanvas.tsx` to compute the exact canvas-space point under the pointer (`(cursor - pan) / zoom`) and solved for the new `pan` offset (`cursor - canvasPoint * newZoom`), anchoring the target point precisely under the cursor throughout the zoom interaction.
+    - Added trackpad pinch-to-zoom support via exponential scaling (`Math.exp(-deltaY * 0.01)` when `e.ctrlKey` is present).
+    - Upgraded toolbar zoom buttons (`onZoomIn`, `onZoomOut`, `onResetZoom`) to zoom into the visual center of the canvas viewport rather than drifting toward the top-left.
+    - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.3`, regenerated matrix documentation, and verified all 984 vitest tests pass.
 - [x] **Zero-Latency Node Dragging & rAF Compositor Optimization (`v0.4.2`)**:
   - **Problem Statement:** Dragging nodes on the canvas felt laggy with delayed, rubber-banding motion behind the cursor and desynced wire cables.
   - **Root Cause & Fix:**
