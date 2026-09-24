@@ -56,12 +56,19 @@ export function ChatbotWidget() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, toggleOpen, setIsOpen])
 
+  const currentView = useNav((s) => s.view)
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
     const clean = input.trim()
     if (!clean) return
     setInput('')
     void sendUserQuery(clean)
+  }
+
+  // Hide Hermano chatbot floating widget in Queue Workflow view so it does not obstruct the canvas or node drawer
+  if (currentView.type === 'queue') {
+    return null
   }
 
   return (

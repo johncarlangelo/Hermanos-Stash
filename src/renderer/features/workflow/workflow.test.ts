@@ -202,8 +202,35 @@ describe('Workflow Pipeline Execution Engine', () => {
     expect(started).toEqual([])
   })
 
-  it('verifies built-in recipes array is cleared pending new verified recipes', () => {
-    expect(BUILT_IN_WORKFLOW_TEMPLATES).toEqual([])
+  it("verifies built-in Dev's Choice recipes are valid, non-cyclic, and matrix-compliant", () => {
+    expect(BUILT_IN_WORKFLOW_TEMPLATES).toHaveLength(10)
+    for (const template of BUILT_IN_WORKFLOW_TEMPLATES) {
+      expect(template.category).toBe("Dev's Choice")
+      expect(template.tags).toContain('dev-choice')
+      expect(template.graph.nodes.length).toBeGreaterThanOrEqual(2)
+      expect(template.graph.edges.length).toBeGreaterThanOrEqual(1)
+
+      // Verify no circular loops in any built-in template
+      for (const edge of template.graph.edges) {
+        expect(wouldCreateCycle(template.graph, edge.fromNodeId, edge.toNodeId)).toBe(false)
+      }
+
+      // Verify each edge is valid according to toolRegistry and directional compatibility
+      for (const edge of template.graph.edges) {
+        const fromNode = template.graph.nodes.find((n) => n.id === edge.fromNodeId)
+        const toNode = template.graph.nodes.find((n) => n.id === edge.toNodeId)
+        expect(fromNode).toBeDefined()
+        expect(toNode).toBeDefined()
+
+        const fromTool = toolRegistry.get(fromNode!.toolId)
+        const toTool = toolRegistry.get(toNode!.toolId)
+        expect(fromTool).toBeDefined()
+        expect(toTool).toBeDefined()
+
+        const validation = validateEdge(fromTool!, toTool!, edge.fromPort, edge.toPort)
+        expect(validation.valid).toBe(true)
+      }
+    }
   })
 
   it.each(['icon-pack', 'qr-decoder'])(
@@ -325,7 +352,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.4.4')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.5.0')
     })
   })
 

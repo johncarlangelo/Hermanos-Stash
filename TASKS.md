@@ -392,6 +392,23 @@ launcher-grade shell. Full spec: `.hermes/plans/2026-08-26_140000-milestone-9-qu
 - [x] **Independent Feature Semantic Versioning Contract (`version.ts`, `AGENTS.md`, `DECISIONS.md ADR-040`)**: `QUEUE_WORKFLOW_VERSION = '0.2.6'` with mandatory SemVer bump on every push (patch for UI/UX/bug fixes, minor for features, major for schema breaking/BETA graduation).
 
 ### Completed Queue Workflow Features
+- [x] **10 Built-In Verified "Dev's Choice" Workflow Recipes (`v0.5.0`)**:
+  - **Problem Statement:** The built-in templates list was previously empty after legacy unvalidated templates were purged.
+  - **Solution & Implementation:**
+    - Authored 10 verified, production-grade recipes in `src/renderer/features/workflow/presets.ts`:
+      1. *Document Bates Stamper & PDF Optimizer* (`pdf-split` → `pdf-numberer` → `pdf-watermark` → `pdf-compress`)
+      2. *Video Soundtrack Extractor & Master* (`extract-audio` → `audio-trimmer` → `audio-normalize` → `audio-convert`)
+      3. *Scanned Document OCR & Markdown Generator* (`image-ocr` → `markdown-preview` → `markdown-to-pdf`)
+      4. *Social & Web Image Optimization Suite* (`social-resizer` → `image-watermark` → `image-compress` → `zip-create`)
+      5. *Video Clip to Compressed WebP & GIF* (`video-convert` → `video-to-gif` → `image-compress`)
+      6. *API JSON Formatter & TypeScript Generator* (`json-format` → `json-to-types`)
+      7. *Payload Base64 Encoder & Multi-Digest Hasher* (`base64-codec` → `hash-generator`)
+      8. *Multi-Image Grid Contact Sheet & ZIP Archiver* (`image-grid` → `image-convert` → `zip-create`)
+      9. *Dynamic QR Code Generator & Brand Stamper* (`qr-generator` → `image-watermark` → `image-compress`)
+      10. *PDF Page Sequence Organizer & Archiver* (`pdf-reorder` → `pdf-compress` → `zip-create`)
+    - Classified each under the "Dev's Choice" drawer tab in `WorkflowTemplatesDrawer.tsx` without per-card badge clutter.
+    - Added automated verification in `workflow.test.ts` asserting 100% matrix compliance, port compatibility, and acyclic DAG invariants for all 10 recipes.
+    - Bumped `QUEUE_WORKFLOW_VERSION` minor to `0.5.0`, regenerated matrix documentation, and verified all 984 vitest tests pass.
 - [x] **Shift+Scroll Horizontal Side Scrolling & Trackpad Tilt (`v0.4.4`)**:
   - **Problem Statement:** Navigating wide horizontal DAG graphs required dragging with canvas panning; users expected standard Figma/creative app `Shift + Wheel` side-scrolling.
   - **Solution & Implementation:**

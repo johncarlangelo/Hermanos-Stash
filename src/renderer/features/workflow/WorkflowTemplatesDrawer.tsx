@@ -118,7 +118,7 @@ export function WorkflowTemplatesDrawer({
                 : 'text-dim hover:text-ink hover:bg-surface/60'
             }`}
           >
-            Built-in Recipes ({BUILT_IN_WORKFLOW_TEMPLATES.length})
+            Dev&apos;s Choice ({BUILT_IN_WORKFLOW_TEMPLATES.length})
           </button>
           <button
             type="button"

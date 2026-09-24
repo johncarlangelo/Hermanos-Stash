@@ -247,7 +247,7 @@ export default function App() {
           <CommandPalette />
           <DropRouter />
           <QuickSwitch />
-          <ChatbotWidget />
+          {view.type !== 'queue' && <ChatbotWidget />}
           <Toaster />
         </div>
         <StatusBar />
