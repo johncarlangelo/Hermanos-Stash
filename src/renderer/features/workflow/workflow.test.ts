@@ -179,6 +179,15 @@ describe('Workflow Topological Sort & DAG Validation', () => {
       expect(result.reason).toContain(tool(a).name)
       expect(result.reason).toContain(tool(b).name)
     }
+    expect(
+      areFileCategoriesCompatible(tool('image-compress'), tool('background-remover')).compatible
+    ).toBe(true)
+    expect(
+      areFileCategoriesCompatible(tool('background-remover'), tool('image-watermark')).compatible
+    ).toBe(true)
+    expect(
+      areFileCategoriesCompatible(tool('background-remover'), tool('pdf-merge')).compatible
+    ).toBe(false)
   })
 })
 
@@ -352,7 +361,7 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.5.0')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.6.0')
     })
   })
 

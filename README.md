@@ -2,13 +2,13 @@
 
 # HERMANOS STASH
 
-**One window. 78 tools. Local-first.**
+**One window. 79 tools. Local-first.**
 
 A local-first desktop toolbox for files, documents, images, video, audio,
 text, developer work and reusable AI prompts — built for processing on your
 machine. Optional model-server connections power the experimental LLM playground.
 
-![Tools](https://img.shields.io/badge/tools-78-d9a35c)
+![Tools](https://img.shields.io/badge/tools-79-d9a35c)
 ![Tests](https://img.shields.io/badge/tests-Vitest-85bb90)
 ![License](https://img.shields.io/badge/license-MIT-9aa2b1)
 ![Electron](https://img.shields.io/badge/Electron-43-2b2f3a)
@@ -77,13 +77,13 @@ Hermanos Stash provides 1-click on-demand installation for missing dependencies:
 
 | Keys | Action |
 |---|---|
-| `Ctrl K` | Command palette — fuzzy-search all 78 tools |
+| `Ctrl K` | Command palette — fuzzy-search all 79 tools |
 | `Ctrl /` | Toggle Hermano (Copilot & Decision Router) |
 | `Esc` | Back to workspace / close modals |
 | `Ctrl 1–5` | Open your first five favorites |
 | Drag file → window background | Find matching tools |
 
-## The catalog — 78 tools
+## The catalog — 79 tools
 
 <details>
 <summary><strong>Text & Data</strong> — 12 tools</summary>
@@ -122,7 +122,7 @@ Hermanos Stash provides 1-click on-demand installation for missing dependencies:
 </details>
 
 <details>
-<summary><strong>Images</strong> — 13 tools</summary>
+<summary><strong>Images</strong> — 14 tools</summary>
 
 | Tool | What it does |
 |---|---|
@@ -139,6 +139,7 @@ Hermanos Stash provides 1-click on-demand installation for missing dependencies:
 | Contact Sheet & Collage Grid Builder | Combine multiple images into high-resolution photo contact sheets and collages. |
 | CSS & Vector Gradient Studio | Design gradients; copy CSS/SVG or download a PNG. |
 | ID & Passport Photo Studio | Scale, crop, and tile portrait photos onto printable 1x1, 2x2, and passport sheets with cutting guides ready for Word and PDF export. |
+| Background Remover | Isolate foreground objects, remove studio or solid backgrounds, and export transparent PNGs with feathered edges. |
 
 </details>
 
@@ -232,7 +233,7 @@ is also available.
 - **Directional media-domain validation:** Audio Extractor → Icon Pack is rejected;
   Image Compressor → Icon Pack is allowed. Sidebar category does not determine compatibility.
 - **Saved/imported graph preflight:** connections are rechecked before any node starts.
-- **Exhaustive static audit:** 78 tools, 6,084 ordered pairs and **24,336 port combinations**.
+- **Exhaustive static audit:** 79 tools, 6,241 ordered pairs and **24,964 port combinations**.
   See the [compatibility matrix](docs/workflow-audit/COMPATIBILITY_MATRIX.md).
 
 > **BETA limits:** pipeline execution is still simulated; this is not real processor
@@ -277,6 +278,10 @@ An **Offline Simulation Sandbox** lets you explore the interface without a runni
 model server. Its responses and benchmark numbers are simulated, not hardware results.
 Real inference sends prompts to the selected endpoint; keep it local for local-only use.
 Endpoint compatibility and benchmark behavior remain experimental.
+
+## Tool #79: Background Remover
+
+Isolate subjects, erase studio and solid backdrops, and export transparent PNGs or WebP cutouts entirely offline. Features border-seeded contiguous flood-fill keying to preserve inner details (such as white clothing or teeth), global chroma color matching, smoothstep edge feathering, and halo defringing. Includes a live before/after interactive split slider and background replacement presets (solid studio backdrops and smooth gradients).
 
 ## Under the hood
 
@@ -338,7 +343,7 @@ Verification is treated as part of correctness here:
 
 ## Status
 
-78 tools are registered. Queue Workflow and selected tools remain **BETA**;
+79 tools are registered. Queue Workflow and selected tools remain **BETA**;
 visual pipeline execution is simulated, not production processor chaining. See
 [`TASKS.md`](TASKS.md) for what's brewing.
 

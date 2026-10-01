@@ -2,7 +2,8 @@
 
 ## README maintenance
 
-- [x] Refresh root README from the 78-tool registry, document Queue Workflow and Local LLM Playground BETA limitations, and require README updates in AGENTS.md. Catalog totals, local links and matrix freshness verified; independent review finding corrected and re-review passed 5/5.
+- [x] Refresh root README from the 79-tool registry, document Queue Workflow and Local LLM Playground BETA limitations, and require README updates in AGENTS.md. Catalog totals, local links and matrix freshness verified; independent review finding corrected and re-review passed 5/5.
+- [x] Tool #79: Background Remover (`background-remover`) — Border-seeded contiguous flood-fill keying and global chroma isolation, smoothstep alpha feathering, defringing, interactive split comparison slider, studio backdrop replacement presets, and transparent PNG/WebP exports. Integrated into Queue Workflow engine, routing matrix, and decision embeddings.
 
 Legend:
 

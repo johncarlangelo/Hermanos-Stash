@@ -27,6 +27,7 @@ import { convertCase, type CaseKind } from '../../tools/case-converter/logic'
 import { encodeBase64Utf8, decodeBase64Utf8 } from '../../tools/base64/logic'
 import { yamlToJson, jsonToYaml } from '../../tools/yaml-json/logic'
 import { csvToJson, jsonToCsv, type CsvDelimiter } from '../../tools/csv-json/logic'
+import { removeBackground, type RemovalMode } from '../../tools/background-remover/logic'
 
 /** Directional media compatibility, independent of sidebar categories. */
 export function areFileCategoriesCompatible(
@@ -394,6 +395,47 @@ async function executeWithStash(
         outputDir: opDir
       })
       return { outputFiles: res.succeeded.map((s) => s.path), opDir, isTemp: !isCustomDir }
+    }
+    case 'background-remover': {
+      const mode = (params.mode as RemovalMode) || 'contiguous'
+      const tolerance = typeof params.tolerance === 'number' ? params.tolerance : 20
+      const feather = typeof params.feather === 'number' ? params.feather : 4
+      const outputFiles: string[] = []
+
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx]
+        const base =
+          file
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.[^/.]+$/, '') || `cutout-${idx + 1}`
+        const targetPath = `${opDir}/${base}-nobg.png`
+
+        const { bytes } = await window.stash.fs.readFileBytes({ path: file })
+        const blob = new Blob([bytes as unknown as BlobPart])
+        const imgBitmap = await createImageBitmap(blob)
+
+        const canvas = document.createElement('canvas')
+        canvas.width = imgBitmap.width
+        canvas.height = imgBitmap.height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(imgBitmap, 0, 0)
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const processed = removeBackground(imgData, { mode, tolerance, feather })
+          ctx.putImageData(processed, 0, 0)
+
+          const outBlob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, 'image/png')
+          )
+          if (outBlob) {
+            const outBuf = await outBlob.arrayBuffer()
+            await window.stash.fs.writeFileBytes(targetPath, outBuf)
+            outputFiles.push(targetPath)
+          }
+        }
+      }
+      return { outputFiles, opDir, isTemp: !isCustomDir }
     }
     case 'images-to-pdf': {
       const targetPdf = `${opDir}/images-to-pdf.pdf`

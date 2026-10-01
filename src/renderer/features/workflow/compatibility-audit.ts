@@ -4,7 +4,7 @@
  */
 export const AUDIT_INPUTS: Record<string, readonly string[]> = {
   image:
-    'image-convert image-compress image-preview image-exif image-watermark image-palette image-slicer image-grid id-photo-maker image-to-ascii social-resizer images-to-pdf icon-pack image-ocr qr-decoder'.split(
+    'image-convert image-compress image-preview image-exif image-watermark image-palette image-slicer image-grid id-photo-maker background-remover image-to-ascii social-resizer images-to-pdf icon-pack image-ocr qr-decoder'.split(
       ' '
     ),
   document:
@@ -100,6 +100,7 @@ checksum-verifier|any|-|01
 audio-trimmer|audio|audio|00
 audio-normalize|audio|audio|00
 id-photo-maker|image|any|00
+background-remover|image|image|00
 token-counter|textfile|-|11
 local-llm-playground|-|-|11
 `

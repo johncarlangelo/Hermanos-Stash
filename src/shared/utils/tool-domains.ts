@@ -46,6 +46,7 @@ export const TOOL_FILE_DOMAINS: Record<
   'image-slicer': { input: 'image', output: 'any' },
   'image-grid': { input: 'image', output: 'image' },
   'id-photo-maker': { input: 'image', output: 'any' },
+  'background-remover': { input: 'image', output: 'image' },
   'image-to-ascii': { input: 'image', output: null }, // produces TEXT art
   'social-resizer': { input: 'image', output: 'image' },
   // --- documents (PDF manipulators) ---

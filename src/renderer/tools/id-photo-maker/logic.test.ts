@@ -31,6 +31,16 @@ describe('ID Photo Studio Logic', () => {
     expect(passport.heightMm).toBe(45)
     expect(passport.widthPx300Dpi).toBe(413)
     expect(passport.heightPx300Dpi).toBe(531)
+
+    const wallet = ID_PHOTO_DIMENSIONS['wallet']
+    expect(wallet.widthInches).toBe(2.5)
+    expect(wallet.heightInches).toBe(3.5)
+    expect(wallet.widthMm).toBe(63.5)
+    expect(wallet.heightMm).toBe(88.9)
+    expect(wallet.widthPt).toBe(180)
+    expect(wallet.heightPt).toBe(252)
+    expect(wallet.widthPx300Dpi).toBe(750)
+    expect(wallet.heightPx300Dpi).toBe(1050)
   })
 
   it('defines standard paper sizes correctly', () => {
@@ -74,6 +84,34 @@ describe('ID Photo Studio Logic', () => {
     expect(layout.boxes[1].sizeId).toBe('2x2')
     expect(layout.boxes[2].sizeId).toBe('1x1')
     expect(layout.boxes[9].sizeId).toBe('1x1')
+  })
+
+  it('computes 4 pcs Wallet Size on Letter paper', () => {
+    const preset = PRESET_PACKAGES.find((p) => p.id === '4_wallet')
+    expect(preset).toBeDefined()
+
+    const layout = calculateSheetLayout(preset!.items, 'letter')
+    expect(layout.totalPhotos).toBe(4)
+    expect(layout.boxes.length).toBe(4)
+    expect(layout.overflowCount).toBe(0)
+    expect(layout.boxes[0].sizeId).toBe('wallet')
+    expect(layout.boxes[0].widthInches).toBe(2.5)
+    expect(layout.boxes[0].heightInches).toBe(3.5)
+  })
+
+  it('computes Combo Pack D (2x Wallet + 2x 2x2 + 4x 1x1) on Letter paper', () => {
+    const preset = PRESET_PACKAGES.find((p) => p.id === 'combo_wallet')
+    expect(preset).toBeDefined()
+
+    const layout = calculateSheetLayout(preset!.items, 'letter')
+    expect(layout.totalPhotos).toBe(8)
+    expect(layout.boxes.length).toBe(8)
+    expect(layout.overflowCount).toBe(0)
+    expect(layout.boxes[0].sizeId).toBe('wallet')
+    expect(layout.boxes[1].sizeId).toBe('wallet')
+    expect(layout.boxes[2].sizeId).toBe('2x2')
+    expect(layout.boxes[3].sizeId).toBe('2x2')
+    expect(layout.boxes[4].sizeId).toBe('1x1')
   })
 
   it('generates a valid vector PDF document with exact dimensions', async () => {
@@ -127,5 +165,40 @@ describe('ID Photo Studio Logic', () => {
     const docXml = await zip.file('word/document.xml')!.async('text')
     expect(docXml).toContain('Photo 1')
     expect(docXml).toContain('w:pgSz')
+  })
+
+  it('generates multi-photo PDF and DOCX packages with distinct images', async () => {
+    const samplePng1 = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+      0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
+      0x77, 0x53, 0xde, 0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xf8,
+      0xcf, 0xc0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xdd, 0x8d, 0xb0, 0x00, 0x00, 0x00,
+      0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+    ])
+    const samplePng2 = new Uint8Array(samplePng1) // Second distinct photo
+
+    const layout = calculateSheetLayout(
+      [
+        { sizeId: '2x2', count: 2, photoIndex: 0 },
+        { sizeId: '2x2', count: 2, photoIndex: 1 }
+      ],
+      'letter'
+    )
+    expect(layout.boxes).toHaveLength(4)
+    expect(layout.boxes[0].photoIndex).toBe(0)
+    expect(layout.boxes[1].photoIndex).toBe(0)
+    expect(layout.boxes[2].photoIndex).toBe(1)
+    expect(layout.boxes[3].photoIndex).toBe(1)
+
+    // Multi-photo PDF
+    const pdfBytes = await generateIdPhotoPdf([samplePng1, samplePng2], layout)
+    expect(pdfBytes).toBeInstanceOf(Uint8Array)
+    expect(pdfBytes.length).toBeGreaterThan(100)
+
+    // Multi-photo DOCX
+    const docxBytes = await generateIdPhotoDocx([samplePng1, samplePng2], layout)
+    const zip = await JSZip.loadAsync(docxBytes)
+    expect(zip.file('word/media/image1.png')).not.toBeNull()
+    expect(zip.file('word/media/image2.png')).not.toBeNull()
   })
 })

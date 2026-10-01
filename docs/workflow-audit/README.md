@@ -11,9 +11,8 @@
 
 ## Scope and reproducibility
 
-The registry contains 78 tools. `tools.csv` records each tool's declared file and text ports plus independently reviewed file-domain expectations. `compatibility.csv` contains **6,084 unique ordered tool pairs**. There are 450 permitted file-port links and 1,148 permitted text-port links at this abstraction level.
-
-`workflow.test.ts` compares the production validator with the independent `compatibility-audit.ts` receiver groups for every pair and all four port combinations (24,336 combinations). It also checks the exact catalog membership and port declarations; adding/removing a tool fails the audit until reviewed.
+The registry contains 79 tools. `tools.csv` records each tool's declared file and text ports plus independently reviewed file-domain expectations. `compatibility.csv` contains **6,241 unique ordered tool pairs**.
+`workflow.test.ts` compares the production validator with the independent `compatibility-audit.ts` receiver groups for every pair and all four port combinations (24,964 combinations). It also checks the exact catalog membership and port declarations; adding/removing a tool fails the audit until reviewed.
 
 Regenerate CSVs explicitly from the repo root in Git Bash:
 

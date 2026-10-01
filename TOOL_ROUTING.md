@@ -206,6 +206,10 @@ To ensure Hermano feels intuitive, responsive, and human rather than rejecting n
 - **Core Intent:** Scale portrait photos to 1x1, 2x2, or 35x45mm passport specs onto printable sheets with cutting guides.
 - **User Triggers:** "passport photo maker", "2x2 picture for visa", "1x1 id picture", "embassy photo format", "print passport sheet".
 
+#### `background-remover` — Background Remover
+- **Core Intent:** Isolate foreground objects, remove studio or solid backgrounds, and export transparent PNGs with feathered edges.
+- **User Triggers:** "remove background from image", "make photo background transparent", "cut out subject from picture", "delete white background", "transparent png cutout", "chroma key background eraser".
+
 #### `svg-creator` — SVG & Vector Studio
 - **Core Intent:** Design vector graphics, shapes, and icons with live SVG code generation and multi-resolution PNG export.
 - **User Triggers:** "create vector icon", "make svg graphic", "design simple logo", "svg generator".

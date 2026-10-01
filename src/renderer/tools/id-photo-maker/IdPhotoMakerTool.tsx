@@ -7,10 +7,12 @@ import {
   IdCard,
   Image as ImageIcon,
   Move,
+  Plus,
   Printer,
   RotateCcw,
   Sparkles,
   User,
+  X,
   ZoomIn
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
@@ -33,64 +35,114 @@ import {
   type PresetPackageId
 } from './logic'
 
+export interface LoadedPhoto {
+  id: string
+  name: string
+  src: string
+  img: HTMLImageElement
+  adjustment: PhotoAdjustmentConfig
+}
+
 export default function IdPhotoMakerTool() {
-  const [photoSrc, setPhotoSrc] = useState<string | null>(null)
-  const [photoImg, setPhotoImg] = useState<HTMLImageElement | null>(null)
-  const [adjustment, setAdjustment] = useState<PhotoAdjustmentConfig>(DEFAULT_ADJUSTMENT_CONFIG)
+  const [photos, setPhotos] = useState<LoadedPhoto[]>([])
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null)
+  const [distributionMode, setDistributionMode] = useState<'split' | 'repeat'>('split')
   const [paperSize, setPaperSize] = useState<PaperSizeId>('letter')
   const [selectedPreset, setSelectedPreset] = useState<PresetPackageId>('combo_a')
   const [customCounts, setCustomCounts] = useState<{ [K in IdPhotoSizeId]: number }>({
     '1x1': 8,
     '2x2': 2,
     passport: 0,
-    '1.5x1.5': 0
+    '1.5x1.5': 0,
+    wallet: 0
   })
   const [showBiometricGuide, setShowBiometricGuide] = useState(true)
+  const [showCuttingGuide, setShowCuttingGuide] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const singlePreviewRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Handle uploaded file
-  const handleFiles = useCallback((files: File[]) => {
-    const file = files[0]
-    if (!file) return
+  const activePhoto = useMemo(() => {
+    return photos.find((p) => p.id === activePhotoId) || photos[0] || null
+  }, [photos, activePhotoId])
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const src = e.target?.result as string
-      setPhotoSrc(src)
-      const img = new Image()
-      img.onload = () => {
-        setPhotoImg(img)
-        toastSuccess(`Loaded photo: ${file.name}`)
-      }
-      img.src = src
-    }
-    reader.readAsDataURL(file)
-  }, [])
+  const activeAdjustment = activePhoto ? activePhoto.adjustment : DEFAULT_ADJUSTMENT_CONFIG
 
-  // Load clean demo portrait
-  const loadDemo = useCallback(() => {
+  const updateActiveAdjustment = useCallback(
+    (updater: (prev: PhotoAdjustmentConfig) => PhotoAdjustmentConfig) => {
+      if (!activePhoto) return
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.id === activePhoto.id ? { ...p, adjustment: updater(p.adjustment) } : p
+        )
+      )
+    },
+    [activePhoto]
+  )
+
+  // Handle uploaded files (single or multiple)
+  const handleFiles = useCallback(
+    (files: File[]) => {
+      if (!files.length) return
+      const newPhotos: LoadedPhoto[] = []
+      let loadedCount = 0
+
+      Array.from(files).forEach((file, idx) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const src = e.target?.result as string
+          const img = new Image()
+          img.onload = () => {
+            newPhotos.push({
+              id: `photo-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+              name: file.name.replace(/\.[^/.]+$/, ''),
+              src,
+              img,
+              adjustment: { ...DEFAULT_ADJUSTMENT_CONFIG }
+            })
+            loadedCount++
+            if (loadedCount === files.length) {
+              setPhotos((prev) => {
+                const combined = [...prev, ...newPhotos]
+                if (!activePhotoId && combined.length > 0) {
+                  setActivePhotoId(combined[0].id)
+                }
+                return combined
+              })
+              toastSuccess(`Loaded ${files.length} photo${files.length > 1 ? 's' : ''}`)
+            }
+          }
+          img.src = src
+        }
+        reader.readAsDataURL(file)
+      })
+    },
+    [activePhotoId]
+  )
+
+  // Demo portraits generator (supports Person 1 Juan and Person 2 Maria)
+  const createDemoPortrait = useCallback((index: number = 0): { dataUrl: string; name: string } => {
     const canvas = document.createElement('canvas')
     canvas.width = 600
     canvas.height = 750
     const ctx = canvas.getContext('2d')
-    if (ctx) {
-      // Gentle studio gradient backdrop
+    if (!ctx) return { dataUrl: '', name: 'Portrait' }
+
+    if (index === 0) {
+      // Juan Dela Cruz (Suit & Tie)
       const grad = ctx.createLinearGradient(0, 0, 0, 750)
       grad.addColorStop(0, '#e2e8f0')
       grad.addColorStop(1, '#cbd5e1')
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, 600, 750)
 
-      // Silhouette shoulders & torso (dark suit)
       ctx.fillStyle = '#1e293b'
       ctx.beginPath()
       ctx.ellipse(300, 700, 240, 180, 0, 0, Math.PI * 2)
       ctx.fill()
 
-      // White collar
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
       ctx.moveTo(250, 520)
@@ -99,7 +151,6 @@ export default function IdPhotoMakerTool() {
       ctx.closePath()
       ctx.fill()
 
-      // Dark tie
       ctx.fillStyle = '#0f172a'
       ctx.beginPath()
       ctx.moveTo(290, 560)
@@ -110,87 +161,198 @@ export default function IdPhotoMakerTool() {
       ctx.closePath()
       ctx.fill()
 
-      // Neck
       ctx.fillStyle = '#fed7aa'
       ctx.fillRect(265, 460, 70, 70)
 
-      // Head
       ctx.fillStyle = '#ffedd5'
       ctx.beginPath()
       ctx.ellipse(300, 360, 110, 140, 0, 0, Math.PI * 2)
       ctx.fill()
 
-      // Hair
       ctx.fillStyle = '#334155'
       ctx.beginPath()
       ctx.ellipse(300, 280, 120, 80, 0, 0, Math.PI * 2)
       ctx.fill()
 
-      // Eyes
       ctx.fillStyle = '#475569'
       ctx.beginPath()
       ctx.ellipse(260, 350, 12, 6, 0, 0, Math.PI * 2)
       ctx.ellipse(340, 350, 12, 6, 0, 0, Math.PI * 2)
       ctx.fill()
 
-      // Friendly smile
       ctx.strokeStyle = '#9a3412'
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.arc(300, 420, 30, 0.2, Math.PI - 0.2)
       ctx.stroke()
-    }
+      return { dataUrl: canvas.toDataURL('image/png'), name: 'DELA CRUZ, JUAN M.' }
+    } else {
+      // Maria Santos (Teal background, collar)
+      const grad = ctx.createLinearGradient(0, 0, 0, 750)
+      grad.addColorStop(0, '#e0f2fe')
+      grad.addColorStop(1, '#bae6fd')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 600, 750)
 
-    const dataUrl = canvas.toDataURL('image/png')
-    setPhotoSrc(dataUrl)
-    const img = new Image()
-    img.onload = () => {
-      setPhotoImg(img)
-      setAdjustment((prev) => ({
-        ...prev,
-        showNametag: true,
-        nametagText: 'DELA CRUZ, JUAN M.'
-      }))
-      toastSuccess('Loaded sample studio portrait with nametag')
+      ctx.fillStyle = '#0369a1'
+      ctx.beginPath()
+      ctx.ellipse(300, 700, 230, 170, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.moveTo(260, 530)
+      ctx.lineTo(300, 600)
+      ctx.lineTo(340, 530)
+      ctx.closePath()
+      ctx.fill()
+
+      ctx.fillStyle = '#fed7aa'
+      ctx.fillRect(270, 460, 60, 70)
+
+      ctx.fillStyle = '#1c1917'
+      ctx.beginPath()
+      ctx.ellipse(300, 400, 150, 190, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffedd5'
+      ctx.beginPath()
+      ctx.ellipse(300, 360, 105, 135, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#1c1917'
+      ctx.beginPath()
+      ctx.ellipse(300, 275, 115, 75, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#334155'
+      ctx.beginPath()
+      ctx.ellipse(265, 350, 11, 6, 0, 0, Math.PI * 2)
+      ctx.ellipse(335, 350, 11, 6, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.strokeStyle = '#be123c'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(300, 420, 26, 0.2, Math.PI - 0.2)
+      ctx.stroke()
+      return { dataUrl: canvas.toDataURL('image/png'), name: 'SANTOS, MARIA C.' }
     }
-    img.src = dataUrl
   }, [])
 
-  // Derive item list based on preset or custom
+  // Load sample demo portrait
+  const loadDemo = useCallback(() => {
+    const demoIdx = photos.length % 2
+    const { dataUrl, name } = createDemoPortrait(demoIdx)
+    const img = new Image()
+    img.onload = () => {
+      const newPhoto: LoadedPhoto = {
+        id: `demo-${Date.now()}-${demoIdx}`,
+        name: demoIdx === 0 ? 'Juan Dela Cruz' : 'Maria Santos',
+        src: dataUrl,
+        img,
+        adjustment: {
+          ...DEFAULT_ADJUSTMENT_CONFIG,
+          showNametag: true,
+          nametagText: name
+        }
+      }
+      setPhotos((prev) => [...prev, newPhoto])
+      setActivePhotoId(newPhoto.id)
+      toastSuccess(`Loaded sample portrait: ${newPhoto.name}`)
+    }
+    img.src = dataUrl
+  }, [photos, createDemoPortrait])
+
+  // Remove a photo
+  const removePhoto = useCallback(
+    (id: string) => {
+      setPhotos((prev) => {
+        const filtered = prev.filter((p) => p.id !== id)
+        if (activePhotoId === id) {
+          setActivePhotoId(filtered.length > 0 ? filtered[0].id : null)
+        }
+        return filtered
+      })
+    },
+    [activePhotoId]
+  )
+
+  // Derive item list based on preset or custom counts and multi-photo distribution
   const sheetItems = useMemo(() => {
+    let baseItems: Array<{ sizeId: IdPhotoSizeId; count: number }> = []
     if (selectedPreset === 'custom') {
-      return (Object.keys(customCounts) as IdPhotoSizeId[])
+      baseItems = (Object.keys(customCounts) as IdPhotoSizeId[])
         .filter((k) => customCounts[k] > 0)
         .map((k) => ({ sizeId: k, count: customCounts[k] }))
+    } else {
+      const preset = PRESET_PACKAGES.find((p) => p.id === selectedPreset)
+      baseItems = preset ? preset.items : [{ sizeId: '2x2' as IdPhotoSizeId, count: 4 }]
     }
-    const preset = PRESET_PACKAGES.find((p) => p.id === selectedPreset)
-    return preset ? preset.items : [{ sizeId: '2x2' as IdPhotoSizeId, count: 4 }]
-  }, [selectedPreset, customCounts])
+
+    if (photos.length <= 1) {
+      return baseItems.map((item) => ({ ...item, photoIndex: 0 }))
+    }
+
+    // Multiple photos loaded:
+    if (distributionMode === 'repeat') {
+      // Repeat the full package for each photo
+      const result: Array<{ sizeId: IdPhotoSizeId; count: number; photoIndex: number }> = []
+      photos.forEach((_, pIdx) => {
+        baseItems.forEach((item) => {
+          result.push({ sizeId: item.sizeId, count: item.count, photoIndex: pIdx })
+        })
+      })
+      return result
+    }
+
+    // Default 'split': Distribute the package's slots evenly among photos
+    const result: Array<{ sizeId: IdPhotoSizeId; count: number; photoIndex: number }> = []
+    baseItems.forEach((item) => {
+      const countsPerPhoto = new Array(photos.length).fill(0)
+      for (let i = 0; i < item.count; i++) {
+        countsPerPhoto[i % photos.length]++
+      }
+      countsPerPhoto.forEach((count, pIdx) => {
+        if (count > 0) {
+          result.push({ sizeId: item.sizeId, count, photoIndex: pIdx })
+        }
+      })
+    })
+    return result
+  }, [selectedPreset, customCounts, photos, distributionMode])
 
   // Calculate layout
   const layout = useMemo(() => {
     return calculateSheetLayout(sheetItems, paperSize)
   }, [sheetItems, paperSize])
 
-  // Render single 2x2 preview canvas with adjustment
+  // Render single preview canvas for active photo
   useEffect(() => {
-    if (!photoImg || !singlePreviewRef.current) return
+    if (!activePhoto || !singlePreviewRef.current) return
     const canvas = singlePreviewRef.current
     canvas.width = 240
     canvas.height = 240
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const processed = renderProcessedPhotoCanvas(photoImg, 240, 240, adjustment)
+    const processed = renderProcessedPhotoCanvas(activePhoto.img, 240, 240, activeAdjustment)
     ctx.clearRect(0, 0, 240, 240)
     ctx.drawImage(processed, 0, 0)
-  }, [photoImg, adjustment])
+  }, [activePhoto, activeAdjustment])
 
   // Render Sheet Canvas Preview
   useEffect(() => {
-    if (!photoImg || !previewCanvasRef.current) return
+    if (photos.length === 0 || !previewCanvasRef.current) return
     const previewCanvas = previewCanvasRef.current
-    const processed = renderProcessedPhotoCanvas(photoImg, 600, 600, adjustment)
+
+    // Pre-render each photo at 600x600 with its specific adjustment
+    const processedCanvases = photos.map((p) =>
+      renderProcessedPhotoCanvas(p.img, 600, 600, {
+        ...p.adjustment,
+        showCuttingGuide: false
+      })
+    )
 
     // Calculate preview dimensions (scale to fit container nicely)
     const containerW = 480
@@ -201,7 +363,7 @@ export default function IdPhotoMakerTool() {
     const ctx = previewCanvas.getContext('2d')
     if (!ctx) return
 
-    // Draw white paper base with subtle inner shadow
+    // Draw white paper base
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, previewCanvas.width, previewCanvas.height)
 
@@ -220,35 +382,59 @@ export default function IdPhotoMakerTool() {
       const bw = Math.round(box.widthInches * 300 * scale)
       const bh = Math.round(box.heightInches * 300 * scale)
 
-      ctx.drawImage(processed, bx, by, bw, bh)
+      const pIdx = Math.min(box.photoIndex ?? 0, processedCanvases.length - 1)
+      const processed = processedCanvases[pIdx]
+      if (processed) {
+        ctx.drawImage(processed, bx, by, bw, bh)
+      }
 
-      if (adjustment.showCuttingGuide) {
+      if (showCuttingGuide) {
         ctx.strokeStyle = '#cbd5e1'
         ctx.lineWidth = 1
         ctx.strokeRect(bx, by, bw, bh)
       }
-    }
-  }, [photoImg, adjustment, layout])
 
-  // Export handlers
-  const getProcessedPngBytes = useCallback((): Promise<Uint8Array> => {
-    return new Promise((resolve, reject) => {
-      if (!photoImg) return reject(new Error('No photo loaded'))
-      const processed = renderProcessedPhotoCanvas(photoImg, 600, 600, adjustment)
-      processed.toBlob((blob) => {
-        if (!blob) return reject(new Error('Failed to generate PNG blob'))
-        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)))
-      }, 'image/png')
-    })
-  }, [photoImg, adjustment])
+      // If multiple photos are on sheet, draw subtle #1, #2 badge in preview
+      if (photos.length > 1) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'
+        const badgeW = 20
+        const badgeH = 14
+        ctx.fillRect(bx + 3, by + 3, badgeW, badgeH)
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 8.5px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`#${pIdx + 1}`, bx + 3 + badgeW / 2, by + 3 + badgeH / 2)
+      }
+    }
+  }, [photos, layout, showCuttingGuide])
+
+  // Process all photos to PNG bytes for exports
+  const getAllProcessedPngBytes = useCallback((): Promise<Uint8Array[]> => {
+    return Promise.all(
+      photos.map(
+        (p) =>
+          new Promise<Uint8Array>((resolve, reject) => {
+            const processed = renderProcessedPhotoCanvas(p.img, 600, 600, {
+              ...p.adjustment,
+              showCuttingGuide: false
+            })
+            processed.toBlob((blob) => {
+              if (!blob) return reject(new Error('Failed to generate PNG blob'))
+              blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)))
+            }, 'image/png')
+          })
+      )
+    )
+  }, [photos])
 
   const handleDownloadPdf = async () => {
-    if (!photoImg) return
+    if (photos.length === 0) return
     setIsExporting(true)
     try {
-      const pngBytes = await getProcessedPngBytes()
-      const pdfBytes = await generateIdPhotoPdf(pngBytes, layout, {
-        showHairlineBorder: adjustment.showCuttingGuide
+      const pngBytesList = await getAllProcessedPngBytes()
+      const pdfBytes = await generateIdPhotoPdf(pngBytesList, layout, {
+        showHairlineBorder: showCuttingGuide
       })
       const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
@@ -268,11 +454,11 @@ export default function IdPhotoMakerTool() {
   }
 
   const handleDownloadDocx = async () => {
-    if (!photoImg) return
+    if (photos.length === 0) return
     setIsExporting(true)
     try {
-      const pngBytes = await getProcessedPngBytes()
-      const docxBytes = await generateIdPhotoDocx(pngBytes, layout)
+      const pngBytesList = await getAllProcessedPngBytes()
+      const docxBytes = await generateIdPhotoDocx(pngBytesList, layout)
       const blob = new Blob([docxBytes as unknown as BlobPart], {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       })
@@ -293,10 +479,15 @@ export default function IdPhotoMakerTool() {
   }
 
   const handleDownloadPng = () => {
-    if (!photoImg) return
+    if (photos.length === 0) return
     try {
-      const processed = renderProcessedPhotoCanvas(photoImg, 600, 600, adjustment)
-      const sheetCanvas = renderSheet300DpiCanvas(processed, layout, adjustment.showCuttingGuide)
+      const processedCanvases = photos.map((p) =>
+        renderProcessedPhotoCanvas(p.img, 600, 600, {
+          ...p.adjustment,
+          showCuttingGuide: false
+        })
+      )
+      const sheetCanvas = renderSheet300DpiCanvas(processedCanvases, layout, showCuttingGuide)
       sheetCanvas.toBlob((blob) => {
         if (!blob) return
         const url = URL.createObjectURL(blob)
@@ -315,7 +506,7 @@ export default function IdPhotoMakerTool() {
   }
 
   const handlePrint = () => {
-    if (!photoImg) return
+    if (photos.length === 0) return
     window.print()
   }
 
@@ -331,17 +522,31 @@ export default function IdPhotoMakerTool() {
             <h2 className="text-[15px] font-semibold tracking-tight text-ink flex items-center gap-2">
               ID & Passport Photo Studio
               <span className="rounded bg-accent-soft px-1.5 py-0.5 font-mono text-[10px] text-accent font-medium uppercase">
-                1x1 · 2x2 · Passport
+                1x1 · 2x2 · Passport · Wallet
               </span>
             </h2>
             <p className="text-[12px] text-dim">
-              Scale, frame, and tile photos onto ready-to-print sheets with exact physical
-              dimensions.
+              Scale, frame, and tile single or multiple photos onto ready-to-print sheets with exact
+              physical dimensions.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp"
+            multiple
+            onChange={(e) => {
+              if (e.target.files) {
+                handleFiles(Array.from(e.target.files))
+                e.target.value = ''
+              }
+            }}
+            className="hidden"
+          />
+
           <Button
             variant="secondary"
             size="sm"
@@ -349,7 +554,11 @@ export default function IdPhotoMakerTool() {
             className="flex items-center gap-1.5"
           >
             <Sparkles size={13} className="text-accent" />
-            <span>Load Sample Studio Photo</span>
+            <span>
+              {photos.length === 0
+                ? 'Load Sample Studio Photo'
+                : `Add Sample Photo (${photos.length % 2 === 0 ? 'Juan' : 'Maria'})`}
+            </span>
           </Button>
         </div>
       </div>
@@ -358,13 +567,14 @@ export default function IdPhotoMakerTool() {
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 overflow-y-auto pr-1">
         {/* LEFT COLUMN: Upload & Adjustment Controls (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          {!photoSrc ? (
+          {photos.length === 0 ? (
             <Panel className="p-4 flex flex-col items-center justify-center text-center gap-3">
               <DropZone
                 accept={['.jpg', '.jpeg', '.png', '.webp']}
+                multiple={true}
                 onRawFiles={handleFiles}
-                label="Drop portrait photo here"
-                hint="Supports JPEG, PNG, and WebP — click to browse"
+                label="Drop one or more portrait photos here"
+                hint="Supports JPEG, PNG, and WebP — select multiple files or click to browse"
                 className="w-full py-8"
               />
               <p className="text-[12px] text-faint">
@@ -374,22 +584,121 @@ export default function IdPhotoMakerTool() {
             </Panel>
           ) : (
             <>
-              {/* Photo Framing Card */}
+              {/* Photo Tray Strip */}
+              <Panel className="p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-dim uppercase tracking-wider">
+                    Loaded Photos ({photos.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 text-[11px] text-accent hover:underline cursor-pointer font-medium"
+                  >
+                    <Plus size={12} /> Add More Photos
+                  </button>
+                </div>
+
+                {/* Horizontal scrollable cards */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5">
+                  {photos.map((p, idx) => {
+                    const isActive = p.id === activePhoto?.id
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => setActivePhotoId(p.id)}
+                        className={`relative flex items-center gap-2 p-1.5 rounded-lg border cursor-pointer transition-all shrink-0 ${
+                          isActive
+                            ? 'border-accent bg-accent/10 shadow-xs ring-1 ring-accent/30'
+                            : 'border-line bg-surface/60 hover:border-line-strong hover:bg-surface'
+                        }`}
+                      >
+                        <img
+                          src={p.src}
+                          alt={p.name}
+                          className="w-9 h-9 object-cover rounded border border-line"
+                        />
+                        <div className="min-w-0 pr-4">
+                          <div className="text-[11px] font-medium text-ink truncate max-w-[85px]">
+                            #{idx + 1} {p.name}
+                          </div>
+                          <div className="text-[9.5px] text-faint truncate max-w-[85px]">
+                            {p.adjustment.showNametag && p.adjustment.nametagText
+                              ? p.adjustment.nametagText
+                              : 'Standard'}
+                          </div>
+                        </div>
+                        {photos.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removePhoto(p.id)
+                            }}
+                            className="absolute top-1 right-1 p-0.5 rounded text-faint hover:text-danger hover:bg-base"
+                            title="Remove photo"
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Multi-Photo Distribution Selector */}
+                {photos.length > 1 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-line/60 text-[11px]">
+                    <span className="text-dim">Sheet Slot Allocation</span>
+                    <div className="flex items-center gap-1 bg-surface rounded p-0.5 border border-line">
+                      <button
+                        type="button"
+                        onClick={() => setDistributionMode('split')}
+                        className={`px-2 py-0.5 rounded text-[10.5px] transition-colors ${
+                          distributionMode === 'split'
+                            ? 'bg-accent text-base font-semibold shadow-xs'
+                            : 'text-dim hover:text-ink'
+                        }`}
+                        title="Distribute package slots evenly among all photos"
+                      >
+                        Split Slots
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDistributionMode('repeat')}
+                        className={`px-2 py-0.5 rounded text-[10.5px] transition-colors ${
+                          distributionMode === 'repeat'
+                            ? 'bg-accent text-base font-semibold shadow-xs'
+                            : 'text-dim hover:text-ink'
+                        }`}
+                        title="Print a full package copy for each photo"
+                      >
+                        Repeat All
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </Panel>
+
+              {/* Photo Framing Card for activePhoto */}
               <Panel className="p-4 space-y-4">
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <span className="font-semibold text-[13px] text-ink flex items-center gap-1.5">
                     <Crop size={14} className="text-accent" />
-                    Portrait Framing & Biometrics
+                    Portrait Framing —{' '}
+                    <span className="text-accent truncate max-w-[150px]">
+                      {activePhoto?.name ?? 'Photo'}
+                    </span>
                   </span>
                   <button
                     type="button"
                     onClick={() => {
-                      setPhotoSrc(null)
-                      setPhotoImg(null)
+                      setPhotos([])
+                      setActivePhotoId(null)
                     }}
                     className="text-[11px] text-faint hover:text-danger cursor-pointer"
                   >
-                    Change Photo
+                    Clear All
                   </button>
                 </div>
 
@@ -418,16 +727,18 @@ export default function IdPhotoMakerTool() {
                         <span className="flex items-center gap-1">
                           <ZoomIn size={12} /> Zoom
                         </span>
-                        <span className="font-mono">{Math.round(adjustment.zoom * 100)}%</span>
+                        <span className="font-mono">
+                          {Math.round(activeAdjustment.zoom * 100)}%
+                        </span>
                       </div>
                       <input
                         type="range"
                         min="0.8"
                         max="2.5"
                         step="0.05"
-                        value={adjustment.zoom}
+                        value={activeAdjustment.zoom}
                         onChange={(e) =>
-                          setAdjustment((prev) => ({
+                          updateActiveAdjustment((prev) => ({
                             ...prev,
                             zoom: parseFloat(e.target.value)
                           }))
@@ -441,16 +752,16 @@ export default function IdPhotoMakerTool() {
                         <span className="flex items-center gap-1">
                           <Move size={12} /> Pan Vertical
                         </span>
-                        <span className="font-mono">{adjustment.panY}px</span>
+                        <span className="font-mono">{activeAdjustment.panY}px</span>
                       </div>
                       <input
                         type="range"
                         min="-150"
                         max="150"
                         step="2"
-                        value={adjustment.panY}
+                        value={activeAdjustment.panY}
                         onChange={(e) =>
-                          setAdjustment((prev) => ({
+                          updateActiveAdjustment((prev) => ({
                             ...prev,
                             panY: parseInt(e.target.value, 10)
                           }))
@@ -475,7 +786,7 @@ export default function IdPhotoMakerTool() {
                       <button
                         type="button"
                         onClick={() =>
-                          setAdjustment((prev) => ({
+                          updateActiveAdjustment((prev) => ({
                             ...prev,
                             zoom: 1.0,
                             panX: 0,
@@ -508,13 +819,13 @@ export default function IdPhotoMakerTool() {
                         key={bg.id}
                         type="button"
                         onClick={() =>
-                          setAdjustment((prev) => ({
+                          updateActiveAdjustment((prev) => ({
                             ...prev,
                             backgroundColor: bg.id as PhotoAdjustmentConfig['backgroundColor']
                           }))
                         }
                         className={`px-2.5 py-1 rounded text-[11px] font-medium border cursor-pointer transition-all ${
-                          adjustment.backgroundColor === bg.id
+                          activeAdjustment.backgroundColor === bg.id
                             ? 'border-accent bg-accent-soft text-accent'
                             : 'border-line bg-surface/60 text-dim hover:text-ink'
                         }`}
@@ -535,9 +846,9 @@ export default function IdPhotoMakerTool() {
                     <input
                       type="checkbox"
                       id="nametag-check"
-                      checked={adjustment.showNametag}
+                      checked={activeAdjustment.showNametag}
                       onChange={(e) =>
-                        setAdjustment((prev) => ({
+                        updateActiveAdjustment((prev) => ({
                           ...prev,
                           showNametag: e.target.checked
                         }))
@@ -545,14 +856,14 @@ export default function IdPhotoMakerTool() {
                       className="accent-accent cursor-pointer"
                     />
                   </div>
-                  {adjustment.showNametag && (
+                  {activeAdjustment.showNametag && (
                     <div className="space-y-1">
                       <input
                         type="text"
                         placeholder="SURNAME, FIRST NAME, M.I."
-                        value={adjustment.nametagText}
+                        value={activeAdjustment.nametagText}
                         onChange={(e) =>
-                          setAdjustment((prev) => ({
+                          updateActiveAdjustment((prev) => ({
                             ...prev,
                             nametagText: e.target.value
                           }))
@@ -591,7 +902,7 @@ export default function IdPhotoMakerTool() {
                       >
                         <div className="font-medium text-[12px]">{p.name}</div>
                         <div className="text-[10px] text-faint font-mono">
-                          {p.widthInches}x{p.heightInches}"
+                          {p.widthInches}″ × {p.heightInches}″
                         </div>
                       </button>
                     )
@@ -656,7 +967,7 @@ export default function IdPhotoMakerTool() {
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-[12px] text-ink">Custom Quantities</div>
                         {selectedPreset === 'custom' && (
-                          <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-line/60">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 pt-2 border-t border-line/60">
                             <div>
                               <span className="text-[10px] text-faint block">1x1 Inch</span>
                               <input
@@ -705,6 +1016,22 @@ export default function IdPhotoMakerTool() {
                                 className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] font-mono text-ink"
                               />
                             </div>
+                            <div>
+                              <span className="text-[10px] text-faint block">Wallet (2.5x3.5)</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="8"
+                                value={customCounts.wallet}
+                                onChange={(e) =>
+                                  setCustomCounts((prev) => ({
+                                    ...prev,
+                                    wallet: Math.max(0, parseInt(e.target.value, 10) || 0)
+                                  }))
+                                }
+                                className="w-full rounded border border-line bg-base px-2 py-1 text-[11px] font-mono text-ink"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -720,13 +1047,8 @@ export default function IdPhotoMakerTool() {
                   <input
                     type="checkbox"
                     id="cutting-check"
-                    checked={adjustment.showCuttingGuide}
-                    onChange={(e) =>
-                      setAdjustment((prev) => ({
-                        ...prev,
-                        showCuttingGuide: e.target.checked
-                      }))
-                    }
+                    checked={showCuttingGuide}
+                    onChange={(e) => setShowCuttingGuide(e.target.checked)}
                     className="accent-accent cursor-pointer"
                   />
                 </div>
@@ -744,6 +1066,7 @@ export default function IdPhotoMakerTool() {
                 <span className="font-medium text-[13px] text-ink">Document Sheet Preview</span>
                 <span className="rounded bg-raised px-2 py-0.5 font-mono text-[10.5px] text-faint border border-line">
                   {PAPER_DIMENSIONS[paperSize].name} · {layout.totalPhotos} Photos
+                  {photos.length > 1 ? ` (${photos.length} people)` : ''}
                 </span>
               </div>
 
@@ -754,7 +1077,7 @@ export default function IdPhotoMakerTool() {
 
             {/* Document Canvas Preview Surface */}
             <div className="flex-1 overflow-auto bg-base/80 rounded-md border border-line p-4 flex items-center justify-center my-3 min-h-[360px]">
-              {photoSrc ? (
+              {photos.length > 0 ? (
                 <div className="relative rounded bg-white shadow-2xl transition-transform">
                   <canvas ref={previewCanvasRef} className="rounded block" />
                 </div>
@@ -763,8 +1086,8 @@ export default function IdPhotoMakerTool() {
                   <ImageIcon size={32} className="mx-auto text-faint/50" />
                   <p className="text-[13px] text-dim">No photo loaded yet</p>
                   <p className="text-[11.5px]">
-                    Upload a picture or click "Load Sample Studio Photo" above to see the sheet
-                    layout.
+                    Upload pictures or click &ldquo;Load Sample Studio Photo&rdquo; above to see the
+                    sheet layout.
                   </p>
                 </div>
               )}
@@ -787,7 +1110,7 @@ export default function IdPhotoMakerTool() {
                   variant="secondary"
                   size="sm"
                   onClick={handlePrint}
-                  disabled={!photoImg || isExporting}
+                  disabled={photos.length === 0 || isExporting}
                   className="flex items-center gap-1.5"
                   title="Print directly to printer"
                 >
@@ -799,9 +1122,9 @@ export default function IdPhotoMakerTool() {
                   variant="secondary"
                   size="sm"
                   onClick={handleDownloadPng}
-                  disabled={!photoImg || isExporting}
+                  disabled={photos.length === 0 || isExporting}
                   className="flex items-center gap-1.5"
-                  title="Export high-resolution 300 DPI image"
+                  title="Export high-resolution 300 DPI sheet image"
                 >
                   <ImageIcon size={13} />
                   <span>Download Image</span>
@@ -811,7 +1134,7 @@ export default function IdPhotoMakerTool() {
                   variant="secondary"
                   size="sm"
                   onClick={handleDownloadDocx}
-                  disabled={!photoImg || isExporting}
+                  disabled={photos.length === 0 || isExporting}
                   className="flex items-center gap-1.5"
                   title="Export Microsoft Word (.docx) document"
                 >
@@ -823,7 +1146,7 @@ export default function IdPhotoMakerTool() {
                   variant="primary"
                   size="sm"
                   onClick={handleDownloadPdf}
-                  disabled={!photoImg || isExporting}
+                  disabled={photos.length === 0 || isExporting}
                   className="flex items-center gap-1.5"
                   title="Export 100% scale vector PDF"
                 >

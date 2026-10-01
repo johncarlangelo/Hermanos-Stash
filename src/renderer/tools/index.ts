@@ -1107,6 +1107,31 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    id: 'background-remover',
+    name: 'Background Remover',
+    category: 'images',
+    description:
+      'Isolate foreground objects, remove solid or studio backgrounds, and export transparent PNGs with feathered edges.',
+    tags: [
+      'background',
+      'remover',
+      'remove-bg',
+      'transparent',
+      'cutout',
+      'isolate',
+      'alpha',
+      'chroma',
+      'keying',
+      'matte'
+    ],
+    icon: 'scissors',
+    version: '1.0.0',
+    capabilities: {
+      acceptsFiles: true,
+      producesFiles: true
+    }
+  },
+  {
     id: 'token-counter',
     name: 'Token & Context Studio',
     category: 'future',
@@ -1244,6 +1269,7 @@ const ChecksumVerifierTool = lazy(() => import('./checksum-verifier/ChecksumVeri
 const AudioTrimmerTool = lazy(() => import('./audio-trimmer/AudioTrimmerTool'))
 const AudioNormalizeTool = lazy(() => import('./audio-normalize/AudioNormalizeTool'))
 const IdPhotoMakerTool = lazy(() => import('./id-photo-maker/IdPhotoMakerTool'))
+const BackgroundRemoverTool = lazy(() => import('./background-remover/BackgroundRemoverTool'))
 const TokenCounterTool = lazy(() => import('./token-counter/TokenCounterTool'))
 const LocalLlmPlaygroundTool = lazy(() => import('./local-llm-playground/LocalLlmPlaygroundTool'))
 
@@ -1324,6 +1350,7 @@ export const TOOL_COMPONENTS: Record<string, React.LazyExoticComponent<React.Com
   'audio-trimmer': AudioTrimmerTool,
   'audio-normalize': AudioNormalizeTool,
   'id-photo-maker': IdPhotoMakerTool,
+  'background-remover': BackgroundRemoverTool,
   'token-counter': TokenCounterTool,
   'local-llm-playground': LocalLlmPlaygroundTool
 }

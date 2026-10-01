@@ -3,7 +3,7 @@
 
 # Queue Workflow Compatibility Matrix
 
-**Workflow feature version:** `0.5.0` · **Registered tools:** 78 · **Ordered tool pairs:** 6084 · **Port combinations per pair:** 4 (files→files, text→text, files→text, text→files) · **Total documented combinations:** 24336
+**Workflow feature version:** `0.6.0` · **Registered tools:** 79 · **Ordered tool pairs:** 6241 · **Port combinations per pair:** 4 (files→files, text→text, files→text, text→files) · **Total documented combinations:** 24964
 
 **Source of truth:** the committed CSVs in this folder, which are written only by `workflow.test.ts` after asserting every row against the independent audit fixture (`compatibility-audit.ts`). This document is a human-readable rendering of those CSVs; the CSVs remain the pair-level record.
 
@@ -13,8 +13,8 @@
 
 | Combination | Result |
 | --- | --- |
-| files → text, text → files | Always REJECT (mismatched ports) — 6084 pairs × 2 = 12168 combinations |
-| files → files | Valid for 450 pairs; rejected for 5634 with a media-domain reason |
+| files → text, text → files | Always REJECT (mismatched ports) — 6241 pairs × 2 = 12482 combinations |
+| files → files | Valid for 482 pairs; rejected for 5759 with a media-domain reason |
 | text → text | Valid for 1148 pairs; rejected when either side lacks text ports |
 
 ## Domain transition summary (file port)
@@ -24,7 +24,7 @@ Allowed file-wire counts by output domain of the source → input domain of the 
 | out \ in | any | image | archive | document | video | audio | textfile |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | any | 24 | 0 | 0 | 0 | 0 | 0 | 0 |
-| image | 60 | 150 | 0 | 0 | 0 | 0 | 0 |
+| image | 66 | 176 | 0 | 0 | 0 | 0 | 0 |
 | archive | 12 | 0 | 4 | 0 | 0 | 0 | 0 |
 | document | 54 | 0 | 0 | 90 | 0 | 0 | 0 |
 | video | 12 | 0 | 0 | 0 | 8 | 0 | 0 |
@@ -111,6 +111,7 @@ Allowed file-wire counts by output domain of the source → input domain of the 
 | `audio-trimmer` | audio | audio | false | false |
 | `audio-normalize` | audio | audio | false | false |
 | `id-photo-maker` | image | any | false | false |
+| `background-remover` | image | image | false | false |
 | `token-counter` | textfile | - | true | true |
 | `local-llm-playground` | - | - | true | true |
 
@@ -198,6 +199,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "JSON Formatter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "JSON Formatter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "JSON Formatter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "JSON Formatter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "JSON Formatter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "JSON Formatter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -281,6 +283,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Base64 Encoder / Decoder" does not produce files. | Compatible text ports; content validation still required |
 
@@ -364,6 +367,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Markdown Preview" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Markdown Preview" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Markdown Preview" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Markdown Preview" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Markdown Preview" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Markdown Preview" does not produce files. | Compatible text ports; content validation still required |
 
@@ -447,6 +451,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "YAML ⇄ JSON Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -530,6 +535,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "CSV ⇄ JSON Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -613,6 +619,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Text Diff" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Text Diff" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Text Diff" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Text Diff" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Text Diff" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Text Diff" does not produce files. | Compatible text ports; content validation still required |
 
@@ -696,6 +703,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "File Metadata Viewer" does not produce files. | "File Metadata Viewer" does not produce text. |
 
@@ -779,6 +787,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Image Preview" does not produce files. | "Image Preview" does not produce text. |
 
@@ -862,6 +871,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "QR Code Generator" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "QR Code Generator" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "QR Code Generator" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "QR Code Generator" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "QR Code Generator" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "QR Code Generator" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "QR Code Generator" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "QR Code Generator" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "QR Code Generator" does not produce text. |
 
@@ -945,6 +955,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Regex Tester" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Regex Tester" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Regex Tester" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Regex Tester" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Regex Tester" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Regex Tester" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1028,6 +1039,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "JWT Decoder" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "JWT Decoder" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "JWT Decoder" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "JWT Decoder" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "JWT Decoder" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "JWT Decoder" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1111,6 +1123,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Unix Timestamp Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1194,6 +1207,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Hash Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Hash Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Hash Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Hash Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Hash Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Hash Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1277,6 +1291,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "URL Utilities" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "URL Utilities" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "URL Utilities" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "URL Utilities" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "URL Utilities" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "URL Utilities" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1360,6 +1375,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "UUID Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "UUID Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "UUID Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "UUID Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "UUID Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "UUID Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1443,6 +1459,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "QR Decoder" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "QR Decoder" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "QR Decoder" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "QR Decoder" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "QR Decoder" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "QR Decoder" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1526,6 +1543,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Passphrase Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Passphrase Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Passphrase Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Passphrase Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Passphrase Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Passphrase Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1609,6 +1627,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Prompt Library" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Prompt Library" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Prompt Library" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Prompt Library" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Prompt Library" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Prompt Library" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1692,6 +1711,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "SQL Formatter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "SQL Formatter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "SQL Formatter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "SQL Formatter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "SQL Formatter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "SQL Formatter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1775,6 +1795,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not produce files. | "Cron Helper" does not produce text. |
 
@@ -1858,6 +1879,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Case Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Case Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Case Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Case Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Case Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Case Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -1941,6 +1963,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "HTML Entities & Slug" does not produce files. | Compatible text ports; content validation still required |
 
@@ -2024,6 +2047,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not produce files. | "MIME Type Lookup" does not produce text. |
 
@@ -2107,6 +2131,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not produce files. | "HTTP Status Codes" does not produce text. |
 
@@ -2190,6 +2215,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Converter" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Converter" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Converter" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Converter" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Converter" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Converter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Converter" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Image Converter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Image Converter" does not produce text. |
 
@@ -2273,6 +2299,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Compressor" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Compressor" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Compressor" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Compressor" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Compressor" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Compressor" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Compressor" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Image Compressor" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Image Compressor" does not produce text. |
 
@@ -2356,6 +2383,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP Creator" to "Audio Waveform Visualizer & Trimmer": produces archive files; requires audio files. Select or extract compatible artifacts first. | "ZIP Creator" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP Creator" to "Audio Loudness & Volume Normalizer": produces archive files; requires audio files. Select or extract compatible artifacts first. | "ZIP Creator" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP Creator" to "ID & Passport Photo Studio": produces archive files; requires image files. Select or extract compatible artifacts first. | "ZIP Creator" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP Creator" to "Background Remover": produces archive files; requires image files. Select or extract compatible artifacts first. | "ZIP Creator" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP Creator" to "Token & Context Studio": produces archive files; requires textfile files. Select or extract compatible artifacts first. | "ZIP Creator" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "ZIP Creator" does not produce text. |
 
@@ -2439,6 +2467,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP & Archive Extractor" to "Audio Waveform Visualizer & Trimmer": produces any files; requires audio files. Select or extract compatible artifacts first. | "ZIP & Archive Extractor" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP & Archive Extractor" to "Audio Loudness & Volume Normalizer": produces any files; requires audio files. Select or extract compatible artifacts first. | "ZIP & Archive Extractor" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP & Archive Extractor" to "ID & Passport Photo Studio": produces any files; requires image files. Select or extract compatible artifacts first. | "ZIP & Archive Extractor" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP & Archive Extractor" to "Background Remover": produces any files; requires image files. Select or extract compatible artifacts first. | "ZIP & Archive Extractor" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "ZIP & Archive Extractor" to "Token & Context Studio": produces any files; requires textfile files. Select or extract compatible artifacts first. | "ZIP & Archive Extractor" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "ZIP & Archive Extractor" does not produce text. |
 
@@ -2522,6 +2551,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not produce files. | "Batch Rename" does not produce text. |
 
@@ -2605,6 +2635,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Merger" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Merger" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Merger" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Merger" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Merger" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Merger" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Merger" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Merger" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Merger" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Merger" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Merger" does not produce text. |
 
@@ -2688,6 +2719,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Splitter" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Splitter" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Splitter" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Splitter" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Splitter" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Splitter" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Splitter" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Splitter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Splitter" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Splitter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Splitter" does not produce text. |
 
@@ -2771,6 +2803,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "PDF Preview" does not produce files. | "PDF Preview" does not produce text. |
 
@@ -2854,6 +2887,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Rotator" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Rotator" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Rotator" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Rotator" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Rotator" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Rotator" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Rotator" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Rotator" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Rotator" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Rotator" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Rotator" does not produce text. |
 
@@ -2937,6 +2971,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Optimizer" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Optimizer" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Optimizer" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Optimizer" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Optimizer" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Optimizer" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Optimizer" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Optimizer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Optimizer" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Optimizer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Optimizer" does not produce text. |
 
@@ -3020,6 +3055,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Reorderer" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Page Reorderer" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Reorderer" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Page Reorderer" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Reorderer" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Page Reorderer" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Reorderer" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Page Reorderer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Reorderer" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Page Reorderer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Page Reorderer" does not produce text. |
 
@@ -3103,6 +3139,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Images → PDF" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "Images → PDF" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Images → PDF" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "Images → PDF" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Images → PDF" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "Images → PDF" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Images → PDF" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "Images → PDF" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Images → PDF" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "Images → PDF" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Images → PDF" does not produce text. |
 
@@ -3186,6 +3223,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF → Images" to "Audio Waveform Visualizer & Trimmer": produces archive files; requires audio files. Select or extract compatible artifacts first. | "PDF → Images" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF → Images" to "Audio Loudness & Volume Normalizer": produces archive files; requires audio files. Select or extract compatible artifacts first. | "PDF → Images" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF → Images" to "ID & Passport Photo Studio": produces archive files; requires image files. Select or extract compatible artifacts first. | "PDF → Images" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF → Images" to "Background Remover": produces archive files; requires image files. Select or extract compatible artifacts first. | "PDF → Images" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF → Images" to "Token & Context Studio": produces archive files; requires textfile files. Select or extract compatible artifacts first. | "PDF → Images" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF → Images" does not produce text. |
 
@@ -3269,6 +3307,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "EXIF Inspector" does not produce files. | "EXIF Inspector" does not produce text. |
 
@@ -3352,6 +3391,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Converter" to "Audio Waveform Visualizer & Trimmer": produces video files; requires audio files. Select or extract compatible artifacts first. | "Video Converter" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Converter" to "Audio Loudness & Volume Normalizer": produces video files; requires audio files. Select or extract compatible artifacts first. | "Video Converter" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Converter" to "ID & Passport Photo Studio": produces video files; requires image files. Select or extract compatible artifacts first. | "Video Converter" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Converter" to "Background Remover": produces video files; requires image files. Select or extract compatible artifacts first. | "Video Converter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Converter" to "Token & Context Studio": produces video files; requires textfile files. Select or extract compatible artifacts first. | "Video Converter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Video Converter" does not produce text. |
 
@@ -3435,6 +3475,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Compressor" to "Audio Waveform Visualizer & Trimmer": produces video files; requires audio files. Select or extract compatible artifacts first. | "Video Compressor" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Compressor" to "Audio Loudness & Volume Normalizer": produces video files; requires audio files. Select or extract compatible artifacts first. | "Video Compressor" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Compressor" to "ID & Passport Photo Studio": produces video files; requires image files. Select or extract compatible artifacts first. | "Video Compressor" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Compressor" to "Background Remover": produces video files; requires image files. Select or extract compatible artifacts first. | "Video Compressor" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video Compressor" to "Token & Context Studio": produces video files; requires textfile files. Select or extract compatible artifacts first. | "Video Compressor" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Video Compressor" does not produce text. |
 
@@ -3518,6 +3559,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video → GIF" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Video → GIF" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video → GIF" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Video → GIF" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Video → GIF" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Video → GIF" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Video → GIF" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Video → GIF" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Video → GIF" does not produce text. |
 
@@ -3601,6 +3643,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Extractor" does not produce text. |
 | audio-normalize | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Extractor" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Extractor" to "ID & Passport Photo Studio": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Extractor" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Extractor" to "Background Remover": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Extractor" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Extractor" to "Token & Context Studio": produces audio files; requires textfile files. Select or extract compatible artifacts first. | "Audio Extractor" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Audio Extractor" does not produce text. |
 
@@ -3684,6 +3727,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Converter" does not produce text. |
 | audio-normalize | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Converter" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Converter" to "ID & Passport Photo Studio": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Converter" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Converter" to "Background Remover": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Converter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Converter" to "Token & Context Studio": produces audio files; requires textfile files. Select or extract compatible artifacts first. | "Audio Converter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Audio Converter" does not produce text. |
 
@@ -3767,6 +3811,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Color Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Color Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Color Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Color Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Color Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Color Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -3850,6 +3895,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Brand Bible Creator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Brand Bible Creator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Brand Bible Creator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Brand Bible Creator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Brand Bible Creator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Brand Bible Creator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -3933,6 +3979,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "JSON → TypeScript Types" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4016,6 +4063,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Watermarker" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Watermarker" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Watermarker" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Image Watermarker" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Watermarker" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Image Watermarker" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Watermarker" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Image Watermarker" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Image Watermarker" does not produce text. |
 
@@ -4099,6 +4147,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Icon Pack Generator" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Icon Pack Generator" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Icon Pack Generator" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Icon Pack Generator" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Icon Pack Generator" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Icon Pack Generator" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Icon Pack Generator" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Icon Pack Generator" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Icon Pack Generator" does not produce text. |
 
@@ -4182,6 +4231,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Social Preset Resizer" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Social Preset Resizer" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Social Preset Resizer" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Social Preset Resizer" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Social Preset Resizer" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Social Preset Resizer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Social Preset Resizer" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Social Preset Resizer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Social Preset Resizer" does not produce text. |
 
@@ -4265,6 +4315,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "PDF → Text" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "PDF → Text" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "PDF → Text" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "PDF → Text" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "PDF → Text" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "PDF → Text" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4348,6 +4399,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Image OCR Extractor" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Image OCR Extractor" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Image OCR Extractor" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Image OCR Extractor" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Image OCR Extractor" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Image OCR Extractor" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4431,6 +4483,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Archive Inspector" to "Audio Waveform Visualizer & Trimmer": produces any files; requires audio files. Select or extract compatible artifacts first. | "Archive Inspector" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Archive Inspector" to "Audio Loudness & Volume Normalizer": produces any files; requires audio files. Select or extract compatible artifacts first. | "Archive Inspector" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Archive Inspector" to "ID & Passport Photo Studio": produces any files; requires image files. Select or extract compatible artifacts first. | "Archive Inspector" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Archive Inspector" to "Background Remover": produces any files; requires image files. Select or extract compatible artifacts first. | "Archive Inspector" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Archive Inspector" to "Token & Context Studio": produces any files; requires textfile files. Select or extract compatible artifacts first. | "Archive Inspector" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Archive Inspector" does not produce text. |
 
@@ -4514,6 +4567,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "SVG & Vector Studio" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "SVG & Vector Studio" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | Cannot connect "SVG & Vector Studio" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | Compatible text ports; content validation still required |
 
@@ -4597,6 +4651,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4680,6 +4735,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Image → ASCII Art Converter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4763,6 +4819,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "ASCII & Unicode Table Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4846,6 +4903,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not produce files. | Compatible text ports; content validation still required |
 
@@ -4929,6 +4987,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5012,6 +5071,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5095,6 +5155,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "JSON Schema Validator & Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5178,6 +5239,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5261,6 +5323,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Cryptographic Keypair Generator" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5344,6 +5407,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "SemVer Calculator & Range Tester" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5427,6 +5491,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Image Color Palette & Swatch Extractor" does not produce files. | Compatible text ports; content validation still required |
 
@@ -5510,6 +5575,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Slicer & Grid Splitter" to "Audio Waveform Visualizer & Trimmer": produces any files; requires audio files. Select or extract compatible artifacts first. | "Image Slicer & Grid Splitter" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Slicer & Grid Splitter" to "Audio Loudness & Volume Normalizer": produces any files; requires audio files. Select or extract compatible artifacts first. | "Image Slicer & Grid Splitter" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Slicer & Grid Splitter" to "ID & Passport Photo Studio": produces any files; requires image files. Select or extract compatible artifacts first. | "Image Slicer & Grid Splitter" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Slicer & Grid Splitter" to "Background Remover": produces any files; requires image files. Select or extract compatible artifacts first. | "Image Slicer & Grid Splitter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Image Slicer & Grid Splitter" to "Token & Context Studio": produces any files; requires textfile files. Select or extract compatible artifacts first. | "Image Slicer & Grid Splitter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Image Slicer & Grid Splitter" does not produce text. |
 
@@ -5593,6 +5659,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Contact Sheet & Collage Grid Builder" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Contact Sheet & Collage Grid Builder" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Contact Sheet & Collage Grid Builder" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Contact Sheet & Collage Grid Builder" does not produce text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Contact Sheet & Collage Grid Builder" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Contact Sheet & Collage Grid Builder" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Contact Sheet & Collage Grid Builder" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Contact Sheet & Collage Grid Builder" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Contact Sheet & Collage Grid Builder" does not produce text. |
 
@@ -5676,6 +5743,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "CSS & Vector Gradient Studio" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "CSS & Vector Gradient Studio" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | Cannot connect "CSS & Vector Gradient Studio" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | Compatible text ports; content validation still required |
 
@@ -5759,6 +5827,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Numberer & Bates Stamper" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Page Numberer & Bates Stamper" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Numberer & Bates Stamper" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Page Numberer & Bates Stamper" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Numberer & Bates Stamper" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Page Numberer & Bates Stamper" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Numberer & Bates Stamper" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Page Numberer & Bates Stamper" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Page Numberer & Bates Stamper" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Page Numberer & Bates Stamper" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Page Numberer & Bates Stamper" does not produce text. |
 
@@ -5842,6 +5911,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Watermarker & Stamp Applier" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Watermarker & Stamp Applier" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Watermarker & Stamp Applier" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "PDF Watermarker & Stamp Applier" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Watermarker & Stamp Applier" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Watermarker & Stamp Applier" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Watermarker & Stamp Applier" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "PDF Watermarker & Stamp Applier" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "PDF Watermarker & Stamp Applier" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "PDF Watermarker & Stamp Applier" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "PDF Watermarker & Stamp Applier" does not produce text. |
 
@@ -5925,6 +5995,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Markdown / Text → PDF Exporter" to "Audio Waveform Visualizer & Trimmer": produces document files; requires audio files. Select or extract compatible artifacts first. | "Markdown / Text → PDF Exporter" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Markdown / Text → PDF Exporter" to "Audio Loudness & Volume Normalizer": produces document files; requires audio files. Select or extract compatible artifacts first. | "Markdown / Text → PDF Exporter" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Markdown / Text → PDF Exporter" to "ID & Passport Photo Studio": produces document files; requires image files. Select or extract compatible artifacts first. | "Markdown / Text → PDF Exporter" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Markdown / Text → PDF Exporter" to "Background Remover": produces document files; requires image files. Select or extract compatible artifacts first. | "Markdown / Text → PDF Exporter" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Markdown / Text → PDF Exporter" to "Token & Context Studio": produces document files; requires textfile files. Select or extract compatible artifacts first. | "Markdown / Text → PDF Exporter" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Markdown / Text → PDF Exporter" does not produce text. |
 
@@ -6008,6 +6079,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Duplicate File & Hash Matcher" does not produce files. | Compatible text ports; content validation still required |
 
@@ -6091,6 +6163,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Disk Space & Folder Tree Analyzer" does not produce files. | Compatible text ports; content validation still required |
 
@@ -6174,6 +6247,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "File Checksum Signature Verifier" does not produce files. | Compatible text ports; content validation still required |
 
@@ -6257,6 +6331,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Waveform Visualizer & Trimmer" does not produce text. |
 | audio-normalize | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Waveform Visualizer & Trimmer" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Waveform Visualizer & Trimmer" to "ID & Passport Photo Studio": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Waveform Visualizer & Trimmer" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Waveform Visualizer & Trimmer" to "Background Remover": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Waveform Visualizer & Trimmer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Waveform Visualizer & Trimmer" to "Token & Context Studio": produces audio files; requires textfile files. Select or extract compatible artifacts first. | "Audio Waveform Visualizer & Trimmer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Audio Waveform Visualizer & Trimmer" does not produce text. |
 
@@ -6340,6 +6415,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Loudness & Volume Normalizer" does not produce text. |
 | audio-normalize | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Audio Loudness & Volume Normalizer" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Loudness & Volume Normalizer" to "ID & Passport Photo Studio": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Loudness & Volume Normalizer" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Loudness & Volume Normalizer" to "Background Remover": produces audio files; requires image files. Select or extract compatible artifacts first. | "Audio Loudness & Volume Normalizer" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Audio Loudness & Volume Normalizer" to "Token & Context Studio": produces audio files; requires textfile files. Select or extract compatible artifacts first. | "Audio Loudness & Volume Normalizer" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Audio Loudness & Volume Normalizer" does not produce text. |
 
@@ -6423,8 +6499,93 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "ID & Passport Photo Studio" to "Audio Waveform Visualizer & Trimmer": produces any files; requires audio files. Select or extract compatible artifacts first. | "ID & Passport Photo Studio" does not produce text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "ID & Passport Photo Studio" to "Audio Loudness & Volume Normalizer": produces any files; requires audio files. Select or extract compatible artifacts first. | "ID & Passport Photo Studio" does not produce text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | Cannot connect "ID & Passport Photo Studio" to "ID & Passport Photo Studio": produces any files; requires image files. Select or extract compatible artifacts first. | "ID & Passport Photo Studio" does not produce text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | Cannot connect "ID & Passport Photo Studio" to "Background Remover": produces any files; requires image files. Select or extract compatible artifacts first. | "ID & Passport Photo Studio" does not produce text. |
 | token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "ID & Passport Photo Studio" to "Token & Context Studio": produces any files; requires textfile files. Select or extract compatible artifacts first. | "ID & Passport Photo Studio" does not produce text. |
 | local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "ID & Passport Photo Studio" does not produce text. |
+
+### background-remover
+
+| Destination | files → files | text → text | files → text | text → files | File reason | Text reason |
+| --- | --- | --- | --- | --- | --- | --- |
+| json-format | REJECT | REJECT | REJECT | REJECT | "JSON Formatter" does not accept files. | "Background Remover" does not produce text. |
+| base64-codec | REJECT | REJECT | REJECT | REJECT | "Base64 Encoder / Decoder" does not accept files. | "Background Remover" does not produce text. |
+| markdown-preview | REJECT | REJECT | REJECT | REJECT | "Markdown Preview" does not accept files. | "Background Remover" does not produce text. |
+| yaml-json | REJECT | REJECT | REJECT | REJECT | "YAML ⇄ JSON Converter" does not accept files. | "Background Remover" does not produce text. |
+| csv-json | REJECT | REJECT | REJECT | REJECT | "CSV ⇄ JSON Converter" does not accept files. | "Background Remover" does not produce text. |
+| text-diff | REJECT | REJECT | REJECT | REJECT | "Text Diff" does not accept files. | "Background Remover" does not produce text. |
+| file-metadata | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| image-preview | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| qr-generator | REJECT | REJECT | REJECT | REJECT | "QR Code Generator" does not accept files. | "Background Remover" does not produce text. |
+| regex-tester | REJECT | REJECT | REJECT | REJECT | "Regex Tester" does not accept files. | "Background Remover" does not produce text. |
+| jwt-decoder | REJECT | REJECT | REJECT | REJECT | "JWT Decoder" does not accept files. | "Background Remover" does not produce text. |
+| timestamp-converter | REJECT | REJECT | REJECT | REJECT | "Unix Timestamp Converter" does not accept files. | "Background Remover" does not produce text. |
+| hash-generator | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| url-utils | REJECT | REJECT | REJECT | REJECT | "URL Utilities" does not accept files. | "Background Remover" does not produce text. |
+| uuid-generator | REJECT | REJECT | REJECT | REJECT | "UUID Generator" does not accept files. | "Background Remover" does not produce text. |
+| qr-decoder | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| passphrase-generator | REJECT | REJECT | REJECT | REJECT | "Passphrase Generator" does not accept files. | "Background Remover" does not produce text. |
+| prompt-library | REJECT | REJECT | REJECT | REJECT | "Prompt Library" does not accept files. | "Background Remover" does not produce text. |
+| sql-formatter | REJECT | REJECT | REJECT | REJECT | "SQL Formatter" does not accept files. | "Background Remover" does not produce text. |
+| cron-explainer | REJECT | REJECT | REJECT | REJECT | "Cron Helper" does not accept files. | "Background Remover" does not produce text. |
+| text-cases | REJECT | REJECT | REJECT | REJECT | "Case Converter" does not accept files. | "Background Remover" does not produce text. |
+| html-entities | REJECT | REJECT | REJECT | REJECT | "HTML Entities & Slug" does not accept files. | "Background Remover" does not produce text. |
+| mime-lookup | REJECT | REJECT | REJECT | REJECT | "MIME Type Lookup" does not accept files. | "Background Remover" does not produce text. |
+| http-status | REJECT | REJECT | REJECT | REJECT | "HTTP Status Codes" does not accept files. | "Background Remover" does not produce text. |
+| image-convert | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| image-compress | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| zip-create | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| zip-extract | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "ZIP & Archive Extractor": produces image files; requires archive files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| batch-rename | REJECT | REJECT | REJECT | REJECT | "Batch Rename" does not accept files. | "Background Remover" does not produce text. |
+| pdf-merge | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Merger": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-split | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Splitter": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-preview | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Preview": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-rotate | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Rotator": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-compress | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Optimizer": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-reorder | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Page Reorderer": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| images-to-pdf | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| pdf-to-images | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF → Images": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| image-exif | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| video-convert | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Video Converter": produces image files; requires video files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| video-compress | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Video Compressor": produces image files; requires video files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| video-to-gif | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Video → GIF": produces image files; requires video files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| extract-audio | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Audio Extractor": produces image files; requires video files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| audio-convert | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Audio Converter": produces image files; requires audio files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| color-converter | REJECT | REJECT | REJECT | REJECT | "Color Converter" does not accept files. | "Background Remover" does not produce text. |
+| brand-bible | REJECT | REJECT | REJECT | REJECT | "Brand Bible Creator" does not accept files. | "Background Remover" does not produce text. |
+| json-to-types | REJECT | REJECT | REJECT | REJECT | "JSON → TypeScript Types" does not accept files. | "Background Remover" does not produce text. |
+| image-watermark | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| icon-pack | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| social-resizer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| pdf-to-text | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF → Text": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| image-ocr | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| archive-inspect | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Archive Inspector": produces image files; requires archive files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| svg-creator | REJECT | REJECT | REJECT | REJECT | "SVG & Vector Studio" does not accept files. | "Background Remover" does not produce text. |
+| ascii-banner | REJECT | REJECT | REJECT | REJECT | "ASCII Art & Retro Banner Generator" does not accept files. | "Background Remover" does not produce text. |
+| image-to-ascii | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| ascii-table | REJECT | REJECT | REJECT | REJECT | "ASCII & Unicode Table Generator" does not accept files. | "Background Remover" does not produce text. |
+| xml-json | REJECT | REJECT | REJECT | REJECT | "XML ⇄ JSON Converter & Formatter" does not accept files. | "Background Remover" does not produce text. |
+| text-analyzer | REJECT | REJECT | REJECT | REJECT | "Text Statistics & Readability Analyzer" does not accept files. | "Background Remover" does not produce text. |
+| curl-converter | REJECT | REJECT | REJECT | REJECT | "cURL ⇄ Multi-Language Code Generator" does not accept files. | "Background Remover" does not produce text. |
+| json-schema | REJECT | REJECT | REJECT | REJECT | "JSON Schema Validator & Generator" does not accept files. | "Background Remover" does not produce text. |
+| chmod-calculator | REJECT | REJECT | REJECT | REJECT | "Chmod & Unix Permission Calculator" does not accept files. | "Background Remover" does not produce text. |
+| keypair-generator | REJECT | REJECT | REJECT | REJECT | "Cryptographic Keypair Generator" does not accept files. | "Background Remover" does not produce text. |
+| semver-calculator | REJECT | REJECT | REJECT | REJECT | "SemVer Calculator & Range Tester" does not accept files. | "Background Remover" does not produce text. |
+| image-palette | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| image-slicer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| image-grid | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| gradient-studio | REJECT | REJECT | REJECT | REJECT | "CSS & Vector Gradient Studio" does not accept files. | "Background Remover" does not produce text. |
+| pdf-numberer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Page Numberer & Bates Stamper": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| pdf-watermark | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "PDF Watermarker & Stamp Applier": produces image files; requires document files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| markdown-to-pdf | REJECT | REJECT | REJECT | REJECT | "Markdown / Text → PDF Exporter" does not accept files. | "Background Remover" does not produce text. |
+| duplicate-finder | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| folder-analyzer | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| checksum-verifier | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| audio-trimmer | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Audio Waveform Visualizer & Trimmer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| audio-normalize | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Audio Loudness & Volume Normalizer": produces image files; requires audio files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| id-photo-maker | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| background-remover | ALLOW | REJECT | REJECT | REJECT | Compatible at media-domain level | "Background Remover" does not produce text. |
+| token-counter | REJECT | REJECT | REJECT | REJECT | Cannot connect "Background Remover" to "Token & Context Studio": produces image files; requires textfile files. Select or extract compatible artifacts first. | "Background Remover" does not produce text. |
+| local-llm-playground | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not accept files. | "Background Remover" does not produce text. |
 
 ### token-counter
 
@@ -6506,6 +6667,7 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Token & Context Studio" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Token & Context Studio" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Token & Context Studio" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Token & Context Studio" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Token & Context Studio" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Token & Context Studio" does not produce files. | Compatible text ports; content validation still required |
 
@@ -6589,5 +6751,6 @@ Each source section lists every destination and all four port verdicts. Self-too
 | audio-trimmer | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | "Audio Waveform Visualizer & Trimmer" does not accept text. |
 | audio-normalize | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | "Audio Loudness & Volume Normalizer" does not accept text. |
 | id-photo-maker | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | "ID & Passport Photo Studio" does not accept text. |
+| background-remover | REJECT | REJECT | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | "Background Remover" does not accept text. |
 | token-counter | REJECT | ALLOW | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | Compatible text ports; content validation still required |
 | local-llm-playground | REJECT | ALLOW | REJECT | REJECT | "Local LLM Playground & Benchmark" does not produce files. | Compatible text ports; content validation still required |

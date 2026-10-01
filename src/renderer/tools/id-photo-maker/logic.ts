@@ -1,7 +1,7 @@
 import { PDFDocument, rgb } from 'pdf-lib'
 import JSZip from 'jszip'
 
-export type IdPhotoSizeId = '1x1' | '2x2' | 'passport' | '1.5x1.5'
+export type IdPhotoSizeId = '1x1' | '2x2' | 'passport' | '1.5x1.5' | 'wallet'
 
 export interface IdPhotoDimension {
   id: IdPhotoSizeId
@@ -89,6 +89,23 @@ export const ID_PHOTO_DIMENSIONS: Record<IdPhotoSizeId, IdPhotoDimension> = {
     heightDxa: 2160,
     widthEmu: 1371600,
     heightEmu: 1371600
+  },
+  wallet: {
+    id: 'wallet',
+    name: 'Wallet Size',
+    label: '2.5" × 3.5" (63.5 × 88.9 mm)',
+    widthInches: 2.5,
+    heightInches: 3.5,
+    widthMm: 63.5,
+    heightMm: 88.9,
+    widthPt: 180, // 2.5 * 72
+    heightPt: 252, // 3.5 * 72
+    widthPx300Dpi: 750, // 2.5 * 300
+    heightPx300Dpi: 1050, // 3.5 * 300
+    widthDxa: 3600, // 2.5 * 1440
+    heightDxa: 5040, // 3.5 * 1440
+    widthEmu: 2286000, // 2.5 * 914400
+    heightEmu: 3200400 // 3.5 * 914400
   }
 }
 
@@ -151,7 +168,15 @@ export const PAPER_DIMENSIONS: Record<PaperSizeId, PaperDimension> = {
 }
 
 export type PresetPackageId =
-  '8_1x1' | '4_2x2' | '6_passport' | 'combo_a' | 'combo_b' | 'combo_c' | 'custom'
+  | '8_1x1'
+  | '4_2x2'
+  | '6_passport'
+  | '4_wallet'
+  | 'combo_a'
+  | 'combo_b'
+  | 'combo_c'
+  | 'combo_wallet'
+  | 'custom'
 
 export interface PresetPackage {
   id: PresetPackageId
@@ -180,6 +205,12 @@ export const PRESET_PACKAGES: PresetPackage[] = [
     items: [{ sizeId: 'passport', count: 6 }]
   },
   {
+    id: '4_wallet',
+    name: '4 pcs Wallet Size (2.5×3.5")',
+    description: '4 copies of 2.5" × 3.5" photos (Keepsake, wallet insert, portfolio)',
+    items: [{ sizeId: 'wallet', count: 4 }]
+  },
+  {
     id: 'combo_a',
     name: 'Combo Pack A (2x 2x2 + 8x 1x1)',
     description: '2 pcs 2x2" + 8 pcs 1x1" (Most popular job/school application set)',
@@ -206,6 +237,16 @@ export const PRESET_PACKAGES: PresetPackage[] = [
       { sizeId: 'passport', count: 4 },
       { sizeId: '1x1', count: 4 }
     ]
+  },
+  {
+    id: 'combo_wallet',
+    name: 'Combo Pack D (2x Wallet + 2x 2x2 + 4x 1x1)',
+    description: '2 pcs Wallet + 2 pcs 2x2" + 4 pcs 1x1" (Universal portfolio & application set)',
+    items: [
+      { sizeId: 'wallet', count: 2 },
+      { sizeId: '2x2', count: 2 },
+      { sizeId: '1x1', count: 4 }
+    ]
   }
 ]
 
@@ -216,6 +257,7 @@ export interface LayoutBox {
   yInches: number
   widthInches: number
   heightInches: number
+  photoIndex?: number
 }
 
 export interface SheetLayoutResult {
@@ -231,7 +273,7 @@ export interface SheetLayoutResult {
  * Places larger photos first (or preserves sequence) within standard printable margins.
  */
 export function calculateSheetLayout(
-  items: Array<{ sizeId: IdPhotoSizeId; count: number }>,
+  items: Array<{ sizeId: IdPhotoSizeId; count: number; photoIndex?: number }>,
   paperId: PaperSizeId = 'letter',
   options?: {
     marginInches?: number
@@ -245,10 +287,10 @@ export function calculateSheetLayout(
   const maxW = paper.widthInches - margin * 2
   const maxH = paper.heightInches - margin * 2
 
-  const flatList: IdPhotoSizeId[] = []
+  const flatList: Array<{ sizeId: IdPhotoSizeId; photoIndex: number }> = []
   for (const item of items) {
     for (let i = 0; i < item.count; i++) {
-      flatList.push(item.sizeId)
+      flatList.push({ sizeId: item.sizeId, photoIndex: item.photoIndex ?? 0 })
     }
   }
 
@@ -258,8 +300,8 @@ export function calculateSheetLayout(
   let rowMaxHeight = 0
   let overflowCount = 0
 
-  flatList.forEach((sizeId, idx) => {
-    const dim = ID_PHOTO_DIMENSIONS[sizeId]
+  flatList.forEach((entry, idx) => {
+    const dim = ID_PHOTO_DIMENSIONS[entry.sizeId]
 
     // Check if item fits in current row
     if (currentX + dim.widthInches > margin + maxW + 0.001) {
@@ -276,12 +318,13 @@ export function calculateSheetLayout(
     }
 
     boxes.push({
-      sizeId,
+      sizeId: entry.sizeId,
       index: idx,
       xInches: currentX,
       yInches: currentY,
       widthInches: dim.widthInches,
-      heightInches: dim.heightInches
+      heightInches: dim.heightInches,
+      photoIndex: entry.photoIndex
     })
 
     currentX += dim.widthInches + gap
@@ -414,13 +457,18 @@ export function renderProcessedPhotoCanvas(
  * Generates a ready-to-print vector PDF via pdf-lib with exact real-world dimensions.
  */
 export async function generateIdPhotoPdf(
-  croppedPhotoPngBytes: Uint8Array,
+  croppedPhotoPngBytes: Uint8Array | Uint8Array[],
   layout: SheetLayoutResult,
   options?: { showHairlineBorder?: boolean }
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const page = doc.addPage([layout.paper.widthPt, layout.paper.heightPt])
-  const embeddedImage = await doc.embedPng(croppedPhotoPngBytes)
+
+  const photoList = Array.isArray(croppedPhotoPngBytes)
+    ? croppedPhotoPngBytes
+    : [croppedPhotoPngBytes]
+
+  const embeddedImages = await Promise.all(photoList.map((bytes) => doc.embedPng(bytes)))
 
   const showBorder = options?.showHairlineBorder ?? true
 
@@ -431,12 +479,17 @@ export async function generateIdPhotoPdf(
     const wPt = box.widthInches * 72
     const hPt = box.heightInches * 72
 
-    page.drawImage(embeddedImage, {
-      x: xPt,
-      y: yPt,
-      width: wPt,
-      height: hPt
-    })
+    const imgIndex = Math.min(box.photoIndex ?? 0, embeddedImages.length - 1)
+    const img = embeddedImages[imgIndex]
+
+    if (img) {
+      page.drawImage(img, {
+        x: xPt,
+        y: yPt,
+        width: wPt,
+        height: hPt
+      })
+    }
 
     if (showBorder) {
       page.drawRectangle({
@@ -457,11 +510,14 @@ export async function generateIdPhotoPdf(
  * Generates a standard Microsoft Word (.docx) package with exact dimensions.
  */
 export async function generateIdPhotoDocx(
-  croppedPhotoPngBytes: Uint8Array,
+  croppedPhotoPngBytes: Uint8Array | Uint8Array[],
   layout: SheetLayoutResult
 ): Promise<Uint8Array> {
   const zip = new JSZip()
   const paper = layout.paper
+  const photoList = Array.isArray(croppedPhotoPngBytes)
+    ? croppedPhotoPngBytes
+    : [croppedPhotoPngBytes]
 
   // 1. [Content_Types].xml
   zip.file(
@@ -484,17 +540,21 @@ export async function generateIdPhotoDocx(
 </Relationships>`
   )
 
-  // 3. word/media/image1.png
-  zip.file('word/media/image1.png', croppedPhotoPngBytes)
+  // 3. word/media/image{N}.png
+  photoList.forEach((bytes, idx) => {
+    zip.file(`word/media/image${idx + 1}.png`, bytes)
+  })
 
   // 4. word/_rels/document.xml.rels
-  zip.file(
-    'word/_rels/document.xml.rels',
-    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+  let relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+  photoList.forEach((_, idx) => {
+    relsXml += `
+  <Relationship Id="rIdImg${idx + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${idx + 1}.png"/>`
+  })
+  relsXml += `
 </Relationships>`
-  )
+  zip.file('word/_rels/document.xml.rels', relsXml)
 
   // Group layout boxes into rows based on y coordinate
   const rows: LayoutBox[][] = []
@@ -520,6 +580,8 @@ export async function generateIdPhotoDocx(
     row.forEach((box, cellIdx) => {
       const dim = ID_PHOTO_DIMENSIONS[box.sizeId]
       const docPrId = rowIdx * 20 + cellIdx + 1
+      const photoIdx = Math.min(box.photoIndex ?? 0, photoList.length - 1)
+      const relId = `rIdImg${photoIdx + 1}`
 
       rowDrawingsXml += `
         <w:r>
@@ -535,7 +597,7 @@ export async function generateIdPhotoDocx(
                       <pic:cNvPicPr/>
                     </pic:nvPicPr>
                     <pic:blipFill>
-                      <a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rIdImg1"/>
+                      <a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${relId}"/>
                       <a:stretch><a:fillRect/></a:stretch>
                     </pic:blipFill>
                     <pic:spPr>
@@ -592,7 +654,10 @@ export async function generateIdPhotoDocx(
  * Renders the full printable sheet onto a 300 DPI Canvas.
  */
 export function renderSheet300DpiCanvas(
-  croppedPhotoImg: HTMLImageElement | HTMLCanvasElement,
+  croppedPhotoImg:
+    | HTMLImageElement
+    | HTMLCanvasElement
+    | Array<HTMLImageElement | HTMLCanvasElement>,
   layout: SheetLayoutResult,
   showGuides: boolean = true
 ): HTMLCanvasElement {
@@ -606,13 +671,18 @@ export function renderSheet300DpiCanvas(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+  const imgList = Array.isArray(croppedPhotoImg) ? croppedPhotoImg : [croppedPhotoImg]
+
   for (const box of layout.boxes) {
     const xPx = Math.round(box.xInches * 300)
     const yPx = Math.round(box.yInches * 300)
     const wPx = Math.round(box.widthInches * 300)
     const hPx = Math.round(box.heightInches * 300)
 
-    ctx.drawImage(croppedPhotoImg, xPx, yPx, wPx, hPx)
+    const img = imgList[Math.min(box.photoIndex ?? 0, imgList.length - 1)]
+    if (img) {
+      ctx.drawImage(img, xPx, yPx, wPx, hPx)
+    }
 
     if (showGuides) {
       ctx.strokeStyle = '#d4d4d8'

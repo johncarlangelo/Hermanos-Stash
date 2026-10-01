@@ -75,5 +75,6 @@ checksum-verifier,any,-,false,true
 audio-trimmer,audio,audio,false,false
 audio-normalize,audio,audio,false,false
 id-photo-maker,image,any,false,false
+background-remover,image,image,false,false
 token-counter,textfile,-,true,true
 local-llm-playground,-,-,true,true

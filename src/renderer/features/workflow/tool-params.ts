@@ -396,7 +396,8 @@ export const WORKFLOW_TOOL_PARAMS: Record<string, ToolParamField[]> = {
       options: [
         { value: '2x2', label: '2" × 2" (US Passport / Official)' },
         { value: '1x1', label: '1" × 1" (Standard ID)' },
-        { value: 'passport', label: '35 × 45 mm (EU / UK / Schengen Passport)' }
+        { value: 'passport', label: '35 × 45 mm (EU / UK / Schengen Passport)' },
+        { value: 'wallet', label: '2.5" × 3.5" (Wallet Size / Keepsake)' }
       ]
     },
     {
@@ -409,6 +410,37 @@ export const WORKFLOW_TOOL_PARAMS: Record<string, ToolParamField[]> = {
         { value: 'Letter', label: 'US Letter' },
         { value: '4x6', label: '4" × 6" Photo Paper' }
       ]
+    }
+  ],
+
+  'background-remover': [
+    {
+      key: 'mode',
+      label: 'Keying Mode',
+      type: 'select',
+      defaultValue: 'contiguous',
+      options: [
+        { value: 'contiguous', label: 'Contiguous (Edges Inward)' },
+        { value: 'global', label: 'Global (All Matching Pixels)' }
+      ]
+    },
+    {
+      key: 'tolerance',
+      label: 'Color Tolerance (%)',
+      type: 'range',
+      defaultValue: 20,
+      min: 1,
+      max: 80,
+      step: 1
+    },
+    {
+      key: 'feather',
+      label: 'Edge Feather (px)',
+      type: 'range',
+      defaultValue: 4,
+      min: 0,
+      max: 20,
+      step: 1
     }
   ],
 

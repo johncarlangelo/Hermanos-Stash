@@ -1,6 +1,6 @@
 # Hermanos Stash — Tool Catalog
 
-This is a living catalog tracking shipped tools and workstation capabilities. Currently **78 tools** are implemented and registered across 8 categories.
+This is a living catalog tracking shipped tools and workstation capabilities. Currently **79 tools** are implemented and registered across 8 categories.
 
 ## Files & Storage (`files`)
 
@@ -32,6 +32,7 @@ This is a living catalog tracking shipped tools and workstation capabilities. Cu
 ## Images & Design (`images`)
 
 - [x] **ID & Passport Photo Studio** (`id-photo-maker`) — Scale, frame, and tile portrait photos to 1x1, 2x2, and 35x45mm passport sizes onto printable sheets with cutting guides and Word (.docx) / PDF export.
+- [x] **Background Remover** (`background-remover`) — Isolate foreground objects, remove studio or solid backgrounds, and export transparent PNGs with feathered edges.
 - [x] **SVG & Vector Studio** (`svg-creator`) — Design vector shapes, graphics, and icons with live code generation, multi-layer styling, and multi-resolution PNG/WebP export.
 - [x] **Image Palette Extractor** (`image-palette`) — Extract dominant color swatches using K-Means clustering with contrast ratios, hex/rgb/hsl, and CSS/Tailwind export.
 - [x] **Image Slicer & Grid Splitter** (`image-slicer`) — Slice photos into 3x3 grids, 3x1 carousels, or custom rows/columns with instant ZIP export.
