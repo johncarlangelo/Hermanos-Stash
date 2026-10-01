@@ -72,8 +72,8 @@ function createWindow(zoomFactor: number): void {
   })
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.maximize()
     mainWindow?.show()
+    mainWindow?.maximize()
   })
 
   // Route progress events to the live window (re-wired if it is recreated).
