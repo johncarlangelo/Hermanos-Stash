@@ -266,23 +266,6 @@ Click the animated floating orb at the bottom-right of the window (or press `Ctr
 - **Workflow Synthesis:** Automatically identifies multi-step tasks and offers a one-click shortcut into the Visual Queue canvas.
 - **100% Local-First:** Runs entirely inside the local desktop application without cloud requirements or telemetry.
 
-
-## Tool #78: Local LLM Playground & Benchmark — BETA
-
-Chat with local models, try system prompts and generation settings, and inspect
-throughput (tokens/sec) and time to first token. The default endpoints are
-**Ollama** (`http://localhost:11434`) and **LM Studio** (`http://localhost:1234`).
-Start your chosen server and load a model separately; Stash does not bundle model weights.
-
-An **Offline Simulation Sandbox** lets you explore the interface without a running
-model server. Its responses and benchmark numbers are simulated, not hardware results.
-Real inference sends prompts to the selected endpoint; keep it local for local-only use.
-Endpoint compatibility and benchmark behavior remain experimental.
-
-## Tool #79: Background Remover
-
-Isolate subjects, erase studio and solid backdrops, and export transparent PNGs or WebP cutouts entirely offline. Features border-seeded contiguous flood-fill keying to preserve inner details (such as white clothing or teeth), global chroma color matching, smoothstep edge feathering, and halo defringing. Includes a live before/after interactive split slider and background replacement presets (solid studio backdrops and smooth gradients).
-
 ## Under the hood
 
 ```text
