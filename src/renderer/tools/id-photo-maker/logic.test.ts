@@ -201,4 +201,56 @@ describe('ID Photo Studio Logic', () => {
     expect(zip.file('word/media/image1.png')).not.toBeNull()
     expect(zip.file('word/media/image2.png')).not.toBeNull()
   })
+
+  it('generates PDF and DOCX with per-size PNG image maps (aspect-ratio preserved)', async () => {
+    const squarePng = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+      0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
+      0x77, 0x53, 0xde, 0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xf8,
+      0xcf, 0xc0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xdd, 0x8d, 0xb0, 0x00, 0x00, 0x00,
+      0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+    ])
+    const walletPng = new Uint8Array(squarePng)
+
+    const layout = calculateSheetLayout(
+      [
+        { sizeId: '2x2', count: 1, photoIndex: 0 },
+        { sizeId: 'wallet', count: 1, photoIndex: 0 }
+      ],
+      'letter'
+    )
+    expect(layout.boxes).toHaveLength(2)
+    expect(layout.boxes[0].sizeId).toBe('2x2')
+    expect(layout.boxes[1].sizeId).toBe('wallet')
+
+    const pngBytesMap = {
+      '0_2x2': squarePng,
+      '0_wallet': walletPng
+    }
+
+    const pdfBytes = await generateIdPhotoPdf(pngBytesMap, layout)
+    expect(pdfBytes).toBeInstanceOf(Uint8Array)
+    expect(pdfBytes.length).toBeGreaterThan(100)
+
+    const docxBytes = await generateIdPhotoDocx(pngBytesMap, layout)
+    const zip = await JSZip.loadAsync(docxBytes)
+    expect(zip.file('word/media/image1.png')).not.toBeNull()
+    expect(zip.file('word/media/image2.png')).not.toBeNull()
+  })
+
+  it('validates non-square aspect ratios for passport and wallet sizes', () => {
+    const passport = ID_PHOTO_DIMENSIONS.passport
+    const passportRatio = passport.widthPx300Dpi / passport.heightPx300Dpi
+    expect(passportRatio).toBeCloseTo(35 / 45, 2)
+    expect(passportRatio).not.toBe(1.0)
+
+    const wallet = ID_PHOTO_DIMENSIONS.wallet
+    const walletRatio = wallet.widthPx300Dpi / wallet.heightPx300Dpi
+    expect(walletRatio).toBeCloseTo(2.5 / 3.5, 2)
+    expect(walletRatio).not.toBe(1.0)
+
+    const square = ID_PHOTO_DIMENSIONS['2x2']
+    expect(square.widthPx300Dpi / square.heightPx300Dpi).toBe(1.0)
+  })
 })
+

@@ -1,4 +1,4 @@
-import { PDFDocument, rgb } from 'pdf-lib'
+import { PDFDocument, rgb, type PDFImage } from 'pdf-lib'
 import JSZip from 'jszip'
 
 export type IdPhotoSizeId = '1x1' | '2x2' | 'passport' | '1.5x1.5' | 'wallet'
@@ -344,14 +344,21 @@ export function calculateSheetLayout(
   }
 }
 
+export interface SizeAdjustment {
+  zoom: number
+  panX: number
+  panY: number
+}
+
 export interface PhotoAdjustmentConfig {
   zoom: number // 1.0 = default 100%, up to 2.5
-  panX: number // offset in pixels or percentage
+  panX: number // offset in pixels
   panY: number
   backgroundColor: 'original' | 'white' | 'offwhite' | 'skyblue' | 'red'
   showNametag: boolean
   nametagText: string
   showCuttingGuide: boolean
+  sizeAdjustments?: Partial<Record<IdPhotoSizeId, SizeAdjustment>>
 }
 
 export const DEFAULT_ADJUSTMENT_CONFIG: PhotoAdjustmentConfig = {
@@ -373,12 +380,14 @@ export const BG_COLORS: Record<string, string> = {
 
 /**
  * Renders a single cropped, adjusted portrait photo onto an HTML canvas at the specified pixel size.
+ * Handles exact target aspect ratios without squishing or stretching.
  */
 export function renderProcessedPhotoCanvas(
   img: HTMLImageElement | HTMLCanvasElement,
   targetWidthPx: number,
   targetHeightPx: number,
-  config: PhotoAdjustmentConfig
+  config: PhotoAdjustmentConfig,
+  sizeId?: IdPhotoSizeId
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = targetWidthPx
@@ -392,27 +401,40 @@ export function renderProcessedPhotoCanvas(
     ctx.fillRect(0, 0, targetWidthPx, targetHeightPx)
   }
 
-  // Calculate cover aspect ratio
+  // Calculate cover aspect ratio without stretching
   const imgW = img.width
   const imgH = img.height
   const targetRatio = targetWidthPx / targetHeightPx
   const imgRatio = imgW / imgH
+
+  // Determine effective zoom and pan for this specific target size (or fallback to base)
+  const sizeAdj = sizeId && config.sizeAdjustments ? config.sizeAdjustments[sizeId] : undefined
+  const effectiveZoom = sizeAdj?.zoom ?? config.zoom
+  const rawPanX = sizeAdj?.panX ?? config.panX
+  const rawPanY = sizeAdj?.panY ?? config.panY
+
+  // Scale pan offsets proportional to target canvas height relative to reference preview height (240px)
+  // Ensures identical framing in 240px preview and 300 DPI high-res exports (600px, 750px, 1050px)
+  const baseReferenceHeight = 240
+  const scaleRatio = targetHeightPx / baseReferenceHeight
+  const scaledPanX = rawPanX * scaleRatio
+  const scaledPanY = rawPanY * scaleRatio
 
   let renderW: number
   let renderH: number
 
   if (imgRatio > targetRatio) {
     // Image is wider than target -> match height
-    renderH = targetHeightPx * config.zoom
+    renderH = targetHeightPx * effectiveZoom
     renderW = renderH * imgRatio
   } else {
     // Image is taller than target -> match width
-    renderW = targetWidthPx * config.zoom
+    renderW = targetWidthPx * effectiveZoom
     renderH = renderW / imgRatio
   }
 
-  const posX = (targetWidthPx - renderW) / 2 + config.panX
-  const posY = (targetHeightPx - renderH) / 2 + config.panY
+  const posX = (targetWidthPx - renderW) / 2 + scaledPanX
+  const posY = (targetHeightPx - renderH) / 2 + scaledPanY
 
   ctx.drawImage(img, posX, posY, renderW, renderH)
 
@@ -453,22 +475,44 @@ export function renderProcessedPhotoCanvas(
   return canvas
 }
 
+export type IdPhotoBytesInput =
+  | Uint8Array
+  | Uint8Array[]
+  | Record<string, Uint8Array>
+  | Map<string, Uint8Array>
+
 /**
  * Generates a ready-to-print vector PDF via pdf-lib with exact real-world dimensions.
+ * Supports per-size rendered images to prevent any squishing or stretching.
  */
 export async function generateIdPhotoPdf(
-  croppedPhotoPngBytes: Uint8Array | Uint8Array[],
+  croppedPhotoPngBytes: IdPhotoBytesInput,
   layout: SheetLayoutResult,
   options?: { showHairlineBorder?: boolean }
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const page = doc.addPage([layout.paper.widthPt, layout.paper.heightPt])
 
-  const photoList = Array.isArray(croppedPhotoPngBytes)
-    ? croppedPhotoPngBytes
-    : [croppedPhotoPngBytes]
+  // Normalization into a map of embedded images
+  const embeddedMap = new Map<string, PDFImage>()
 
-  const embeddedImages = await Promise.all(photoList.map((bytes) => doc.embedPng(bytes)))
+  if (croppedPhotoPngBytes instanceof Map) {
+    for (const [key, bytes] of croppedPhotoPngBytes.entries()) {
+      embeddedMap.set(key, await doc.embedPng(bytes))
+    }
+  } else if (!Array.isArray(croppedPhotoPngBytes) && !(croppedPhotoPngBytes instanceof Uint8Array)) {
+    for (const [key, bytes] of Object.entries(croppedPhotoPngBytes)) {
+      embeddedMap.set(key, await doc.embedPng(bytes))
+    }
+  } else {
+    const photoList = Array.isArray(croppedPhotoPngBytes)
+      ? croppedPhotoPngBytes
+      : [croppedPhotoPngBytes]
+    const embeddedImages = await Promise.all(photoList.map((bytes) => doc.embedPng(bytes)))
+    embeddedImages.forEach((img, idx) => {
+      embeddedMap.set(String(idx), img)
+    })
+  }
 
   const showBorder = options?.showHairlineBorder ?? true
 
@@ -479,8 +523,11 @@ export async function generateIdPhotoPdf(
     const wPt = box.widthInches * 72
     const hPt = box.heightInches * 72
 
-    const imgIndex = Math.min(box.photoIndex ?? 0, embeddedImages.length - 1)
-    const img = embeddedImages[imgIndex]
+    const pIdx = box.photoIndex ?? 0
+    let img = embeddedMap.get(`${pIdx}_${box.sizeId}`)
+    if (!img) img = embeddedMap.get(String(pIdx))
+    if (!img) img = embeddedMap.get(box.sizeId)
+    if (!img) img = embeddedMap.values().next().value
 
     if (img) {
       page.drawImage(img, {
@@ -508,16 +555,32 @@ export async function generateIdPhotoPdf(
 
 /**
  * Generates a standard Microsoft Word (.docx) package with exact dimensions.
+ * Maps per-size image files into DrawingML to prevent any squishing or stretching.
  */
 export async function generateIdPhotoDocx(
-  croppedPhotoPngBytes: Uint8Array | Uint8Array[],
+  croppedPhotoPngBytes: IdPhotoBytesInput,
   layout: SheetLayoutResult
 ): Promise<Uint8Array> {
   const zip = new JSZip()
   const paper = layout.paper
-  const photoList = Array.isArray(croppedPhotoPngBytes)
-    ? croppedPhotoPngBytes
-    : [croppedPhotoPngBytes]
+
+  // Flatten available images into a unified map
+  const imageEntries: Array<{ key: string; bytes: Uint8Array }> = []
+
+  if (croppedPhotoPngBytes instanceof Map) {
+    for (const [key, bytes] of croppedPhotoPngBytes.entries()) {
+      imageEntries.push({ key, bytes })
+    }
+  } else if (!Array.isArray(croppedPhotoPngBytes) && !(croppedPhotoPngBytes instanceof Uint8Array)) {
+    for (const [key, bytes] of Object.entries(croppedPhotoPngBytes)) {
+      imageEntries.push({ key, bytes })
+    }
+  } else {
+    const list = Array.isArray(croppedPhotoPngBytes) ? croppedPhotoPngBytes : [croppedPhotoPngBytes]
+    list.forEach((bytes, idx) => {
+      imageEntries.push({ key: String(idx), bytes })
+    })
+  }
 
   // 1. [Content_Types].xml
   zip.file(
@@ -540,18 +603,20 @@ export async function generateIdPhotoDocx(
 </Relationships>`
   )
 
-  // 3. word/media/image{N}.png
-  photoList.forEach((bytes, idx) => {
-    zip.file(`word/media/image${idx + 1}.png`, bytes)
-  })
-
-  // 4. word/_rels/document.xml.rels
+  // Map key -> relId and media filename
+  const keyToRelId = new Map<string, string>()
   let relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
-  photoList.forEach((_, idx) => {
+
+  imageEntries.forEach((entry, idx) => {
+    const mediaName = `image${idx + 1}.png`
+    const relId = `rIdImg${idx + 1}`
+    keyToRelId.set(entry.key, relId)
+    zip.file(`word/media/${mediaName}`, entry.bytes)
     relsXml += `
-  <Relationship Id="rIdImg${idx + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${idx + 1}.png"/>`
+  <Relationship Id="${relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${mediaName}"/>`
   })
+
   relsXml += `
 </Relationships>`
   zip.file('word/_rels/document.xml.rels', relsXml)
@@ -580,8 +645,12 @@ export async function generateIdPhotoDocx(
     row.forEach((box, cellIdx) => {
       const dim = ID_PHOTO_DIMENSIONS[box.sizeId]
       const docPrId = rowIdx * 20 + cellIdx + 1
-      const photoIdx = Math.min(box.photoIndex ?? 0, photoList.length - 1)
-      const relId = `rIdImg${photoIdx + 1}`
+      const pIdx = box.photoIndex ?? 0
+
+      let relId = keyToRelId.get(`${pIdx}_${box.sizeId}`)
+      if (!relId) relId = keyToRelId.get(String(pIdx))
+      if (!relId) relId = keyToRelId.get(box.sizeId)
+      if (!relId) relId = keyToRelId.values().next().value || 'rIdImg1'
 
       rowDrawingsXml += `
         <w:r>
@@ -652,12 +721,16 @@ export async function generateIdPhotoDocx(
 
 /**
  * Renders the full printable sheet onto a 300 DPI Canvas.
+ * Supports per-size rendered images or lookup callback.
  */
 export function renderSheet300DpiCanvas(
   croppedPhotoImg:
     | HTMLImageElement
     | HTMLCanvasElement
-    | Array<HTMLImageElement | HTMLCanvasElement>,
+    | Array<HTMLImageElement | HTMLCanvasElement>
+    | Record<string, HTMLImageElement | HTMLCanvasElement>
+    | Map<string, HTMLImageElement | HTMLCanvasElement>
+    | ((photoIndex: number, sizeId: IdPhotoSizeId) => HTMLImageElement | HTMLCanvasElement | null),
   layout: SheetLayoutResult,
   showGuides: boolean = true
 ): HTMLCanvasElement {
@@ -671,15 +744,37 @@ export function renderSheet300DpiCanvas(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  const imgList = Array.isArray(croppedPhotoImg) ? croppedPhotoImg : [croppedPhotoImg]
-
   for (const box of layout.boxes) {
     const xPx = Math.round(box.xInches * 300)
     const yPx = Math.round(box.yInches * 300)
     const wPx = Math.round(box.widthInches * 300)
     const hPx = Math.round(box.heightInches * 300)
 
-    const img = imgList[Math.min(box.photoIndex ?? 0, imgList.length - 1)]
+    const pIdx = box.photoIndex ?? 0
+    let img: HTMLImageElement | HTMLCanvasElement | null
+
+    if (typeof croppedPhotoImg === 'function') {
+      img = croppedPhotoImg(pIdx, box.sizeId)
+    } else if (croppedPhotoImg instanceof Map) {
+      img =
+        croppedPhotoImg.get(`${pIdx}_${box.sizeId}`) ||
+        croppedPhotoImg.get(String(pIdx)) ||
+        croppedPhotoImg.get(box.sizeId) ||
+        null
+    } else if (Array.isArray(croppedPhotoImg)) {
+      img = croppedPhotoImg[Math.min(pIdx, croppedPhotoImg.length - 1)] || null
+    } else if (
+      croppedPhotoImg &&
+      typeof croppedPhotoImg === 'object' &&
+      !('getContext' in croppedPhotoImg) &&
+      !('src' in croppedPhotoImg)
+    ) {
+      const rec = croppedPhotoImg as Record<string, HTMLImageElement | HTMLCanvasElement>
+      img = rec[`${pIdx}_${box.sizeId}`] || rec[String(pIdx)] || rec[box.sizeId] || null
+    } else {
+      img = croppedPhotoImg as HTMLImageElement | HTMLCanvasElement
+    }
+
     if (img) {
       ctx.drawImage(img, xPx, yPx, wPx, hPx)
     }

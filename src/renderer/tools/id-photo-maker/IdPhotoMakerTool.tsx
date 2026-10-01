@@ -25,6 +25,7 @@ import {
   DEFAULT_ADJUSTMENT_CONFIG,
   generateIdPhotoDocx,
   generateIdPhotoPdf,
+  ID_PHOTO_DIMENSIONS,
   PAPER_DIMENSIONS,
   PRESET_PACKAGES,
   renderProcessedPhotoCanvas,
@@ -32,7 +33,8 @@ import {
   type IdPhotoSizeId,
   type PaperSizeId,
   type PhotoAdjustmentConfig,
-  type PresetPackageId
+  type PresetPackageId,
+  type SizeAdjustment
 } from './logic'
 
 export interface LoadedPhoto {
@@ -41,6 +43,47 @@ export interface LoadedPhoto {
   src: string
   img: HTMLImageElement
   adjustment: PhotoAdjustmentConfig
+}
+
+export const FRAMING_PREVIEW_SIZES: Record<
+  IdPhotoSizeId,
+  { name: string; width: number; height: number; boxClass: string; desc: string }
+> = {
+  '2x2': {
+    name: '2" × 2"',
+    width: 240,
+    height: 240,
+    boxClass: 'w-36 h-36',
+    desc: 'Square 1:1 (US Visa / Passport / PRC)'
+  },
+  passport: {
+    name: 'Passport (35×45)',
+    width: 210,
+    height: 270,
+    boxClass: 'w-[126px] h-[162px]',
+    desc: '35×45mm (Schengen / DFA / International)'
+  },
+  wallet: {
+    name: 'Wallet (2.5×3.5")',
+    width: 196,
+    height: 274,
+    boxClass: 'w-[125px] h-[175px]',
+    desc: '2.5" × 3.5" (Keepsake / Portfolio)'
+  },
+  '1x1': {
+    name: '1" × 1"',
+    width: 240,
+    height: 240,
+    boxClass: 'w-36 h-36',
+    desc: 'Square 1:1 (Gov ID / clearance)'
+  },
+  '1.5x1.5': {
+    name: '1.5" × 1.5"',
+    width: 240,
+    height: 240,
+    boxClass: 'w-36 h-36',
+    desc: 'Square 1:1 (School / College)'
+  }
 }
 
 export default function IdPhotoMakerTool() {
@@ -59,16 +102,33 @@ export default function IdPhotoMakerTool() {
   const [showBiometricGuide, setShowBiometricGuide] = useState(true)
   const [showCuttingGuide, setShowCuttingGuide] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
+  const [framingSize, setFramingSize] = useState<IdPhotoSizeId>('2x2')
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const singlePreviewRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isDraggingRef = useRef(false)
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const initialPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
 
   const activePhoto = useMemo(() => {
     return photos.find((p) => p.id === activePhotoId) || photos[0] || null
   }, [photos, activePhotoId])
 
   const activeAdjustment = activePhoto ? activePhoto.adjustment : DEFAULT_ADJUSTMENT_CONFIG
+
+  const currentSizeAdj = activePhoto?.adjustment.sizeAdjustments?.[framingSize]
+  const currentZoom = currentSizeAdj?.zoom ?? activeAdjustment.zoom
+  const currentPanX = currentSizeAdj?.panX ?? activeAdjustment.panX
+  const currentPanY = currentSizeAdj?.panY ?? activeAdjustment.panY
+
+  // Automatically match framing preview size if preset has exactly 1 size (e.g. 4_wallet -> wallet)
+  useEffect(() => {
+    const preset = PRESET_PACKAGES.find((p) => p.id === selectedPreset)
+    if (preset && preset.items.length === 1) {
+      setFramingSize(preset.items[0].sizeId)
+    }
+  }, [selectedPreset])
 
   const updateActiveAdjustment = useCallback(
     (updater: (prev: PhotoAdjustmentConfig) => PhotoAdjustmentConfig) => {
@@ -81,6 +141,148 @@ export default function IdPhotoMakerTool() {
     },
     [activePhoto]
   )
+
+  const updateFraming = useCallback(
+    (delta: { zoom?: number; panX?: number; panY?: number }) => {
+      if (!activePhoto) return
+      setPhotos((prev) =>
+        prev.map((p) => {
+          if (p.id !== activePhoto.id) return p
+          const prevSizeAdj = p.adjustment.sizeAdjustments?.[framingSize] ?? {
+            zoom: p.adjustment.zoom,
+            panX: p.adjustment.panX,
+            panY: p.adjustment.panY
+          }
+          const nextSizeAdj = {
+            zoom: delta.zoom !== undefined ? delta.zoom : prevSizeAdj.zoom,
+            panX: delta.panX !== undefined ? delta.panX : prevSizeAdj.panX,
+            panY: delta.panY !== undefined ? delta.panY : prevSizeAdj.panY
+          }
+          return {
+            ...p,
+            adjustment: {
+              ...p.adjustment,
+              zoom: framingSize === '2x2' ? nextSizeAdj.zoom : p.adjustment.zoom,
+              panX: framingSize === '2x2' ? nextSizeAdj.panX : p.adjustment.panX,
+              panY: framingSize === '2x2' ? nextSizeAdj.panY : p.adjustment.panY,
+              sizeAdjustments: {
+                ...p.adjustment.sizeAdjustments,
+                [framingSize]: nextSizeAdj
+              }
+            }
+          }
+        })
+      )
+    },
+    [activePhoto, framingSize]
+  )
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    initialPanRef.current = { x: currentPanX, y: currentPanY }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return
+    const dx = e.clientX - dragStartRef.current.x
+    const dy = e.clientY - dragStartRef.current.y
+    updateFraming({
+      panX: Math.round(initialPanRef.current.x + dx),
+      panY: Math.round(initialPanRef.current.y + dy)
+    })
+  }
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false
+  }
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const zoomStep = 0.05
+    const delta = e.deltaY < 0 ? zoomStep : -zoomStep
+    const newZoom = Math.min(2.5, Math.max(0.8, parseFloat((currentZoom + delta).toFixed(2))))
+    updateFraming({ zoom: newZoom })
+  }
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 1) {
+      isDraggingRef.current = true
+      dragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+      initialPanRef.current = { x: currentPanX, y: currentPanY }
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || e.touches.length !== 1) return
+    const dx = e.touches[0].clientX - dragStartRef.current.x
+    const dy = e.touches[0].clientY - dragStartRef.current.y
+    updateFraming({
+      panX: Math.round(initialPanRef.current.x + dx),
+      panY: Math.round(initialPanRef.current.y + dy)
+    })
+  }
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false
+  }
+
+  const handleApplyToAllSizes = () => {
+    if (!activePhoto) return
+    setPhotos((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePhoto.id) return p
+        const allSizes: IdPhotoSizeId[] = ['2x2', '1x1', 'passport', 'wallet', '1.5x1.5']
+        const newSizeAdjustments: Partial<Record<IdPhotoSizeId, SizeAdjustment>> = {}
+        allSizes.forEach((sz) => {
+          newSizeAdjustments[sz] = {
+            zoom: currentZoom,
+            panX: currentPanX,
+            panY: currentPanY
+          }
+        })
+        return {
+          ...p,
+          adjustment: {
+            ...p.adjustment,
+            zoom: currentZoom,
+            panX: currentPanX,
+            panY: currentPanY,
+            sizeAdjustments: newSizeAdjustments
+          }
+        }
+      })
+    )
+    toastSuccess(`Applied ${FRAMING_PREVIEW_SIZES[framingSize].name} framing to all photo sizes`)
+  }
+
+  const handleDownloadSinglePhoto = () => {
+    if (!activePhoto) return
+    try {
+      const dim = ID_PHOTO_DIMENSIONS[framingSize]
+      const processed = renderProcessedPhotoCanvas(
+        activePhoto.img,
+        dim.widthPx300Dpi,
+        dim.heightPx300Dpi,
+        activePhoto.adjustment,
+        framingSize
+      )
+      processed.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${activePhoto.name}_${framingSize}_300dpi.png`
+        a.click()
+        URL.revokeObjectURL(url)
+        toastSuccess(`Exported single ${dim.name} (${dim.widthMm}×${dim.heightMm}mm) PNG`)
+        recordHistoryQuietly('id-photo-maker', 'ID Photo Studio', 'images')
+      }, 'image/png')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toastError(`Single photo export failed: ${msg}`)
+    }
+  }
 
   // Handle uploaded files (single or multiple)
   const handleFiles = useCallback(
@@ -331,28 +533,45 @@ export default function IdPhotoMakerTool() {
   useEffect(() => {
     if (!activePhoto || !singlePreviewRef.current) return
     const canvas = singlePreviewRef.current
-    canvas.width = 240
-    canvas.height = 240
+    const targetDim = FRAMING_PREVIEW_SIZES[framingSize]
+    canvas.width = targetDim.width
+    canvas.height = targetDim.height
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const processed = renderProcessedPhotoCanvas(activePhoto.img, 240, 240, activeAdjustment)
-    ctx.clearRect(0, 0, 240, 240)
+    const processed = renderProcessedPhotoCanvas(
+      activePhoto.img,
+      targetDim.width,
+      targetDim.height,
+      activeAdjustment,
+      framingSize
+    )
+    ctx.clearRect(0, 0, targetDim.width, targetDim.height)
     ctx.drawImage(processed, 0, 0)
-  }, [activePhoto, activeAdjustment])
+  }, [activePhoto, activeAdjustment, framingSize])
 
   // Render Sheet Canvas Preview
   useEffect(() => {
     if (photos.length === 0 || !previewCanvasRef.current) return
     const previewCanvas = previewCanvasRef.current
 
-    // Pre-render each photo at 600x600 with its specific adjustment
-    const processedCanvases = photos.map((p) =>
-      renderProcessedPhotoCanvas(p.img, 600, 600, {
-        ...p.adjustment,
-        showCuttingGuide: false
+    // Pre-render canvases for each unique (photo, sizeId) combo
+    const uniqueSizes = Array.from(new Set(layout.boxes.map((b) => b.sizeId)))
+    const canvasMap = new Map<string, HTMLCanvasElement>()
+
+    photos.forEach((p, pIdx) => {
+      uniqueSizes.forEach((sizeId) => {
+        const dim = ID_PHOTO_DIMENSIONS[sizeId]
+        const c = renderProcessedPhotoCanvas(
+          p.img,
+          dim.widthPx300Dpi,
+          dim.heightPx300Dpi,
+          { ...p.adjustment, showCuttingGuide: false },
+          sizeId
+        )
+        canvasMap.set(`${pIdx}_${sizeId}`, c)
       })
-    )
+    })
 
     // Calculate preview dimensions (scale to fit container nicely)
     const containerW = 480
@@ -382,8 +601,8 @@ export default function IdPhotoMakerTool() {
       const bw = Math.round(box.widthInches * 300 * scale)
       const bh = Math.round(box.heightInches * 300 * scale)
 
-      const pIdx = Math.min(box.photoIndex ?? 0, processedCanvases.length - 1)
-      const processed = processedCanvases[pIdx]
+      const pIdx = Math.min(box.photoIndex ?? 0, photos.length - 1)
+      const processed = canvasMap.get(`${pIdx}_${box.sizeId}`)
       if (processed) {
         ctx.drawImage(processed, bx, by, bw, bh)
       }
@@ -409,31 +628,49 @@ export default function IdPhotoMakerTool() {
     }
   }, [photos, layout, showCuttingGuide])
 
-  // Process all photos to PNG bytes for exports
-  const getAllProcessedPngBytes = useCallback((): Promise<Uint8Array[]> => {
-    return Promise.all(
-      photos.map(
-        (p) =>
-          new Promise<Uint8Array>((resolve, reject) => {
-            const processed = renderProcessedPhotoCanvas(p.img, 600, 600, {
-              ...p.adjustment,
-              showCuttingGuide: false
-            })
+  // Process all photos to PNG bytes per size for exports
+  const getAllProcessedPngBytesMap = useCallback((): Promise<Record<string, Uint8Array>> => {
+    const uniqueSizes = Array.from(new Set(layout.boxes.map((b) => b.sizeId)))
+    const tasks: Array<Promise<{ key: string; bytes: Uint8Array }>> = []
+
+    photos.forEach((p, pIdx) => {
+      uniqueSizes.forEach((sizeId) => {
+        const dim = ID_PHOTO_DIMENSIONS[sizeId]
+        tasks.push(
+          new Promise<{ key: string; bytes: Uint8Array }>((resolve, reject) => {
+            const processed = renderProcessedPhotoCanvas(
+              p.img,
+              dim.widthPx300Dpi,
+              dim.heightPx300Dpi,
+              { ...p.adjustment, showCuttingGuide: false },
+              sizeId
+            )
             processed.toBlob((blob) => {
               if (!blob) return reject(new Error('Failed to generate PNG blob'))
-              blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)))
+              blob.arrayBuffer().then((buf) => {
+                resolve({ key: `${pIdx}_${sizeId}`, bytes: new Uint8Array(buf) })
+              })
             }, 'image/png')
           })
-      )
-    )
-  }, [photos])
+        )
+      })
+    })
+
+    return Promise.all(tasks).then((entries) => {
+      const map: Record<string, Uint8Array> = {}
+      for (const entry of entries) {
+        map[entry.key] = entry.bytes
+      }
+      return map
+    })
+  }, [photos, layout])
 
   const handleDownloadPdf = async () => {
     if (photos.length === 0) return
     setIsExporting(true)
     try {
-      const pngBytesList = await getAllProcessedPngBytes()
-      const pdfBytes = await generateIdPhotoPdf(pngBytesList, layout, {
+      const pngBytesMap = await getAllProcessedPngBytesMap()
+      const pdfBytes = await generateIdPhotoPdf(pngBytesMap, layout, {
         showHairlineBorder: showCuttingGuide
       })
       const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' })
@@ -457,8 +694,8 @@ export default function IdPhotoMakerTool() {
     if (photos.length === 0) return
     setIsExporting(true)
     try {
-      const pngBytesList = await getAllProcessedPngBytes()
-      const docxBytes = await generateIdPhotoDocx(pngBytesList, layout)
+      const pngBytesMap = await getAllProcessedPngBytesMap()
+      const docxBytes = await generateIdPhotoDocx(pngBytesMap, layout)
       const blob = new Blob([docxBytes as unknown as BlobPart], {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       })
@@ -481,13 +718,24 @@ export default function IdPhotoMakerTool() {
   const handleDownloadPng = () => {
     if (photos.length === 0) return
     try {
-      const processedCanvases = photos.map((p) =>
-        renderProcessedPhotoCanvas(p.img, 600, 600, {
-          ...p.adjustment,
-          showCuttingGuide: false
+      const uniqueSizes = Array.from(new Set(layout.boxes.map((b) => b.sizeId)))
+      const canvasMap = new Map<string, HTMLCanvasElement>()
+
+      photos.forEach((p, pIdx) => {
+        uniqueSizes.forEach((sizeId) => {
+          const dim = ID_PHOTO_DIMENSIONS[sizeId]
+          const c = renderProcessedPhotoCanvas(
+            p.img,
+            dim.widthPx300Dpi,
+            dim.heightPx300Dpi,
+            { ...p.adjustment, showCuttingGuide: false },
+            sizeId
+          )
+          canvasMap.set(`${pIdx}_${sizeId}`, c)
         })
-      )
-      const sheetCanvas = renderSheet300DpiCanvas(processedCanvases, layout, showCuttingGuide)
+      })
+
+      const sheetCanvas = renderSheet300DpiCanvas(canvasMap, layout, showCuttingGuide)
       sheetCanvas.toBlob((blob) => {
         if (!blob) return
         const url = URL.createObjectURL(blob)
@@ -681,7 +929,7 @@ export default function IdPhotoMakerTool() {
               </Panel>
 
               {/* Photo Framing Card for activePhoto */}
-              <Panel className="p-4 space-y-4">
+              <Panel className="p-4 space-y-3.5">
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <span className="font-semibold text-[13px] text-ink flex items-center gap-1.5">
                     <Crop size={14} className="text-accent" />
@@ -702,101 +950,209 @@ export default function IdPhotoMakerTool() {
                   </button>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  {/* Interactive Crop Preview Box */}
-                  <div className="relative shrink-0 w-32 h-32 rounded border border-line bg-base overflow-hidden shadow-inner flex items-center justify-center">
-                    <canvas ref={singlePreviewRef} className="w-full h-full object-cover" />
-
-                    {/* Biometric Guide Overlay (Head & Eye line) */}
-                    {showBiometricGuide && (
-                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                        {/* Oval head guide */}
-                        <div className="w-20 h-24 rounded-full border border-accent/60 bg-accent/5" />
-                        {/* Eye level line */}
-                        <div className="absolute top-[42%] w-full border-t border-dashed border-accent/40" />
-                        {/* Center crosshair */}
-                        <div className="absolute h-full border-l border-dashed border-accent/30" />
-                      </div>
+                {/* Framing Size Selector Tabs */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-dim font-medium">Select Size to Frame:</span>
+                    <span className="text-faint text-[10.5px]">
+                      {FRAMING_PREVIEW_SIZES[framingSize].desc}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 bg-surface/60 p-1 rounded-lg border border-line">
+                    {(['2x2', 'passport', 'wallet', '1x1', '1.5x1.5'] as IdPhotoSizeId[]).map(
+                      (sz) => {
+                        const isSelected = framingSize === sz
+                        const isIncludedInLayout = layout.boxes.some((b) => b.sizeId === sz)
+                        return (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => setFramingSize(sz)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-accent text-base font-semibold shadow-xs'
+                                : 'text-dim hover:text-ink hover:bg-surface'
+                            }`}
+                          >
+                            <span>{FRAMING_PREVIEW_SIZES[sz].name}</span>
+                            {isIncludedInLayout && (
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isSelected ? 'bg-base' : 'bg-accent'
+                                }`}
+                                title="Included in current sheet layout"
+                              />
+                            )}
+                          </button>
+                        )
+                      }
                     )}
                   </div>
+                </div>
 
-                  {/* Sliders & Toggles */}
-                  <div className="flex-1 space-y-2.5 min-w-0">
+                <div className="flex items-start gap-3.5 pt-1">
+                  {/* Interactive Drag-to-Pan Canvas Box */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <div
+                      className={`relative ${FRAMING_PREVIEW_SIZES[framingSize].boxClass} rounded border border-line bg-base overflow-hidden shadow-inner flex items-center justify-center cursor-grab active:cursor-grabbing select-none group`}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onWheel={handleWheel}
+                      title="Click & drag picture to freely position • Scroll mouse wheel to zoom"
+                    >
+                      <canvas
+                        ref={singlePreviewRef}
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+
+                      {/* Biometric Face Guide Overlay */}
+                      {showBiometricGuide && (
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          {/* Oval head guide scaled to aspect ratio */}
+                          <div
+                            className={`rounded-full border border-accent/60 bg-accent/5 ${
+                              framingSize === 'passport'
+                                ? 'w-[90px] h-[122px]'
+                                : framingSize === 'wallet'
+                                  ? 'w-[88px] h-[126px]'
+                                  : 'w-20 h-24'
+                            }`}
+                          />
+                          {/* Eye level line */}
+                          <div className="absolute top-[42%] w-full border-t border-dashed border-accent/40" />
+                          {/* Center vertical crosshair */}
+                          <div className="absolute h-full border-l border-dashed border-accent/30" />
+                        </div>
+                      )}
+
+                      {/* Subtle drag hint */}
+                      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xs text-[9px] text-white/90 px-1 py-0.5 rounded pointer-events-none flex items-center gap-0.5">
+                        <Move size={9} /> Drag to pan
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-faint flex items-center gap-1">
+                      <Move size={10} /> Drag to move picture
+                    </span>
+                  </div>
+
+                  {/* Sliders: Zoom, Pan X, Pan Y */}
+                  <div className="flex-1 space-y-2 min-w-0">
+                    {/* Zoom */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[11.5px] text-dim">
+                      <div className="flex justify-between text-[11px] text-dim">
                         <span className="flex items-center gap-1">
                           <ZoomIn size={12} /> Zoom
                         </span>
-                        <span className="font-mono">
-                          {Math.round(activeAdjustment.zoom * 100)}%
-                        </span>
+                        <span className="font-mono">{Math.round(currentZoom * 100)}%</span>
                       </div>
                       <input
                         type="range"
                         min="0.8"
                         max="2.5"
                         step="0.05"
-                        value={activeAdjustment.zoom}
-                        onChange={(e) =>
-                          updateActiveAdjustment((prev) => ({
-                            ...prev,
-                            zoom: parseFloat(e.target.value)
-                          }))
-                        }
+                        value={currentZoom}
+                        onChange={(e) => updateFraming({ zoom: parseFloat(e.target.value) })}
                         className="w-full accent-accent cursor-pointer"
                       />
                     </div>
 
+                    {/* Pan Horizontal (X) */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[11.5px] text-dim">
+                      <div className="flex justify-between text-[11px] text-dim">
                         <span className="flex items-center gap-1">
-                          <Move size={12} /> Pan Vertical
+                          <Move size={12} /> Pan Horizontal (X)
                         </span>
-                        <span className="font-mono">{activeAdjustment.panY}px</span>
+                        <span className="font-mono">
+                          {currentPanX > 0 ? `+${currentPanX}` : currentPanX}px
+                        </span>
                       </div>
                       <input
                         type="range"
                         min="-150"
                         max="150"
-                        step="2"
-                        value={activeAdjustment.panY}
-                        onChange={(e) =>
-                          updateActiveAdjustment((prev) => ({
-                            ...prev,
-                            panY: parseInt(e.target.value, 10)
-                          }))
-                        }
+                        step="1"
+                        value={currentPanX}
+                        onChange={(e) => updateFraming({ panX: parseInt(e.target.value, 10) })}
                         className="w-full accent-accent cursor-pointer"
                       />
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
+                    {/* Pan Vertical (Y) */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-dim">
+                        <span className="flex items-center gap-1">
+                          <Move size={12} /> Pan Vertical (Y)
+                        </span>
+                        <span className="font-mono">
+                          {currentPanY > 0 ? `+${currentPanY}` : currentPanY}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-150"
+                        max="150"
+                        step="1"
+                        value={currentPanY}
+                        onChange={(e) => updateFraming({ panY: parseInt(e.target.value, 10) })}
+                        className="w-full accent-accent cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Buttons: Face Guide, Center, Reset */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 text-[11px]">
                       <button
                         type="button"
                         onClick={() => setShowBiometricGuide(!showBiometricGuide)}
-                        className={`text-[11px] cursor-pointer px-2 py-0.5 rounded border transition-colors ${
+                        className={`cursor-pointer px-2 py-0.5 rounded border transition-colors ${
                           showBiometricGuide
-                            ? 'border-accent bg-accent/15 text-accent'
+                            ? 'border-accent bg-accent/15 text-accent font-medium'
                             : 'border-line text-faint hover:text-dim'
                         }`}
                       >
                         Face Guide {showBiometricGuide ? 'ON' : 'OFF'}
                       </button>
 
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => updateFraming({ panX: 0, panY: 0 })}
+                          title="Center Image (Pan = 0)"
+                          className="text-faint hover:text-ink px-2 py-0.5 rounded border border-line bg-surface/50 cursor-pointer"
+                        >
+                          Center
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateFraming({ zoom: 1.0, panX: 0, panY: 0 })}
+                          title="Reset Zoom & Pan"
+                          className="text-faint hover:text-ink px-2 py-0.5 rounded border border-line bg-surface/50 flex items-center gap-1 cursor-pointer"
+                        >
+                          <RotateCcw size={10} /> Reset
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Secondary Actions: Apply All & Single Photo Download */}
+                    <div className="flex items-center justify-between pt-1 border-t border-line/50 text-[10.5px]">
                       <button
                         type="button"
-                        onClick={() =>
-                          updateActiveAdjustment((prev) => ({
-                            ...prev,
-                            zoom: 1.0,
-                            panX: 0,
-                            panY: 0
-                          }))
-                        }
-                        title="Reset Pan & Zoom"
-                        className="text-[11px] text-faint hover:text-ink flex items-center gap-1 cursor-pointer"
+                        onClick={handleApplyToAllSizes}
+                        className="text-accent hover:underline cursor-pointer font-medium"
                       >
-                        <RotateCcw size={11} /> Reset
+                        Apply framing to all sizes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadSinglePhoto}
+                        className="text-dim hover:text-ink flex items-center gap-1 cursor-pointer"
+                        title="Download this single cropped photo as PNG"
+                      >
+                        <Download size={11} /> Save {FRAMING_PREVIEW_SIZES[framingSize].name}
                       </button>
                     </div>
                   </div>
