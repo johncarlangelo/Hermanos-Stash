@@ -373,6 +373,24 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Delivers true semantic problem routing and 3-tier confidence classification with Raycast-grade responsiveness (<10 ms), zero background battery drain, minimal RAM usage, zero installer bloat, and polished human-like conversational handling.
 
+## ADR-047 — Bounded Canvas Undo & Redo History Engine for Queue Workflow
+
+**Decision:**
+1. **Dedicated History Reducer & Immutability (`useWorkflowHistory.ts`):**
+   - Manage canvas graph history through a pure reducer (`workflowHistoryReducer`) with past/present/future stacks capped at 40 snapshots.
+   - Deep-clone graph structures (`cloneWorkflowGraph`) across transitions to ensure immutable node parameters, file attachments, and edge topologies.
+2. **Action Granularity & Drag Smoothing:**
+   - Decouple high-frequency rAF pointermove dragging from the history stack (`addToHistory: false`).
+   - Capture pre-drag graph snapshot on pointerdown; on pointerup, commit the pre-drag snapshot to `past` only if the node actually moved to a new snapped coordinate. A single `Ctrl+Z` reverses the complete drag to pre-drag coordinates without micro-stepping.
+3. **Runtime Execution State Isolation:**
+   - Pipeline execution node progress states (`running`, `success`, `error`) and output artifacts are updated transiently without polluting the user's graph structural undo/redo stack.
+4. **Ergonomics & Keyboard Guarding:**
+   - Provide standard `Ctrl+Z` (Undo) and `Ctrl+Y` / `Ctrl+Shift+Z` (Redo) shortcuts, strictly guarded against active input/textarea focus.
+   - Expose accessible Undo and Redo icon buttons (`Undo2`, `Redo2`) in `WorkflowToolbar.tsx` with live disabled opacity states.
+
+**Reason:** Eliminates user frustration from accidental node deletions or wrong cable connections in the Queue Workflow canvas, bringing Raycast/Figma-tier creative ergonomics to visual pipeline composition.
+
+
 
 
 

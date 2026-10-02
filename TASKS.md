@@ -535,7 +535,33 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - [ ] Implement parameter extraction: parse user natural language prompts to automatically pre-fill tool parameters (e.g. resolution, quality, page ranges, watermark text).
   - [ ] Implement dynamic recipe graph generation: automatically assemble multi-node graphs and import them into the Queue Workflow canvas.
 
+## Quality-of-Life, Performance & Ergonomics Candidates (Small-Scale Improvements)
 
+Focused, high-impact improvements to desktop ergonomics, canvas interactions, and multi-tasking workflows:
+
+- [x] **1. Workflow Canvas Undo & Redo History Engine (`v0.7.0`)**:
+  - Full past/present/future history stack (clamped to 40 snapshots) tracking node placement, node deletion, duplication, edge wiring, edge disconnection, auto-layout, canvas clear, and template loading.
+  - Dedicated `useWorkflowHistory` hook decoupling canvas history reducer from React DOM lifecycle, preserving discrete snapshotting upon drag finish and isolating runtime execution states.
+  - Global `Ctrl+Z` (Undo) and `Ctrl+Y` / `Ctrl+Shift+Z` (Redo) keyboard shortcuts (with input element typing guard) and interactive Undo/Redo toolbar icon buttons with tooltip hints and disabled states.
+  - Unit tests covering history stack bounds, sequential undo/redo, redo invalidation upon new actions, and transient execution state safety.
+- [ ] **2. Canvas Marquee / Box Multi-Node Selection & Batch Operations**:
+  - Dragging on empty canvas background draws an SVG dashed selection box.
+  - All nodes intersecting the box get selected (`selectedNodeIds: Set<string>`).
+  - Pressing `Delete` or `Backspace` deletes all selected nodes and their associated wires in a single action.
+  - Pressing `Ctrl+A` selects all nodes on the canvas.
+- [ ] **3. Hermano Chat Session Persistence & Quick Actions**:
+  - Persists recent chat conversation messages in SQLite preferences (`prefs.get/set('chatbot.history')`) so closing the widget or switching between tools doesn't erase previous tool recommendations and explanations.
+  - Adds a "Clear Chat" header action button to reset the session.
+  - Adds a "Copy Response" action to assistant messages.
+- [ ] **4. Dual-Tool Split Orientation (Horizontal vs. Vertical Split)**:
+  - Adds a layout orientation toggle (`splitOrientation: 'vertical' | 'horizontal'`) to the Dual Workspace header.
+  - Allows stacking two tools top/bottom instead of only side-by-side for wide tools (Text Diff, Audio Trimmer with waveforms, Markdown Preview).
+- [ ] **5. Window Bounds & Geometry Restoration**:
+  - Records window size (`width`, `height`), position (`x`, `y`), and `isMaximized` in local preferences on window move/resize (debounced ~300ms).
+  - On launch, restores the exact previous position and screen geometry (with virtual display bounding checks to prevent off-screen launches on disconnected external monitors).
+- [ ] **6. Image Comparison Zoom & Pan Lens**:
+  - Adds mouse-wheel zoom (1x to 5x) and drag-to-pan inside the before/after split slider in Background Remover and Image Preview.
+  - Allows inspecting pixel-level alpha edges (hair, fine transparency keying, defringing) at 100% native resolution.
 
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 

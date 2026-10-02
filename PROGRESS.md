@@ -1,5 +1,15 @@
 # Hermanos Stash — Progress
 
+## Queue Workflow View — Bounded Canvas Undo & Redo History Engine [BETA v0.7.0]
+
+Shipped a production-grade, bounded Undo & Redo history engine (`v0.7.0`) for the Queue Workflow visual canvas orchestrator:
+- **Dedicated History Reducer & Immutable Snapshots (`useWorkflowHistory.ts`)**: Pure state reducer managing past/present/future stacks (bounded to 40 historical snapshots) with deep structural graph cloning (`cloneWorkflowGraph`).
+- **Discrete Node Dragging & Action Granularity**: Seamlessly isolates high-frequency rAF pointer dragging from the history stack; automatically snapshots the pre-drag graph upon pointer release only if the node's position actually moved, allowing a single `Ctrl+Z` to undo dragging to its exact pre-drag coordinates.
+- **Runtime Execution State Isolation**: Pipeline execution node progress states (`running`, `success`, `error`) and output artifacts are updated transiently without polluting the user's graph structural undo/redo stack.
+- **Global Keyboard Shortcuts & Input Guards**: `Ctrl+Z` (Undo) and `Ctrl+Y` / `Ctrl+Shift+Z` (Redo) with strict input typing guards (`INPUT`, `TEXTAREA`, `SELECT`, `isContentEditable`) preserving native browser text editing.
+- **Workflow Toolbar Integration**: Added dedicated Undo and Redo icon buttons (`Undo2`, `Redo2` from `lucide-react`) in `WorkflowToolbar.tsx` with dynamic disabled opacity states and accessible tooltip shortcuts.
+- **Verification**: Added 9 unit tests in `useWorkflowHistory.test.ts` and companion assertions in `workflow.test.ts` (119/119 passing); full test suite green with **1,006 tests passing across 99 test files (100%)**; zero typecheck, lint, or format issues.
+
 ## Milestone 12 — Hermano: AI Copilot & Local Decision Router (Branch: `feature/chatbot-integration`)
 
 Shipped the initial front-end and interactive routing prototype for **Hermano**, an AI Copilot and decision router designed to navigate Stash's 78 tools and future 500+ utilities:

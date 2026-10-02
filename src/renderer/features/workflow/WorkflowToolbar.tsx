@@ -6,9 +6,11 @@ import {
   Network,
   Play,
   Plus,
+  Redo2,
   RefreshCw,
   Save,
   Trash2,
+  Undo2,
   Workflow
 } from 'lucide-react'
 import { Badge } from '../../components/ui/badge'
@@ -32,6 +34,10 @@ interface WorkflowToolbarProps {
   zoom: number
   onClearCanvas: () => void
   onSwitchToLinearView?: () => void
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
 }
 
 export function WorkflowToolbar({
@@ -51,7 +57,11 @@ export function WorkflowToolbar({
   onResetZoom,
   zoom,
   onClearCanvas,
-  onSwitchToLinearView
+  onSwitchToLinearView,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo
 }: WorkflowToolbarProps) {
   return (
     <div
@@ -149,6 +159,31 @@ export function WorkflowToolbar({
         </button>
 
         <div className="h-5 w-px bg-line/60 mx-1 hidden sm:block" />
+
+        {/* Undo & Redo Controls */}
+        <div className="flex items-center rounded-md border border-line bg-surface/70 text-dim">
+          <button
+            type="button"
+            disabled={!canUndo}
+            onClick={onUndo}
+            className="cursor-pointer p-1.5 hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo"
+          >
+            <Undo2 size={13} />
+          </button>
+          <div className="h-3.5 w-px bg-line/60" />
+          <button
+            type="button"
+            disabled={!canRedo}
+            onClick={onRedo}
+            className="cursor-pointer p-1.5 hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+            aria-label="Redo"
+          >
+            <Redo2 size={13} />
+          </button>
+        </div>
 
         {/* Auto Layout */}
         <button

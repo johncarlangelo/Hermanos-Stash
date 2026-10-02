@@ -22,6 +22,7 @@ import { QUEUE_WORKFLOW_VERSION } from './version'
 import { AUDIT_ROWS, expectedAuditPorts } from './compatibility-audit'
 import { getToolParamFields, resolveParamValue } from './tool-params'
 import { isWorkflowEligibleTool } from './WorkflowToolDrawer'
+import { workflowHistoryReducer } from './useWorkflowHistory'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -362,7 +363,50 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.6.1')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.7.0')
+    })
+  })
+
+  describe('Workflow Canvas Undo & Redo History Engine', () => {
+    it('manages graph snapshots, undo/redo state transitions, and avoids transient runtime pollution', () => {
+      const g0: WorkflowGraph = { nodes: [], edges: [] }
+      const g1: WorkflowGraph = {
+        nodes: [{ id: 'n1', toolId: 'json-format', position: { x: 0, y: 0 }, params: {} }],
+        edges: []
+      }
+
+      let state = workflowHistoryReducer(
+        { past: [], present: g0, future: [] },
+        { type: 'SET_GRAPH', updater: g1, addToHistory: true }
+      )
+      expect(state.past.length).toBe(1)
+      expect(state.present.nodes.length).toBe(1)
+      expect(state.future.length).toBe(0)
+
+      // Undo
+      state = workflowHistoryReducer(state, { type: 'UNDO' })
+      expect(state.past.length).toBe(0)
+      expect(state.present.nodes.length).toBe(0)
+      expect(state.future.length).toBe(1)
+
+      // Redo
+      state = workflowHistoryReducer(state, { type: 'REDO' })
+      expect(state.past.length).toBe(1)
+      expect(state.present.nodes.length).toBe(1)
+      expect(state.future.length).toBe(0)
+
+      // Transient update (e.g. execution status or active drag)
+      state = workflowHistoryReducer(state, {
+        type: 'SET_GRAPH',
+        updater: (prev) => ({
+          ...prev,
+          nodes: prev.nodes.map((n) => ({ ...n, status: 'running' as const }))
+        }),
+        addToHistory: false
+      })
+      expect(state.past.length).toBe(1)
+      expect(state.present.nodes[0].status).toBe('running')
+      expect(state.future.length).toBe(0)
     })
   })
 

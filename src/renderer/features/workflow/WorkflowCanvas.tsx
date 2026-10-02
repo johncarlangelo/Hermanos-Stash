@@ -25,6 +25,7 @@ import { WorkflowTemplateModal } from './WorkflowTemplateModal'
 import { WorkflowTemplatesDrawer } from './WorkflowTemplatesDrawer'
 import { WorkflowOutputDrawer } from './WorkflowOutputDrawer'
 import { WorkflowNodeDetailDrawer } from './WorkflowNodeDetailDrawer'
+import { useWorkflowHistory } from './useWorkflowHistory'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { toastError, toastSuccess } from '../../stores/toasts'
 
@@ -36,11 +37,23 @@ interface WorkflowCanvasProps {
 }
 
 export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowCanvasProps) {
-  // Master graph state
-  const [graph, setGraph] = useState<WorkflowGraph>(() => {
+  // Master graph state with bounded Undo / Redo history engine
+  const initialGraphState = useMemo<WorkflowGraph>(() => {
     if (initialGraph && initialGraph.nodes.length > 0) return initialGraph
     return { nodes: [], edges: [] }
-  })
+  }, [initialGraph])
+
+  const {
+    graph,
+    setGraph,
+    recordSnapshot,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useWorkflowHistory(initialGraphState)
+
+  const dragStartGraphRef = useRef<WorkflowGraph | null>(null)
 
   const [workflowName, setWorkflowName] = useState<string>('Untitled Workflow')
 
@@ -190,7 +203,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                   : n
               )
             }
-          })
+          }, false)
         })
       }
       return
@@ -238,8 +251,17 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
             n.id === nodeId ? { ...n, position: { x: finalX, y: finalY } } : n
           )
         }
-      })
+      }, false)
+
+      // If the node moved from its initial position, push pre-drag snapshot to history stack
+      if (
+        dragStartGraphRef.current &&
+        (initialNodePos.x !== finalX || initialNodePos.y !== finalY)
+      ) {
+        recordSnapshot(dragStartGraphRef.current)
+      }
     }
+    dragStartGraphRef.current = null
 
     isPanningRef.current = false
     draggingNodeRef.current = null
@@ -439,7 +461,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       edges: prev.edges.filter((e) => e.fromNodeId !== nodeId && e.toNodeId !== nodeId)
     }))
     setSelectedNodeId((curr) => (curr === nodeId ? null : curr))
-  }, [])
+  }, [setGraph])
 
   const handleDuplicateNode = useCallback((nodeId: string) => {
     const newId = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
@@ -464,7 +486,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       }
     })
     setSelectedNodeId(newId)
-  }, [])
+  }, [setGraph])
 
   const handleStartNodeDrag = useCallback(
     (nodeId: string, e: React.PointerEvent) => {
@@ -479,9 +501,10 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         startY: e.clientY,
         initialNodePos: { ...node.position }
       }
+      dragStartGraphRef.current = graph
       pendingNodeDragPosRef.current = { clientX: e.clientX, clientY: e.clientY }
     },
-    [graph.nodes]
+    [graph]
   )
 
   // Wiring actions
@@ -644,7 +667,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       edges: prev.edges.filter((e) => e.id !== edgeId)
     }))
     setSelectedEdgeId((curr) => (curr === edgeId ? null : curr))
-  }, [])
+  }, [setGraph])
 
   // Toolbar Actions
   const handleAutoLayout = () => {
@@ -746,7 +769,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         )
       }))
     },
-    []
+    [setGraph]
   )
 
   const handleUpdateNodeLabel = useCallback((nodeId: string, customLabel: string) => {
@@ -754,14 +777,14 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       ...prev,
       nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, customLabel } : n))
     }))
-  }, [])
+  }, [setGraph])
 
   const handleUpdateNodeParams = useCallback((nodeId: string, params: Record<string, unknown>) => {
     setGraph((prev) => ({
       ...prev,
       nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, params } : n))
     }))
-  }, [])
+  }, [setGraph])
 
   // Execution Pipeline
   const handleRunPipeline = async () => {
@@ -809,7 +832,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         outputFiles: undefined,
         error: undefined
       }))
-    }))
+    }), false)
 
     try {
       // Execute without synthetic sample inputs (Item 5: pass empty defaults)
@@ -818,7 +841,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           setGraph((prev) => ({
             ...prev,
             nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, status: 'running' } : n))
-          }))
+          }), false)
         },
         onNodeSuccess: (nodeId, outputFiles, durationMs) => {
           setGraph((prev) => ({
@@ -833,13 +856,13 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
                   }
                 : n
             )
-          }))
+          }), false)
         },
         onNodeError: (nodeId, error) => {
           setGraph((prev) => ({
             ...prev,
             nodes: prev.nodes.map((n) => (n.id === nodeId ? { ...n, status: 'error', error } : n))
-          }))
+          }), false)
         }
       })
 
@@ -866,7 +889,20 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
       if (isTyping) return
 
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        if (canUndo) {
+          undo()
+        }
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))
+      ) {
+        e.preventDefault()
+        if (canRedo) {
+          redo()
+        }
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedNodeId) {
           e.preventDefault()
           handleDeleteNode(selectedNodeId)
@@ -898,7 +934,11 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     inspectingNodeId,
     handleDeleteNode,
     handleDeleteEdge,
-    handleDuplicateNode
+    handleDuplicateNode,
+    canUndo,
+    canRedo,
+    undo,
+    redo
   ])
 
   const handleOpenDetails = useCallback((id: string) => {
@@ -963,6 +1003,10 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         zoom={zoom}
         onClearCanvas={handleClearCanvas}
         onSwitchToLinearView={onSwitchToLinearView}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
       />
 
       {/* Scaled & Panned Canvas Viewport */}
