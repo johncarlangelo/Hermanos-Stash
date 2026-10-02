@@ -21,6 +21,7 @@ import type { WorkflowGraph } from './types'
 import { QUEUE_WORKFLOW_VERSION } from './version'
 import { AUDIT_ROWS, expectedAuditPorts } from './compatibility-audit'
 import { getToolParamFields, resolveParamValue } from './tool-params'
+import { isWorkflowEligibleTool } from './WorkflowToolDrawer'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -361,7 +362,33 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.6.0')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.6.1')
+    })
+  })
+
+  describe('Workflow Tool Palette Curation', () => {
+    it('identifies workflow-eligible tools with active I/O ports', () => {
+      const allTools = toolRegistry.all()
+      expect(allTools.length).toBe(79)
+
+      const eligible = allTools.filter(isWorkflowEligibleTool)
+      const inert = allTools.filter((t) => !isWorkflowEligibleTool(t))
+
+      // Exactly 76 tools are workflow-eligible (have inputs or outputs)
+      expect(eligible.length).toBe(76)
+
+      // Only the 3 zero-port reference / in-place disk tools are filtered
+      expect(inert.map((t) => t.id).sort()).toEqual(
+        ['batch-rename', 'http-status', 'mime-lookup'].sort()
+      )
+
+      // Every eligible tool has at least one input or output capability
+      for (const tool of eligible) {
+        const c = tool.capabilities
+        expect(
+          Boolean(c.acceptsFiles || c.producesFiles || c.acceptsText || c.producesText)
+        ).toBe(true)
+      }
     })
   })
 

@@ -473,8 +473,9 @@ Local v0.3.0 implementation is verified; parent task stays in progress pending u
   - Removed the 4 legacy built-in recipes (`presets.ts`) that predated the directional compatibility matrix (including the legacy Photo ID studio whose mixed-output wire failed preflight checks).
   - Added clean empty state in `WorkflowTemplatesDrawer.tsx` informing users that updated pre-built recipes matching the matrix will be curated and added.
   - Bumped `QUEUE_WORKFLOW_VERSION` to `0.4.1`, updated unit tests and regenerated matrix documentation. All 929 tests pass.
+- [x] **Filter Out Inert / Non-Transforming Tools in Workflow Drawer (`v0.6.1`)**:
+  - Filtered inert zero-port reference tools (`http-status`, `mime-lookup`, and in-place `batch-rename`) from `WorkflowToolDrawer.tsx` via `isWorkflowEligibleTool` check. All 79 tools remain registered in the app shell, while the workflow palette surfaces exactly the 76 connectable pipeline tools with dynamic count placeholder. Unit tests added in `workflow.test.ts`.
 - [ ] **Workflow Catalog Curation & Execution Relevance Audit (Future Consideration)**:
-  - **Filter Out Inert / Non-Transforming Tools:** Audit tools that have no I/O capability or pipeline transformation utility (e.g. `mime-lookup` and `http-status` with empty capabilities `{}`, `chmod-calculator`, `cron-explainer`). Evaluate hiding them from the workflow palette drawer (e.g. via `isWorkflowCompatible?: boolean` or requiring at least one input/output port) so inert cards don't clutter the canvas.
   - **Metric / Terminal Sink Nodes:** Clarify the role of inspector/calculator tools like `token-counter` (can act as a read-only terminal sink or pipeline token estimator).
   - **Local LLM & Prompt Pipeline Integration:** Define a non-interactive step-execution contract for `prompt-library` (source node feeding prompt text) and `local-llm-playground` (pipeline node that accepts prompt text/context and outputs generated text via local Ollama/LM Studio endpoints, e.g. for `PDF -> Text -> Local LLM Summary -> Markdown-to-PDF` pipelines).
 - [ ] **Interactive Radial Chord Compatibility Explorer / Interop Graph (Future UX Feature)**:

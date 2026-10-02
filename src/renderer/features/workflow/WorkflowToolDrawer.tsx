@@ -2,8 +2,17 @@ import { useMemo, useState } from 'react'
 import { Layers, Plus, Search, X } from 'lucide-react'
 import { toolRegistry } from '../../../shared/tool-registry/registry'
 import { CATEGORIES } from '../../../shared/constants/categories'
-import type { CategoryId } from '../../../shared/types/tool'
+import type { CategoryId, ToolDefinition } from '../../../shared/types/tool'
 import { getIcon } from '../../components/icons'
+
+/**
+ * Determines whether a tool can participate in the visual node graph workflow.
+ * A tool must have at least one input or output port (files or text) to be connectable.
+ */
+export function isWorkflowEligibleTool(tool: ToolDefinition): boolean {
+  const c = tool.capabilities
+  return Boolean(c.acceptsFiles || c.producesFiles || c.acceptsText || c.producesText)
+}
 
 interface WorkflowToolDrawerProps {
   open: boolean
@@ -15,10 +24,10 @@ export function WorkflowToolDrawer({ open, onClose, onAddTool }: WorkflowToolDra
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | 'all'>('all')
 
-  const allTools = useMemo(() => toolRegistry.all(), [])
+  const workflowTools = useMemo(() => toolRegistry.all().filter(isWorkflowEligibleTool), [])
 
   const filteredTools = useMemo(() => {
-    let result = allTools
+    let result = workflowTools
 
     if (selectedCategory !== 'all') {
       result = result.filter((t) => t.category === selectedCategory)
@@ -35,7 +44,7 @@ export function WorkflowToolDrawer({ open, onClose, onAddTool }: WorkflowToolDra
     }
 
     return result
-  }, [allTools, selectedCategory, searchQuery])
+  }, [workflowTools, selectedCategory, searchQuery])
 
   return (
     <>
@@ -76,7 +85,7 @@ export function WorkflowToolDrawer({ open, onClose, onAddTool }: WorkflowToolDra
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 78 local tools…"
+              placeholder={`Search ${workflowTools.length} pipeline tools…`}
               className="w-full rounded-md border border-line bg-base/80 py-1.5 pl-8 pr-3 text-xs text-ink placeholder:text-faint focus:border-accent focus:outline-none transition-colors"
             />
             {searchQuery && (
