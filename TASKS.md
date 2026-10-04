@@ -561,9 +561,11 @@ Focused, high-impact improvements to desktop ergonomics, canvas interactions, an
 - [ ] **5. Window Bounds & Geometry Restoration**:
   - Records window size (`width`, `height`), position (`x`, `y`), and `isMaximized` in local preferences on window move/resize (debounced ~300ms).
   - On launch, restores the exact previous position and screen geometry (with virtual display bounding checks to prevent off-screen launches on disconnected external monitors).
-- [ ] **6. Image Comparison Zoom & Pan Lens**:
-  - Adds mouse-wheel zoom (1x to 5x) and drag-to-pan inside the before/after split slider in Background Remover and Image Preview.
-  - Allows inspecting pixel-level alpha edges (hair, fine transparency keying, defringing) at 100% native resolution.
+- [x] **6. Image Comparison Zoom & Pan Lens**:
+  - Reusable hook `useImageZoomPan` (`src/renderer/tools/shared/use-image-zoom-pan.ts`) providing cursor-anchored wheel zooming, drag-to-pan, pointer capture, double-click fit/zoom toggling, and GPU-accelerated CSS `transform: translate3d(...) scale(...)`.
+  - Integrated into **Background Remover** (`BackgroundRemoverTool.tsx`): decoupled split slider from full-screen input into an isolated draggable slider handle with tactile `< | >` pill, enabling 1x to 6x wheel zooming and smooth drag-to-pan across before/after cutouts while maintaining native eyedropper color sampling accuracy.
+  - Integrated into **Image Preview** (`ImagePreviewTool.tsx`): replaced native `overflow-auto` scrollbars with 0.1x to 8x smooth cursor-anchored wheel zooming, click-and-drag panning, 1:1 actual pixel size calculation, and double-click to fit/zoom.
+  - Comprehensive unit test suite in `use-image-zoom-pan.test.ts` (9 tests) covering bounding clamps, zoom stepping, anchored pan offset invariance, and negative coordinate scaling.
 
 ## Milestone 11 — Future: Hermanos Desktop App Starter Template & UI/UX Design System Extraction
 

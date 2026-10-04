@@ -1,5 +1,13 @@
 # Hermanos Stash — Progress
 
+## Media Tools — Image Comparison Zoom & Pan Lens Lens Engine
+
+Shipped a reusable cursor-anchored zoom and pan lens engine (`use-image-zoom-pan.ts`) for high-precision pixel inspection across image tools:
+- **Cursor-Anchored Wheel Zoom & Drag-to-Pan (`use-image-zoom-pan.ts`)**: Pure geometric projection math (`calculateAnchoredPan`) ensuring the exact pixel beneath the cursor remains stationary across scale changes. Hardware-accelerated CSS transforms (`translate3d(...) scale(...)`) provide fluid 60fps pan and zoom without triggering DOM layout recalculation or image re-decoding.
+- **Background Remover Integration (`BackgroundRemoverTool.tsx`)**: Replaced the full-screen invisible slider input with an isolated draggable split handle with a tactile `↔` badge. Added Zoom Out, Zoom Percentage chip, Zoom In, and Fit buttons to the Cutout View toolbar. Supports 1x to 6x cursor-anchored wheel zooming and click-and-drag panning across before/after cutouts while maintaining mathematically exact pixel-to-canvas coordinate sampling for the eyedropper tool.
+- **Image Preview Integration (`ImagePreviewTool.tsx`)**: Upgraded from static browser scrollbars (`overflow-auto`) to smooth 0.1x to 8x cursor-anchored wheel zooming, click-and-drag panning with tactile grab/grabbing cursors, true 1:1 physical pixel calculation on the `100%` button, and double-click to toggle fit/zoom.
+- **Verification**: Added comprehensive unit test coverage in `use-image-zoom-pan.test.ts` (9 tests) covering boundary clamping, factor stepping, anchored pan offset invariance, centered scaling stability, and negative cursor coordinate handling; full project test suite green with **1,020 tests passing across 100 test files (100%)**; zero typecheck, lint, or format issues.
+
 ## Queue Workflow View — Canvas Marquee Selection & Batch Operations [BETA v0.8.0]
 
 Shipped an enterprise-grade marquee box selection and multi-node batch operations engine (`v0.8.0`) for the Queue Workflow visual canvas orchestrator:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { EmptyState, ErrorNote, Panel, SectionHeading, Spinner } from '../../components/ui/Feedback'
@@ -8,11 +8,10 @@ import { normalizeError, stashError, type StashError } from '../../../shared/err
 import { formatBytes, guessMimeType } from '../../../shared/utils/files'
 import {
   ACCEPTED_IMAGE_EXTENSIONS,
-  stepZoom,
   ZOOM_MAX_PERCENT,
-  ZOOM_MIN_PERCENT,
-  type ZoomMode
+  ZOOM_MIN_PERCENT
 } from './logic'
+import { useImageZoomPan } from '../shared/use-image-zoom-pan'
 
 interface LoadedImage {
   path: string
@@ -27,7 +26,29 @@ export default function ImagePreviewTool() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<StashError | null>(null)
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null)
-  const [zoom, setZoom] = useState<ZoomMode>('fit')
+
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  const {
+    isZoomed,
+    zoomPercent,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    setZoom: setLensZoom,
+    handleWheel,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleDoubleClick,
+    transformStyle,
+    cursorClass
+  } = useImageZoomPan({
+    minZoom: 0.1,
+    maxZoom: 8.0,
+    initialZoom: 1.0,
+    stepFactor: 1.25
+  })
 
   // Object URLs must be released whenever they are replaced or on unmount;
   // keying the effect on the URL guarantees exactly-once revocation.
@@ -41,50 +62,65 @@ export default function ImagePreviewTool() {
     setImage(null)
     setError(null)
     setDimensions(null)
-    setZoom('fit')
-  }, [])
+    resetZoom()
+  }, [resetZoom])
 
-  const loadFile = useCallback(async (paths: string[]): Promise<void> => {
-    const path = paths[0]
-    if (!path) return
-    const name = fileNameOf(path)
-    setLoading(true)
-    setError(null)
-    try {
-      const mimeType = guessMimeType(name)
-      if (
-        !mimeType ||
-        !(ACCEPTED_IMAGE_EXTENSIONS as readonly string[]).includes(extensionOf(name))
-      ) {
-        throw stashError('UNSUPPORTED', `"${name}" isn't a supported image format.`, {
-          technicalMessage: `mime=${String(mimeType)}`
-        })
-      }
-      const { bytes, truncated, sizeBytes } = await window.stash.fs.readFileBytes({ path })
-      if (truncated) {
-        throw stashError('FS_READ', `"${name}" is too large to preview in full.`)
-      }
-      // <img> rendering keeps SVGs inert — scripts inside them never execute.
-      setImage({
-        path,
-        name,
-        objectUrl: URL.createObjectURL(new Blob([bytes], { type: mimeType })),
-        sizeBytes,
-        mimeType
-      })
-      setDimensions(null)
-      setZoom('fit')
-      recordHistory(name, 'success')
-    } catch (err) {
-      const normalized = normalizeError(err)
-      setError(normalized)
-      recordHistory(name, 'failure', normalized.userMessage)
-    } finally {
-      setLoading(false)
+  const handleShowActualSize = useCallback(() => {
+    if (!dimensions || !imgRef.current) {
+      setLensZoom(1.0)
+      return
     }
-  }, [])
+    const clientWidth = imgRef.current.clientWidth
+    if (clientWidth > 0) {
+      const actualScale = dimensions.width / clientWidth
+      setLensZoom(Number(actualScale.toFixed(2)))
+    } else {
+      setLensZoom(1.0)
+    }
+  }, [dimensions, setLensZoom])
 
-  const zoomPercent = zoom === 'fit' ? null : zoom
+  const loadFile = useCallback(
+    async (paths: string[]): Promise<void> => {
+      const path = paths[0]
+      if (!path) return
+      const name = fileNameOf(path)
+      setLoading(true)
+      setError(null)
+      try {
+        const mimeType = guessMimeType(name)
+        if (
+          !mimeType ||
+          !(ACCEPTED_IMAGE_EXTENSIONS as readonly string[]).includes(extensionOf(name))
+        ) {
+          throw stashError('UNSUPPORTED', `"${name}" isn't a supported image format.`, {
+            technicalMessage: `mime=${String(mimeType)}`
+          })
+        }
+        const { bytes, truncated, sizeBytes } = await window.stash.fs.readFileBytes({ path })
+        if (truncated) {
+          throw stashError('FS_READ', `"${name}" is too large to preview in full.`)
+        }
+        // <img> rendering keeps SVGs inert — scripts inside them never execute.
+        setImage({
+          path,
+          name,
+          objectUrl: URL.createObjectURL(new Blob([bytes], { type: mimeType })),
+          sizeBytes,
+          mimeType
+        })
+        setDimensions(null)
+        resetZoom()
+        recordHistory(name, 'success')
+      } catch (err) {
+        const normalized = normalizeError(err)
+        setError(normalized)
+        recordHistory(name, 'failure', normalized.userMessage)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [resetZoom]
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,15 +140,15 @@ export default function ImagePreviewTool() {
             <SectionHeading>Preview</SectionHeading>
             <div className="flex items-center gap-1.5">
               <span aria-live="polite" className="tnum mr-1 text-[11px] text-faint">
-                {zoomPercent === null ? 'Fit' : `${zoomPercent}%`}
+                {!isZoomed ? 'Fit' : `${zoomPercent}%`}
               </span>
               <IconButton
                 variant="surface"
                 size="sm"
                 aria-label="Zoom out"
                 title="Zoom out"
-                disabled={zoomPercent !== null && zoomPercent <= ZOOM_MIN_PERCENT}
-                onClick={() => setZoom(stepZoom(zoom, -1))}
+                disabled={zoomPercent <= ZOOM_MIN_PERCENT}
+                onClick={() => zoomOut()}
               >
                 <ZoomOut size={13} />
               </IconButton>
@@ -121,24 +157,25 @@ export default function ImagePreviewTool() {
                 size="sm"
                 aria-label="Zoom in"
                 title="Zoom in"
-                disabled={zoomPercent !== null && zoomPercent >= ZOOM_MAX_PERCENT}
-                onClick={() => setZoom(stepZoom(zoom, 1))}
+                disabled={zoomPercent >= ZOOM_MAX_PERCENT}
+                onClick={() => zoomIn()}
               >
                 <ZoomIn size={13} />
               </IconButton>
               <Button
                 size="sm"
-                variant={zoom === 'fit' ? 'primary' : 'secondary'}
-                aria-pressed={zoom === 'fit'}
-                onClick={() => setZoom('fit')}
+                variant={!isZoomed ? 'primary' : 'secondary'}
+                aria-pressed={!isZoomed}
+                title="Fit image inside preview window"
+                onClick={resetZoom}
               >
                 Fit
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
-                title="Show at actual size"
-                onClick={() => setZoom(100)}
+                title="Show at actual pixel size (1:1)"
+                onClick={handleShowActualSize}
               >
                 100%
               </Button>
@@ -154,31 +191,30 @@ export default function ImagePreviewTool() {
             </div>
           </div>
 
-          <div className="flex min-h-40 items-center justify-center overflow-auto rounded-md border border-line bg-base p-3">
-            <img
-              key={image.objectUrl}
-              src={image.objectUrl}
-              alt={image.name}
-              onLoad={(e) =>
-                setDimensions({
-                  width: e.currentTarget.naturalWidth,
-                  height: e.currentTarget.naturalHeight
-                })
-              }
-              className={
-                zoom === 'fit'
-                  ? 'max-h-[60vh] max-w-full object-contain'
-                  : 'h-auto w-auto origin-top-left'
-              }
-              style={
-                zoom !== 'fit' && dimensions
-                  ? {
-                      width: `${Math.round((dimensions.width * zoom) / 100)}px`,
-                      height: 'auto'
-                    }
-                  : undefined
-              }
-            />
+          <div
+            onWheel={handleWheel}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onDoubleClick={handleDoubleClick}
+            className={`flex min-h-40 max-h-[65vh] items-center justify-center overflow-hidden rounded-md border border-line bg-base p-3 select-none ${cursorClass}`}
+          >
+            <div style={transformStyle} className="flex items-center justify-center">
+              <img
+                ref={imgRef}
+                key={image.objectUrl}
+                src={image.objectUrl}
+                alt={image.name}
+                draggable={false}
+                onLoad={(e) =>
+                  setDimensions({
+                    width: e.currentTarget.naturalWidth,
+                    height: e.currentTarget.naturalHeight
+                  })
+                }
+                className="max-h-[60vh] max-w-full object-contain pointer-events-none select-none"
+              />
+            </div>
           </div>
 
           <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 border-t border-line pt-3">

@@ -5,18 +5,22 @@ import {
   Download,
   Eye,
   Pipette,
+  RotateCcw,
   Scissors,
   Sliders,
   Sparkles,
   SplitSquareVertical,
   UploadCloud,
-  Wand2
+  Wand2,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { DropZone } from '../../components/ui/DropZone'
 import { Panel } from '../../components/ui/Feedback'
 import { toastError, toastSuccess } from '../../stores/toasts'
 import { recordHistoryQuietly } from '../shared/use-progress-event'
+import { useImageZoomPan } from '../shared/use-image-zoom-pan'
 import {
   DEFAULT_REMOVAL_OPTIONS,
   detectBackgroundColor,
@@ -48,11 +52,77 @@ export default function BackgroundRemoverTool() {
   const processedCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const {
+    zoom,
+    isZoomed,
+    zoomPercent,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    handleWheel,
+    handlePointerDown: handleZoomPointerDown,
+    handlePointerMove: handleZoomPointerMove,
+    handlePointerUp: handleZoomPointerUp,
+    handleDoubleClick,
+    transformStyle,
+    cursorClass
+  } = useImageZoomPan({
+    minZoom: 1.0,
+    maxZoom: 6.0,
+    initialZoom: 1.0,
+    stepFactor: 1.25
+  })
+
+  const isDraggingSplitRef = useRef<boolean>(false)
+
+  const handleStartSplitDrag = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.stopPropagation()
+      e.preventDefault()
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      isDraggingSplitRef.current = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Non-fatal
+      }
+
+      const onPointerMove = (moveEvt: PointerEvent) => {
+        if (!isDraggingSplitRef.current || !canvasRef.current) return
+        const rect = canvasRef.current.getBoundingClientRect()
+        if (rect.width <= 0) return
+        const raw = ((moveEvt.clientX - rect.left) / rect.width) * 100
+        const clamped = Math.max(0, Math.min(100, Math.round(raw)))
+        setSplitPos(clamped)
+      }
+
+      const onPointerUp = (upEvt: PointerEvent) => {
+        isDraggingSplitRef.current = false
+        try {
+          if ((e.currentTarget as HTMLElement).hasPointerCapture(upEvt.pointerId)) {
+            (e.currentTarget as HTMLElement).releasePointerCapture(upEvt.pointerId)
+          }
+        } catch {
+          // Non-fatal
+        }
+        window.removeEventListener('pointermove', onPointerMove)
+        window.removeEventListener('pointerup', onPointerUp)
+      }
+
+      window.addEventListener('pointermove', onPointerMove)
+      window.addEventListener('pointerup', onPointerUp)
+    },
+    []
+  )
+
   // Handle file upload
   const handleFiles = useCallback((files: File[]) => {
     const file = files[0]
     if (!file) return
     setFileName(file.name.replace(/\.[^/.]+$/, ''))
+    resetZoom()
     const reader = new FileReader()
     reader.onload = (e) => {
       const src = e.target?.result as string
@@ -78,7 +148,7 @@ export default function BackgroundRemoverTool() {
       img.src = src
     }
     reader.readAsDataURL(file)
-  }, [])
+  }, [resetZoom])
 
   // Sample Product Graphic with clean studio background
   const loadDemoProduct = useCallback(() => {
@@ -157,6 +227,7 @@ export default function BackgroundRemoverTool() {
     const dataUrl = canvas.toDataURL('image/png')
     setOriginalSrc(dataUrl)
     setFileName('studio-headphones')
+    resetZoom()
     const img = new Image()
     img.onload = () => {
       setOriginalImg(img)
@@ -165,7 +236,7 @@ export default function BackgroundRemoverTool() {
       toastSuccess('Loaded sample studio product')
     }
     img.src = dataUrl
-  }, [])
+  }, [resetZoom])
 
   // Draw interactive composite to the visible display canvas
   const drawPreviewCanvas = useCallback(() => {
@@ -728,64 +799,118 @@ export default function BackgroundRemoverTool() {
                 )}
               </div>
 
-              {/* View Mode Selector */}
-              <div className="flex items-center gap-1 bg-surface rounded p-0.5 border border-line">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('split')}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] transition-colors ${
-                    viewMode === 'split'
-                      ? 'bg-accent text-base font-semibold'
-                      : 'text-dim hover:text-ink'
-                  }`}
-                  title="Interactive Before & After Split Slider"
-                >
-                  <SplitSquareVertical size={11} />
-                  <span>Split Slider</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('result')}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] transition-colors ${
-                    viewMode === 'result'
-                      ? 'bg-accent text-base font-semibold'
-                      : 'text-dim hover:text-ink'
-                  }`}
-                  title="Cutout Result Only"
-                >
-                  <Eye size={11} />
-                  <span>Result Only</span>
-                </button>
+              <div className="flex items-center gap-2">
+                {/* View Mode Selector */}
+                <div className="flex items-center gap-1 bg-surface rounded p-0.5 border border-line">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('split')}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] transition-colors ${
+                      viewMode === 'split'
+                        ? 'bg-accent text-base font-semibold'
+                        : 'text-dim hover:text-ink'
+                    }`}
+                    title="Interactive Before & After Split Slider"
+                  >
+                    <SplitSquareVertical size={11} />
+                    <span>Split Slider</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('result')}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] transition-colors ${
+                      viewMode === 'result'
+                        ? 'bg-accent text-base font-semibold'
+                        : 'text-dim hover:text-ink'
+                    }`}
+                    title="Cutout Result Only"
+                  >
+                    <Eye size={11} />
+                    <span>Result Only</span>
+                  </button>
+                </div>
+
+                {/* Zoom & Pan Controls */}
+                <div className="flex items-center gap-1 bg-surface rounded p-0.5 border border-line">
+                  <button
+                    type="button"
+                    onClick={() => zoomOut()}
+                    disabled={zoom <= 1.0}
+                    className="p-1 rounded text-dim hover:text-ink disabled:opacity-40 disabled:hover:text-dim transition-colors"
+                    title="Zoom out (Mouse wheel down)"
+                  >
+                    <ZoomOut size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetZoom}
+                    className="px-1.5 py-0.5 font-mono text-[10.5px] text-faint hover:text-ink transition-colors"
+                    title="Click to reset zoom (100% Fit)"
+                  >
+                    {zoomPercent}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => zoomIn()}
+                    disabled={zoom >= 6.0}
+                    className="p-1 rounded text-dim hover:text-ink disabled:opacity-40 disabled:hover:text-dim transition-colors"
+                    title="Zoom in (Mouse wheel up)"
+                  >
+                    <ZoomIn size={12} />
+                  </button>
+                  {isZoomed && (
+                    <button
+                      type="button"
+                      onClick={resetZoom}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-soft text-accent font-medium hover:bg-accent/20 transition-colors"
+                      title="Reset view to fit container (Double-click)"
+                    >
+                      <RotateCcw size={10} />
+                      <span>Fit</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Canvas Surface */}
+            {/* Canvas Surface with Wheel Zoom & Drag-to-Pan */}
             <div
               ref={containerRef}
-              className="flex-1 overflow-auto bg-base/80 rounded-md border border-line p-4 flex items-center justify-center my-3 min-h-[360px] relative select-none"
+              onWheel={handleWheel}
+              onPointerDown={(e) => {
+                if (isEyedropperActive) return
+                handleZoomPointerDown(e)
+              }}
+              onPointerMove={handleZoomPointerMove}
+              onPointerUp={handleZoomPointerUp}
+              onDoubleClick={handleDoubleClick}
+              className={`flex-1 overflow-hidden bg-base/80 rounded-md border border-line p-4 flex items-center justify-center my-3 min-h-[360px] relative select-none ${
+                isEyedropperActive ? 'cursor-crosshair' : cursorClass
+              }`}
             >
               {originalSrc ? (
-                <div className="relative shadow-2xl rounded border border-line/60 overflow-hidden max-w-full">
+                <div
+                  style={transformStyle}
+                  className="relative shadow-2xl rounded border border-line/60 overflow-hidden max-w-full"
+                >
                   <canvas
                     ref={canvasRef}
                     onClick={handleCanvasClick}
-                    className={`block max-w-full max-h-[500px] object-contain ${
-                      isEyedropperActive ? 'cursor-crosshair' : 'cursor-default'
-                    }`}
+                    className="block max-w-full max-h-[500px] object-contain"
                   />
 
-                  {/* Split position draggable overlay slider */}
+                  {/* Interactive Split Slider Handle */}
                   {viewMode === 'split' && (
-                    <div className="absolute inset-0 flex items-center pointer-events-none">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={splitPos}
-                        onChange={(e) => setSplitPos(parseInt(e.target.value, 10))}
-                        className="w-full absolute opacity-0 cursor-ew-resize pointer-events-auto h-full"
-                        title="Drag to compare before & after"
-                      />
+                    <div
+                      onPointerDown={handleStartSplitDrag}
+                      style={{ left: `${splitPos}%` }}
+                      className="absolute top-0 bottom-0 -translate-x-1/2 w-8 flex items-center justify-center cursor-ew-resize pointer-events-auto z-20 group"
+                      title="Drag to compare before & after (Split Slider)"
+                    >
+                      <div className="w-0.5 h-full bg-accent/80 group-hover:bg-accent group-hover:w-1 transition-all shadow-sm" />
+                      <div className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-accent text-base flex items-center justify-center shadow-lg border border-accent/40 text-[9px] font-bold tracking-tighter select-none transition-transform group-hover:scale-110">
+                        ↔
+                      </div>
                     </div>
                   )}
 

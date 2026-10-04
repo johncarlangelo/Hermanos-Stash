@@ -413,6 +413,27 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Empowers users to rapidly manipulate, duplicate, re-arrange, and delete complex multi-tool workflow graphs with standard creative-workstation ergonomics matching Figma, Blender, and Unreal Engine.
 
+## ADR-049 — Cursor-Anchored Zoom & Pan Lens Architecture for Image Inspection & Comparison Tools
+
+**Decision:**
+1. **Geometric Projection & Anchored Scale Math (`use-image-zoom-pan.ts`):**
+   - Provide a reusable hook `useImageZoomPan` encapsulating cursor-anchored wheel zooming, drag-to-pan, pointer capture, and double-click fit/zoom.
+   - Use pure geometric projection math: `newPan = cursor - (cursor - oldPan) * (newZoom / oldZoom)` so the specific image feature directly under the cursor remains stationary on screen across magnification changes.
+   - Apply hardware-accelerated CSS `transform: translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})` on an inner viewport wrapper with `overflow-hidden` on the outer panel, avoiding expensive DOM layout recalculations or canvas redrawing during pan/zoom.
+2. **Decoupling Split Slider Drag from Canvas Panning (Background Remover):**
+   - Eliminate full-surface invisible `<input type="range">` elements that block canvas drag interactions.
+   - Position an isolated draggable handle bar at `style={{ left: `${splitPos}%` }}` inside the canvas's transformed wrapper, equipped with a tactile `↔` pill and pointer capture (`handleStartSplitDrag`).
+   - Dragging the handle adjusts `splitPos` using `getBoundingClientRect()` ratios (which remain invariant across zoom/pan levels).
+   - Dragging anywhere else on the canvas pans the viewport when zoomed in.
+3. **Preserving Eyedropper Sampling Coordinate Invariance:**
+   - In `handleCanvasClick`, compute pixel coordinates using normalized ratios `(e.clientX - rect.left) * (canvas.width / rect.width)`.
+   - Because `rect` accounts for CSS `scale` and `translate3d`, color sampling remains pixel-perfect at any magnification tier (1x to 6x+).
+4. **True 1:1 Pixel Display (Image Preview):**
+   - Replaced browser scrollbars with cursor-anchored wheel zooming (0.1x to 8x) and drag-to-pan.
+   - Added true physical pixel mapping on the `100%` button (`actualScale = dimensions.width / imgRef.current.clientWidth`), displaying each file pixel as a 1:1 screen pixel regardless of initial fit dimensions.
+
+**Reason:** Inspecting fine hair, keying artifacts, edge feathering, and compression noise requires high-magnification panning and split comparison without layout jitter or interaction conflicts.
+
 
 
 
