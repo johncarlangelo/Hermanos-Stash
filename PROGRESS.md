@@ -1,5 +1,15 @@
 # Hermanos Stash — Progress
 
+## Queue Workflow View — Canvas Marquee Selection & Batch Operations [BETA v0.8.0]
+
+Shipped an enterprise-grade marquee box selection and multi-node batch operations engine (`v0.8.0`) for the Queue Workflow visual canvas orchestrator:
+- **Interactive Marquee Selection (`selection.ts`, `WorkflowCanvas.tsx`)**: Dragging on empty canvas background renders a dashed accent selection box (`getNodesIntersectingMarquee`) with real-time intersection testing and inverted drag support (dragging in any direction: top-left, bottom-right, etc.).
+- **Multi-Node Selection & Synchronized Dragging**: Replaced single-node selection with `selectedNodeIds: Set<string>`. Dragging any node in an active multi-selection moves all selected nodes simultaneously, preserving relative spacing and grid snapping in a single history snapshot.
+- **Select (`V`) vs. Pan (`H`) Canvas Modes**: Added a segmented mode toggle in `WorkflowToolbar.tsx` with hotkeys `V` and `H`. Universal `Space + Drag` (and middle-mouse click) pans the canvas at any time with dynamic cursor state feedback (`cursor-grab`, `cursor-grabbing`, `cursor-crosshair`).
+- **Atomic Batch Deletion & Cluster Duplication**: Pressing `Delete` / `Backspace` removes all selected nodes and their associated wires in a single operation (`deleteNodesFromGraph`). Pressing `Ctrl+D` duplicates selected nodes with position offset and clones internal interconnecting wires (`duplicateNodesInGraph`).
+- **Global Shortcuts & Floating Action Bar**: Added `Ctrl+A` (Select All) and `Escape` (Deselect All) with typing guards. Docked a sleek bottom-centered floating action pill when `selectedNodeIds.size > 1` providing quick count inspection and 1-click batch duplication, deletion, and dismissal.
+- **Verification**: Added 5 unit tests in `workflow.test.ts` covering normal/inverted marquee intersection, batch deletion, and cluster duplication; all **1,011 tests across 99 test files pass (100%)**; zero typecheck, lint, or format issues; matrix check verified with 0 diffs.
+
 ## Queue Workflow View — Bounded Canvas Undo & Redo History Engine [BETA v0.7.0]
 
 Shipped a production-grade, bounded Undo & Redo history engine (`v0.7.0`) for the Queue Workflow visual canvas orchestrator:

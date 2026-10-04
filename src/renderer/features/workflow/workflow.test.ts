@@ -23,6 +23,11 @@ import { AUDIT_ROWS, expectedAuditPorts } from './compatibility-audit'
 import { getToolParamFields, resolveParamValue } from './tool-params'
 import { isWorkflowEligibleTool } from './WorkflowToolDrawer'
 import { workflowHistoryReducer } from './useWorkflowHistory'
+import {
+  deleteNodesFromGraph,
+  duplicateNodesInGraph,
+  getNodesIntersectingMarquee
+} from './selection'
 
 describe('Workflow Layout Utilities', () => {
   it('snaps coordinates to grid intervals', () => {
@@ -363,7 +368,107 @@ describe('Workflow Pipeline Execution Engine', () => {
   describe('Workflow Feature Versioning', () => {
     it('defines a valid semantic version string matching vMAJOR.MINOR.PATCH', () => {
       expect(QUEUE_WORKFLOW_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
-      expect(QUEUE_WORKFLOW_VERSION).toBe('0.7.0')
+      expect(QUEUE_WORKFLOW_VERSION).toBe('0.8.0')
+    })
+  })
+
+  describe('Workflow Marquee Selection & Batch Operations', () => {
+    const testNodes = [
+      { id: 'n1', toolId: 'json-format', position: { x: 100, y: 100 }, params: {} },
+      { id: 'n2', toolId: 'base64', position: { x: 500, y: 100 }, params: {} },
+      { id: 'n3', toolId: 'hash-calc', position: { x: 100, y: 400 }, params: {} }
+    ]
+
+    it('identifies intersecting nodes for standard left-to-right top-to-bottom drag', () => {
+      // Marquee covers (80, 80) to (400, 300) -> should intersect n1 (x: 100..360, y: 100..240)
+      const intersecting = getNodesIntersectingMarquee(testNodes, {
+        startX: 80,
+        startY: 80,
+        currentX: 400,
+        currentY: 300
+      })
+      expect(intersecting).toEqual(['n1'])
+    })
+
+    it('identifies intersecting nodes for inverted bottom-to-top right-to-left drag', () => {
+      // Inverted drag covering n1 and n2
+      const intersecting = getNodesIntersectingMarquee(testNodes, {
+        startX: 800,
+        startY: 300,
+        currentX: 50,
+        currentY: 50
+      })
+      expect(intersecting).toContain('n1')
+      expect(intersecting).toContain('n2')
+      expect(intersecting).not.toContain('n3')
+    })
+
+    it('excludes nodes completely outside the selection box', () => {
+      const intersecting = getNodesIntersectingMarquee(testNodes, {
+        startX: 0,
+        startY: 0,
+        currentX: 50,
+        currentY: 50
+      })
+      expect(intersecting).toHaveLength(0)
+    })
+
+    it('deletes selected nodes and their associated wires in a single atomic pass', () => {
+      const graph: WorkflowGraph = {
+        nodes: [
+          { id: 'a', toolId: 't1', position: { x: 0, y: 0 }, params: {} },
+          { id: 'b', toolId: 't2', position: { x: 100, y: 0 }, params: {} },
+          { id: 'c', toolId: 't3', position: { x: 200, y: 0 }, params: {} }
+        ],
+        edges: [
+          { id: 'e1', fromNodeId: 'a', fromPort: 'files', toNodeId: 'b', toPort: 'files' },
+          { id: 'e2', fromNodeId: 'b', fromPort: 'files', toNodeId: 'c', toPort: 'files' },
+          { id: 'e3', fromNodeId: 'a', fromPort: 'text', toNodeId: 'c', toPort: 'text' }
+        ]
+      }
+
+      const { nextGraph, deletedNodeCount, deletedEdgeCount } = deleteNodesFromGraph(graph, ['b'])
+      expect(deletedNodeCount).toBe(1)
+      expect(deletedEdgeCount).toBe(2) // e1 and e2 removed
+      expect(nextGraph.nodes.map((n) => n.id)).toEqual(['a', 'c'])
+      expect(nextGraph.edges.map((e) => e.id)).toEqual(['e3'])
+    })
+
+    it('duplicates selected nodes with position offset and clones internal edges only', () => {
+      const graph: WorkflowGraph = {
+        nodes: [
+          { id: 'a', toolId: 't1', position: { x: 100, y: 100 }, params: { foo: 'bar' } },
+          { id: 'b', toolId: 't2', position: { x: 400, y: 100 }, params: {} },
+          { id: 'c', toolId: 't3', position: { x: 700, y: 100 }, params: {} }
+        ],
+        edges: [
+          { id: 'e1', fromNodeId: 'a', fromPort: 'files', toNodeId: 'b', toPort: 'files' },
+          { id: 'e2', fromNodeId: 'b', fromPort: 'files', toNodeId: 'c', toPort: 'files' }
+        ]
+      }
+
+      // Duplicate cluster [a, b]
+      const { nextGraph, newSelectedNodeIds } = duplicateNodesInGraph(graph, ['a', 'b'], {
+        x: 40,
+        y: 40
+      })
+
+      expect(newSelectedNodeIds).toHaveLength(2)
+      expect(nextGraph.nodes).toHaveLength(5) // 3 original + 2 duplicated
+      expect(nextGraph.edges).toHaveLength(3) // 2 original + 1 cloned internal edge (a' -> b')
+
+      const [dupAId, dupBId] = newSelectedNodeIds
+      const dupA = nextGraph.nodes.find((n) => n.id === dupAId)!
+      const dupB = nextGraph.nodes.find((n) => n.id === dupBId)!
+
+      expect(dupA.position).toEqual({ x: 140, y: 140 })
+      expect(dupB.position).toEqual({ x: 440, y: 140 })
+      expect(dupA.params).toEqual({ foo: 'bar' })
+
+      // Verify the duplicated edge connects dupA to dupB, NOT c
+      const clonedEdge = nextGraph.edges.find((e) => e.fromNodeId === dupAId)!
+      expect(clonedEdge).toBeDefined()
+      expect(clonedEdge.toNodeId).toBe(dupBId)
     })
   })
 

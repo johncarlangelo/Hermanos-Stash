@@ -544,11 +544,13 @@ Focused, high-impact improvements to desktop ergonomics, canvas interactions, an
   - Dedicated `useWorkflowHistory` hook decoupling canvas history reducer from React DOM lifecycle, preserving discrete snapshotting upon drag finish and isolating runtime execution states.
   - Global `Ctrl+Z` (Undo) and `Ctrl+Y` / `Ctrl+Shift+Z` (Redo) keyboard shortcuts (with input element typing guard) and interactive Undo/Redo toolbar icon buttons with tooltip hints and disabled states.
   - Unit tests covering history stack bounds, sequential undo/redo, redo invalidation upon new actions, and transient execution state safety.
-- [ ] **2. Canvas Marquee / Box Multi-Node Selection & Batch Operations**:
-  - Dragging on empty canvas background draws an SVG dashed selection box.
-  - All nodes intersecting the box get selected (`selectedNodeIds: Set<string>`).
-  - Pressing `Delete` or `Backspace` deletes all selected nodes and their associated wires in a single action.
-  - Pressing `Ctrl+A` selects all nodes on the canvas.
+- [x] **2. Canvas Marquee / Box Multi-Node Selection & Batch Operations (`v0.8.0`)**:
+  - Interactive SVG/HTML dashed marquee selection box drawn on empty canvas background (`getNodesIntersectingMarquee` in `selection.ts`) with inverted drag support and real-time node intersection feedback.
+  - Multi-selection state management (`selectedNodeIds: Set<string>`), multi-node simultaneous dragging with relative coordinate preservation, and additive `Shift` / `Ctrl` toggle clicks.
+  - Select & Marquee (`V`) vs. Pan (`H`) mode toggle in `WorkflowToolbar.tsx`, with universal `Space + Drag` and middle-click panning.
+  - Atomic batch deletion (`Delete` / `Backspace` via `deleteNodesFromGraph`) and atomic batch duplication (`Ctrl+D` via `duplicateNodesInGraph`) with internal cable cloning and single-step undo history integration.
+  - Global `Ctrl+A` (Select All) and `Escape` (Deselect All) shortcuts with typing guards, plus bottom floating batch action pill when multiple nodes are selected.
+  - Unit tests covering marquee intersection (normal and inverted drag), batch node deletion, and cluster duplication.
 - [ ] **3. Hermano Chat Session Persistence & Quick Actions**:
   - Persists recent chat conversation messages in SQLite preferences (`prefs.get/set('chatbot.history')`) so closing the widget or switching between tools doesn't erase previous tool recommendations and explanations.
   - Adds a "Clear Chat" header action button to reset the session.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Copy, FolderArchive, Plus, Settings2, Trash2, Workflow } from 'lucide-react'
+import { Copy, FolderArchive, Plus, Settings2, Trash2, Workflow, X } from 'lucide-react'
 import type {
   PortType,
   WorkflowEdge,
@@ -17,6 +17,12 @@ import {
   snapToGrid
 } from './layout'
 import { runWorkflowPipeline, validateEdge, wouldCreateCycle } from './execution'
+import {
+  deleteNodesFromGraph,
+  duplicateNodesInGraph,
+  getNodesIntersectingMarquee,
+  type MarqueeBox
+} from './selection'
 import { WorkflowNodeCard } from './WorkflowNodeCard'
 import { WorkflowEdgeRenderer } from './WorkflowEdgeRenderer'
 import { WorkflowToolbar } from './WorkflowToolbar'
@@ -68,9 +74,16 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     nodeId: string
     startX: number
     startY: number
-    initialNodePos: { x: number; y: number }
+    initialPositions: Map<string, { x: number; y: number }>
   } | null>(null)
   const [activeDraggingNodeId, setActiveDraggingNodeId] = useState<string | null>(null)
+
+  // Canvas Mode & Marquee Selection state
+  const [canvasMode, setCanvasMode] = useState<'select' | 'pan'>('select')
+  const [marqueeBox, setMarqueeBox] = useState<MarqueeBox | null>(null)
+  const isMarqueeActiveRef = useRef(false)
+  const marqueeStartRef = useRef<{ x: number; y: number; isAdditive: boolean } | null>(null)
+  const spacePressedRef = useRef(false)
 
   // rAF throttling refs for instant 60/120/144fps interaction
   const rafIdRef = useRef<number | null>(null)
@@ -86,7 +99,10 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
   } | null>(null)
 
   // Selection & Inspector
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set())
+  const setSelectedNodeId = useCallback((id: string | null) => {
+    setSelectedNodeIds(id ? new Set([id]) : new Set())
+  }, [])
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [inspectingNodeId, setInspectingNodeId] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(
@@ -146,17 +162,47 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     [pan, zoom]
   )
 
-  // Pan handlers
+  // Canvas pointer down: handles Pan, Marquee Selection, and Deselection
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
     setContextMenu(null)
     if (e.target !== e.currentTarget && (e.target as HTMLElement).id !== 'canvas-grid-bg') return
-    isPanningRef.current = true
-    panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
-    setSelectedNodeId(null)
-    setSelectedEdgeId(null)
+
+    // Middle click OR Space held OR Pan mode (without Shift) => PAN
+    const isMiddleClick = e.button === 1
+    const isSpacePan = spacePressedRef.current
+    const shouldPan = isMiddleClick || isSpacePan || (canvasMode === 'pan' && !e.shiftKey)
+
+    if (shouldPan) {
+      isPanningRef.current = true
+      panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
+      setSelectedEdgeId(null)
+      return
+    }
+
+    // Left click on background => MARQUEE SELECTION
+    if (e.button === 0) {
+      const canvasPos = clientToCanvasCoord(e.clientX, e.clientY)
+      const isAdditive = e.shiftKey || e.ctrlKey || e.metaKey
+      isMarqueeActiveRef.current = true
+      marqueeStartRef.current = {
+        x: canvasPos.x,
+        y: canvasPos.y,
+        isAdditive
+      }
+      setMarqueeBox({
+        startX: canvasPos.x,
+        startY: canvasPos.y,
+        currentX: canvasPos.x,
+        currentY: canvasPos.y
+      })
+      setSelectedEdgeId(null)
+      if (!isAdditive) {
+        setSelectedNodeIds(new Set())
+      }
+    }
   }
 
-  // Master pointer move handler for canvas pan, node drag, and wire drag
+  // Master pointer move handler for canvas pan, marquee select, multi-node drag, and wire drag
   const handleCanvasPointerMove = (e: React.PointerEvent) => {
     if (isPanningRef.current) {
       pendingPanPosRef.current = { clientX: e.clientX, clientY: e.clientY }
@@ -173,35 +219,58 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       return
     }
 
+    if (isMarqueeActiveRef.current && marqueeStartRef.current) {
+      const canvasPos = clientToCanvasCoord(e.clientX, e.clientY)
+      const currentMarquee: MarqueeBox = {
+        startX: marqueeStartRef.current.x,
+        startY: marqueeStartRef.current.y,
+        currentX: canvasPos.x,
+        currentY: canvasPos.y
+      }
+      setMarqueeBox(currentMarquee)
+
+      const dx = Math.abs(canvasPos.x - marqueeStartRef.current.x)
+      const dy = Math.abs(canvasPos.y - marqueeStartRef.current.y)
+      if (dx > 4 || dy > 4) {
+        const intersectingIds = getNodesIntersectingMarquee(graph.nodes, currentMarquee)
+        if (marqueeStartRef.current.isAdditive) {
+          setSelectedNodeIds((prev) => {
+            const next = new Set(prev)
+            for (const id of intersectingIds) next.add(id)
+            return next
+          })
+        } else {
+          setSelectedNodeIds(new Set(intersectingIds))
+        }
+      }
+      return
+    }
+
     if (draggingNodeRef.current) {
       pendingNodeDragPosRef.current = { clientX: e.clientX, clientY: e.clientY }
       if (rafIdRef.current === null) {
         rafIdRef.current = requestAnimationFrame(() => {
           rafIdRef.current = null
           if (!draggingNodeRef.current || !pendingNodeDragPosRef.current) return
-          const { nodeId, startX, startY, initialNodePos } = draggingNodeRef.current
+          const { initialPositions } = draggingNodeRef.current
           const { clientX, clientY } = pendingNodeDragPosRef.current
-          const deltaX = (clientX - startX) / zoom
-          const deltaY = (clientY - startY) / zoom
-
-          const newX = snapToGrid(initialNodePos.x + deltaX)
-          const newY = snapToGrid(initialNodePos.y + deltaY)
+          const deltaX = (clientX - draggingNodeRef.current.startX) / zoom
+          const deltaY = (clientY - draggingNodeRef.current.startY) / zoom
 
           setGraph((prev) => {
-            const currentNode = prev.nodes.find((n) => n.id === nodeId)
-            if (currentNode && currentNode.position.x === newX && currentNode.position.y === newY) {
-              return prev
-            }
             return {
               ...prev,
-              nodes: prev.nodes.map((n) =>
-                n.id === nodeId
-                  ? {
-                      ...n,
-                      position: { x: newX, y: newY }
-                    }
-                  : n
-              )
+              nodes: prev.nodes.map((n) => {
+                const init = initialPositions.get(n.id)
+                if (!init) return n
+                return {
+                  ...n,
+                  position: {
+                    x: snapToGrid(init.x + deltaX),
+                    y: snapToGrid(init.y + deltaY)
+                  }
+                }
+              })
             }
           }, false)
         })
@@ -231,33 +300,41 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
       rafIdRef.current = null
     }
 
+    if (isMarqueeActiveRef.current) {
+      isMarqueeActiveRef.current = false
+      marqueeStartRef.current = null
+      setMarqueeBox(null)
+    }
+
     // Flush final drag position if there was a pending move
     if (draggingNodeRef.current && pendingNodeDragPosRef.current) {
-      const { nodeId, startX, startY, initialNodePos } = draggingNodeRef.current
+      const { startX, startY, initialPositions } = draggingNodeRef.current
       const { clientX, clientY } = pendingNodeDragPosRef.current
       const deltaX = (clientX - startX) / zoom
       const deltaY = (clientY - startY) / zoom
-      const finalX = snapToGrid(initialNodePos.x + deltaX)
-      const finalY = snapToGrid(initialNodePos.y + deltaY)
 
+      let moved = false
       setGraph((prev) => {
-        const currentNode = prev.nodes.find((n) => n.id === nodeId)
-        if (currentNode && currentNode.position.x === finalX && currentNode.position.y === finalY) {
-          return prev
-        }
         return {
           ...prev,
-          nodes: prev.nodes.map((n) =>
-            n.id === nodeId ? { ...n, position: { x: finalX, y: finalY } } : n
-          )
+          nodes: prev.nodes.map((n) => {
+            const init = initialPositions.get(n.id)
+            if (!init) return n
+            const finalX = snapToGrid(init.x + deltaX)
+            const finalY = snapToGrid(init.y + deltaY)
+            if (finalX !== init.x || finalY !== init.y) {
+              moved = true
+            }
+            return {
+              ...n,
+              position: { x: finalX, y: finalY }
+            }
+          })
         }
       }, false)
 
-      // If the node moved from its initial position, push pre-drag snapshot to history stack
-      if (
-        dragStartGraphRef.current &&
-        (initialNodePos.x !== finalX || initialNodePos.y !== finalY)
-      ) {
+      // If any node moved from its initial position, push pre-drag snapshot to history stack
+      if (dragStartGraphRef.current && moved) {
         recordSnapshot(dragStartGraphRef.current)
       }
     }
@@ -277,12 +354,20 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
   // Window-level safety reset to prevent stuck dragging/panning states if pointerup fires outside canvas
   useEffect(() => {
     const handleGlobalPointerUp = () => {
-      if (isPanningRef.current || draggingNodeRef.current || draggingWire) {
+      if (
+        isPanningRef.current ||
+        draggingNodeRef.current ||
+        draggingWire ||
+        isMarqueeActiveRef.current
+      ) {
         if (rafIdRef.current !== null) {
           cancelAnimationFrame(rafIdRef.current)
           rafIdRef.current = null
         }
         isPanningRef.current = false
+        isMarqueeActiveRef.current = false
+        marqueeStartRef.current = null
+        setMarqueeBox(null)
         draggingNodeRef.current = null
         pendingNodeDragPosRef.current = null
         pendingPanPosRef.current = null
@@ -454,57 +539,118 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     toastSuccess(`Placed "${toolRegistry.get(toolId)?.name ?? toolId}" on canvas`)
   }
 
-  // Node actions
-  const handleDeleteNode = useCallback((nodeId: string) => {
-    setGraph((prev) => ({
-      nodes: prev.nodes.filter((n) => n.id !== nodeId),
-      edges: prev.edges.filter((e) => e.fromNodeId !== nodeId && e.toNodeId !== nodeId)
-    }))
-    setSelectedNodeId((curr) => (curr === nodeId ? null : curr))
-  }, [setGraph])
-
-  const handleDuplicateNode = useCallback((nodeId: string) => {
-    const newId = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
-    setGraph((prev) => {
-      const original = prev.nodes.find((n) => n.id === nodeId)
-      if (!original) return prev
-
-      const duplicate: WorkflowNode = {
-        ...original,
-        id: newId,
-        position: {
-          x: snapToGrid(original.position.x + 40),
-          y: snapToGrid(original.position.y + 40)
-        },
-        status: 'idle',
-        outputFiles: undefined
+  // Node actions & multi-selection operations
+  const handleSelectNode = useCallback((nodeId: string, isMulti = false) => {
+    setSelectedNodeIds((prev) => {
+      if (isMulti) {
+        const next = new Set(prev)
+        if (next.has(nodeId)) {
+          next.delete(nodeId)
+        } else {
+          next.add(nodeId)
+        }
+        return next
       }
-
-      return {
-        ...prev,
-        nodes: [...prev.nodes, duplicate]
-      }
+      return new Set([nodeId])
     })
-    setSelectedNodeId(newId)
-  }, [setGraph])
+    setSelectedEdgeId(null)
+  }, [])
+
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      setGraph((prev) => {
+        const { nextGraph } = deleteNodesFromGraph(prev, [nodeId])
+        return nextGraph
+      })
+      setSelectedNodeIds((prev) => {
+        const next = new Set(prev)
+        next.delete(nodeId)
+        return next
+      })
+    },
+    [setGraph]
+  )
+
+  const handleBatchDelete = useCallback(() => {
+    if (selectedNodeIds.size === 0) return
+    const count = selectedNodeIds.size
+    let deletedEdgeCount = 0
+    setGraph((prev) => {
+      const res = deleteNodesFromGraph(prev, selectedNodeIds)
+      deletedEdgeCount = res.deletedEdgeCount
+      return res.nextGraph
+    })
+    setSelectedNodeIds(new Set())
+    toastSuccess(
+      `Deleted ${count} ${count === 1 ? 'node' : 'nodes'}${
+        deletedEdgeCount > 0
+          ? ` and ${deletedEdgeCount} ${deletedEdgeCount === 1 ? 'connection' : 'connections'}`
+          : ''
+      }`
+    )
+  }, [selectedNodeIds, setGraph])
+
+  const handleDuplicateNode = useCallback(
+    (nodeId: string) => {
+      let createdIds: string[] = []
+      setGraph((prev) => {
+        const res = duplicateNodesInGraph(prev, [nodeId])
+        createdIds = res.newSelectedNodeIds
+        return res.nextGraph
+      })
+      if (createdIds.length > 0) {
+        setSelectedNodeIds(new Set(createdIds))
+        toastSuccess('Duplicated node')
+      }
+    },
+    [setGraph]
+  )
+
+  const handleBatchDuplicate = useCallback(() => {
+    if (selectedNodeIds.size === 0) return
+    let createdIds: string[] = []
+    setGraph((prev) => {
+      const res = duplicateNodesInGraph(prev, selectedNodeIds)
+      createdIds = res.newSelectedNodeIds
+      return res.nextGraph
+    })
+    if (createdIds.length > 0) {
+      setSelectedNodeIds(new Set(createdIds))
+      toastSuccess(`Duplicated ${createdIds.length} ${createdIds.length === 1 ? 'node' : 'nodes'}`)
+    }
+  }, [selectedNodeIds, setGraph])
 
   const handleStartNodeDrag = useCallback(
     (nodeId: string, e: React.PointerEvent) => {
       e.stopPropagation()
       const node = graph.nodes.find((n) => n.id === nodeId)
       if (!node) return
-      setSelectedNodeId(nodeId)
+
+      let dragIds = selectedNodeIds
+      if (!selectedNodeIds.has(nodeId)) {
+        dragIds = new Set([nodeId])
+        setSelectedNodeIds(dragIds)
+      }
+
+      const initialPositions = new Map<string, { x: number; y: number }>()
+      for (const id of dragIds) {
+        const target = graph.nodes.find((n) => n.id === id)
+        if (target) {
+          initialPositions.set(id, { ...target.position })
+        }
+      }
+
       setActiveDraggingNodeId(nodeId)
       draggingNodeRef.current = {
         nodeId,
         startX: e.clientX,
         startY: e.clientY,
-        initialNodePos: { ...node.position }
+        initialPositions
       }
       dragStartGraphRef.current = graph
       pendingNodeDragPosRef.current = { clientX: e.clientX, clientY: e.clientY }
     },
-    [graph]
+    [graph, selectedNodeIds]
   )
 
   // Wiring actions
@@ -889,12 +1035,42 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
       if (isTyping) return
 
+      // Spacebar for temporary pan
+      if (e.code === 'Space' && !e.repeat) {
+        spacePressedRef.current = true
+      }
+
+      // Mode toggles: V for select, H for pan
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === 'v') {
+          setCanvasMode('select')
+          return
+        }
+        if (e.key.toLowerCase() === 'h') {
+          setCanvasMode('pan')
+          return
+        }
+      }
+
+      // Select All (Ctrl/Cmd + A)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault()
+        if (graph.nodes.length > 0) {
+          setSelectedNodeIds(new Set(graph.nodes.map((n) => n.id)))
+          setSelectedEdgeId(null)
+        }
+        return
+      }
+
+      // Undo / Redo
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
         if (canUndo) {
           undo()
         }
-      } else if (
+        return
+      }
+      if (
         (e.ctrlKey || e.metaKey) &&
         (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))
       ) {
@@ -902,39 +1078,75 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         if (canRedo) {
           redo()
         }
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedNodeId) {
+        return
+      }
+
+      // Delete (Del / Backspace)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedNodeIds.size > 0) {
           e.preventDefault()
-          handleDeleteNode(selectedNodeId)
+          handleBatchDelete()
         } else if (selectedEdgeId) {
           e.preventDefault()
           handleDeleteEdge(selectedEdgeId)
         }
-      } else if (e.key === 'Enter' && selectedNodeId) {
+        return
+      }
+
+      // Duplicate (Ctrl/Cmd + D)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedNodeIds.size > 0) {
         e.preventDefault()
-        setInspectingNodeId(selectedNodeId)
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedNodeId) {
+        handleBatchDuplicate()
+        return
+      }
+
+      // Enter to inspect (when node selected)
+      if (e.key === 'Enter' && selectedNodeIds.size > 0) {
         e.preventDefault()
-        handleDuplicateNode(selectedNodeId)
-      } else if (e.key === 'Escape') {
+        const primary = Array.from(selectedNodeIds)[0]
+        if (primary) setInspectingNodeId(primary)
+        return
+      }
+
+      // Escape to deselect / close menus
+      if (e.key === 'Escape') {
         if (contextMenu) {
           setContextMenu(null)
         } else if (inspectingNodeId) {
           setInspectingNodeId(null)
+        } else if (selectedNodeIds.size > 0) {
+          setSelectedNodeIds(new Set())
         }
       }
     }
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        spacePressedRef.current = false
+      }
+    }
+
+    const handleBlur = () => {
+      spacePressedRef.current = false
+    }
+
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleBlur)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleBlur)
+    }
   }, [
-    selectedNodeId,
+    graph.nodes,
+    selectedNodeIds,
     selectedEdgeId,
     contextMenu,
     inspectingNodeId,
-    handleDeleteNode,
+    handleBatchDelete,
+    handleBatchDuplicate,
     handleDeleteEdge,
-    handleDuplicateNode,
     canUndo,
     canRedo,
     undo,
@@ -947,7 +1159,10 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
 
   const handleContextMenu = useCallback((id: string, e: React.MouseEvent) => {
     setContextMenu({ x: e.clientX, y: e.clientY, nodeId: id })
-    setSelectedNodeId(id)
+    setSelectedNodeIds((prev) => {
+      if (prev.has(id)) return prev
+      return new Set([id])
+    })
   }, [])
 
   const incomingEdgeMap = useMemo(() => {
@@ -964,6 +1179,15 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
     return map
   }, [graph.edges])
 
+  const canvasCursorClass =
+    spacePressedRef.current || canvasMode === 'pan'
+      ? isPanningRef.current
+        ? 'cursor-grabbing'
+        : 'cursor-grab'
+      : isMarqueeActiveRef.current
+        ? 'cursor-crosshair'
+        : 'cursor-default'
+
   return (
     <div
       ref={canvasRef}
@@ -977,7 +1201,7 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         e.dataTransfer.dropEffect = 'copy'
       }}
       onDrop={handleCanvasDrop}
-      className="relative h-full w-full overflow-hidden bg-shell select-none cursor-default"
+      className={`relative h-full w-full overflow-hidden bg-shell select-none ${canvasCursorClass}`}
       style={{
         backgroundImage: `radial-gradient(circle, var(--color-line) 1px, transparent 1px)`,
         backgroundSize: `${GRID_SIZE * zoom}px ${GRID_SIZE * zoom}px`,
@@ -1007,6 +1231,9 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
+        canvasMode={canvasMode}
+        onModeChange={setCanvasMode}
+        selectedCount={selectedNodeIds.size}
       />
 
       {/* Scaled & Panned Canvas Viewport */}
@@ -1026,6 +1253,19 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           draggingWire={draggingWire}
           isRunning={isRunning}
         />
+
+        {/* Marquee Selection Rectangle */}
+        {marqueeBox && (
+          <div
+            className="pointer-events-none absolute rounded-md border border-dashed border-accent bg-accent/10 z-40 transition-none shadow-[0_0_16px_rgba(99,102,241,0.15)]"
+            style={{
+              left: Math.min(marqueeBox.startX, marqueeBox.currentX),
+              top: Math.min(marqueeBox.startY, marqueeBox.currentY),
+              width: Math.abs(marqueeBox.currentX - marqueeBox.startX),
+              height: Math.abs(marqueeBox.currentY - marqueeBox.startY)
+            }}
+          />
+        )}
 
         {/* Node Cards Layer (cards themselves have pointer-events-auto) */}
         <div className="pointer-events-none">
@@ -1079,14 +1319,14 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
               <WorkflowNodeCard
                 key={node.id}
                 node={node}
-                selected={selectedNodeId === node.id}
+                selected={selectedNodeIds.has(node.id)}
                 isDragging={activeDraggingNodeId === node.id}
                 hasIncomingFileEdge={hasIncomingFileEdge}
                 hasIncomingTextEdge={hasIncomingTextEdge}
                 wireStatus={wireStatus}
                 wireReason={wireReason}
                 activeWirePort={draggingWire?.fromPort}
-                onSelect={setSelectedNodeId}
+                onSelect={handleSelectNode}
                 onOpenDetails={handleOpenDetails}
                 onContextMenu={handleContextMenu}
                 onDelete={handleDeleteNode}
@@ -1101,6 +1341,48 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           })}
         </div>
       </div>
+
+      {/* Floating Multi-Selection Action Pill */}
+      {selectedNodeIds.size > 1 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-line bg-shell/95 px-4 py-2 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-accent">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/20 text-[11px] text-accent">
+              {selectedNodeIds.size}
+            </span>
+            <span>nodes selected</span>
+          </div>
+          <div className="h-4 w-px bg-line/60 mx-1" />
+          <button
+            type="button"
+            onClick={handleBatchDuplicate}
+            className="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-ink hover:bg-surface transition-colors"
+            title="Duplicate selected nodes (Ctrl+D)"
+          >
+            <Copy size={12} className="text-dim" />
+            <span>Duplicate</span>
+            <span className="font-mono text-[9px] text-faint ml-0.5">Ctrl+D</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleBatchDelete}
+            className="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-danger hover:bg-danger/10 transition-colors"
+            title="Delete selected nodes (Del)"
+          >
+            <Trash2 size={12} />
+            <span>Delete</span>
+            <span className="font-mono text-[9px] text-faint ml-0.5">Del</span>
+          </button>
+          <div className="h-4 w-px bg-line/60 mx-1" />
+          <button
+            type="button"
+            onClick={() => setSelectedNodeIds(new Set())}
+            className="cursor-pointer rounded-full p-1 text-faint hover:text-ink hover:bg-surface transition-colors"
+            title="Clear selection (Esc)"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
 
       {/* Slide-over Tool Palette Drawer */}
       <WorkflowToolDrawer
@@ -1189,43 +1471,75 @@ export function WorkflowCanvas({ initialGraph, onSwitchToLinearView }: WorkflowC
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={() => {
-              setInspectingNodeId(contextMenu.nodeId)
-              setContextMenu(null)
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface hover:text-accent transition-colors"
-          >
-            <Settings2 size={13} className="text-accent" />
-            <span>Configure & Details</span>
-            <span className="ml-auto font-mono text-[9px] text-faint">↵</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              handleDuplicateNode(contextMenu.nodeId)
-              setContextMenu(null)
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
-          >
-            <Copy size={13} className="text-dim" />
-            <span>Duplicate Node</span>
-            <span className="ml-auto font-mono text-[9px] text-faint">Ctrl+D</span>
-          </button>
-          <div className="my-1 h-px bg-line/60" />
-          <button
-            type="button"
-            onClick={() => {
-              handleDeleteNode(contextMenu.nodeId)
-              setContextMenu(null)
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 transition-colors"
-          >
-            <Trash2 size={13} />
-            <span>Delete Node</span>
-            <span className="ml-auto font-mono text-[9px] text-faint">Del</span>
-          </button>
+          {selectedNodeIds.size > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  handleBatchDuplicate()
+                  setContextMenu(null)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+              >
+                <Copy size={13} className="text-dim" />
+                <span>Duplicate {selectedNodeIds.size} Nodes</span>
+                <span className="ml-auto font-mono text-[9px] text-faint">Ctrl+D</span>
+              </button>
+              <div className="my-1 h-px bg-line/60" />
+              <button
+                type="button"
+                onClick={() => {
+                  handleBatchDelete()
+                  setContextMenu(null)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 transition-colors"
+              >
+                <Trash2 size={13} />
+                <span>Delete {selectedNodeIds.size} Nodes</span>
+                <span className="ml-auto font-mono text-[9px] text-faint">Del</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setInspectingNodeId(contextMenu.nodeId)
+                  setContextMenu(null)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface hover:text-accent transition-colors"
+              >
+                <Settings2 size={13} className="text-accent" />
+                <span>Configure & Details</span>
+                <span className="ml-auto font-mono text-[9px] text-faint">↵</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDuplicateNode(contextMenu.nodeId)
+                  setContextMenu(null)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+              >
+                <Copy size={13} className="text-dim" />
+                <span>Duplicate Node</span>
+                <span className="ml-auto font-mono text-[9px] text-faint">Ctrl+D</span>
+              </button>
+              <div className="my-1 h-px bg-line/60" />
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteNode(contextMenu.nodeId)
+                  setContextMenu(null)
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-danger hover:bg-danger/10 transition-colors"
+              >
+                <Trash2 size={13} />
+                <span>Delete Node</span>
+                <span className="ml-auto font-mono text-[9px] text-faint">Del</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

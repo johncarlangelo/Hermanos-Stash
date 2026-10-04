@@ -24,7 +24,7 @@ interface WorkflowNodeCardProps {
   wireStatus?: 'compatible' | 'incompatible' | 'source' | null
   wireReason?: string
   activeWirePort?: PortType
-  onSelect: (nodeId: string) => void
+  onSelect: (nodeId: string, isMulti?: boolean) => void
   onDelete: (nodeId: string) => void
   onDuplicate: (nodeId: string) => void
   onOpenDetails?: (nodeId: string) => void
@@ -123,7 +123,7 @@ export const WorkflowNodeCard = memo(function WorkflowNodeCard({
       }}
       onClick={(e) => {
         e.stopPropagation()
-        onSelect(node.id)
+        onSelect(node.id, e.shiftKey || e.ctrlKey || e.metaKey)
       }}
       onDoubleClick={(e) => {
         e.stopPropagation()

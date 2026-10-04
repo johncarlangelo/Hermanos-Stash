@@ -1,8 +1,10 @@
 import {
   FolderArchive,
+  Hand,
   ListOrdered,
   Maximize2,
   Minus,
+  MousePointer,
   Network,
   Play,
   Plus,
@@ -38,6 +40,9 @@ interface WorkflowToolbarProps {
   canRedo?: boolean
   onUndo?: () => void
   onRedo?: () => void
+  canvasMode?: 'select' | 'pan'
+  onModeChange?: (mode: 'select' | 'pan') => void
+  selectedCount?: number
 }
 
 export function WorkflowToolbar({
@@ -61,7 +66,10 @@ export function WorkflowToolbar({
   canUndo = false,
   canRedo = false,
   onUndo,
-  onRedo
+  onRedo,
+  canvasMode = 'select',
+  onModeChange,
+  selectedCount = 0
 }: WorkflowToolbarProps) {
   return (
     <div
@@ -99,6 +107,11 @@ export function WorkflowToolbar({
           <p className="font-mono text-[10px] text-faint ml-1 truncate">
             {nodeCount} {nodeCount === 1 ? 'node' : 'nodes'} · {edgeCount}{' '}
             {edgeCount === 1 ? 'connection' : 'connections'}
+            {selectedCount > 0 && (
+              <span className="text-accent font-semibold ml-1">
+                · {selectedCount} selected
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -159,6 +172,38 @@ export function WorkflowToolbar({
         </button>
 
         <div className="h-5 w-px bg-line/60 mx-1 hidden sm:block" />
+
+        {/* Canvas Mode: Select & Marquee (V) vs Pan (H) */}
+        {onModeChange && (
+          <div className="flex items-center rounded-md border border-line bg-surface/70 text-dim p-0.5">
+            <button
+              type="button"
+              onClick={() => onModeChange('select')}
+              className={`cursor-pointer rounded p-1 transition-colors ${
+                canvasMode === 'select'
+                  ? 'bg-accent/20 text-accent font-medium'
+                  : 'hover:text-ink text-dim'
+              }`}
+              title="Select & Marquee Box Tool (V) — Drag on canvas to box-select, Shift to add"
+              aria-label="Select Mode"
+            >
+              <MousePointer size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange('pan')}
+              className={`cursor-pointer rounded p-1 transition-colors ${
+                canvasMode === 'pan'
+                  ? 'bg-accent/20 text-accent font-medium'
+                  : 'hover:text-ink text-dim'
+              }`}
+              title="Pan Tool (H) — Drag to pan canvas, or hold Space anytime"
+              aria-label="Pan Mode"
+            >
+              <Hand size={13} />
+            </button>
+          </div>
+        )}
 
         {/* Undo & Redo Controls */}
         <div className="flex items-center rounded-md border border-line bg-surface/70 text-dim">

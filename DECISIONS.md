@@ -390,6 +390,29 @@ Compatibility is domain-level, not a codec/content/adapter guarantee. Preserve e
 
 **Reason:** Eliminates user frustration from accidental node deletions or wrong cable connections in the Queue Workflow canvas, bringing Raycast/Figma-tier creative ergonomics to visual pipeline composition.
 
+## ADR-048 — Canvas Marquee Box Multi-Node Selection & Batch Operations for Queue Workflow
+
+**Decision:**
+1. **Separation of Selection Geometry (`selection.ts`):**
+   - Encapsulate 2D bounding box intersection tests (`getNodesIntersectingMarquee`) into a standalone pure math module.
+   - Use normalized min/max bounds calculation (`Math.min`, `Math.max`) to provide identical intersection behavior regardless of drag direction (top-left, bottom-right, diagonal inversion).
+2. **Dual Interaction Modes & Figma-Style Ergonomics:**
+   - Introduce `canvasMode: 'select' | 'pan'` toggled via `WorkflowToolbar.tsx` or hotkeys `V` (Select & Marquee) and `H` (Pan).
+   - In Select mode, dragging empty canvas background draws an SVG dashed marquee selection box (`border-dashed border-accent bg-accent/10`).
+   - In Pan mode, dragging canvas background translates viewport coordinates.
+   - `Space + Left Drag` and middle-mouse button (`e.button === 1`) universally trigger panning across all modes, displaying tactile cursor states (`cursor-grab`, `cursor-grabbing`, `cursor-crosshair`).
+3. **Multi-Node Selection & Synchronized Dragging:**
+   - Transition canvas selection state from a scalar `string | null` to `selectedNodeIds: Set<string>`.
+   - Node clicks with `Shift` or `Ctrl/Cmd` toggle individual membership in `selectedNodeIds`.
+   - When initiating a drag on any node that is part of an active multi-selection, record initial coordinates for all selected nodes and translate them in unison, snapping each node to grid while preserving relative layout.
+4. **Atomic Batch Mutations with Undo Integration:**
+   - **Batch Deletion (`deleteNodesFromGraph`):** `Delete` or `Backspace` deletes all selected nodes and strips all incoming and outgoing connected wires in a single state update, creating one clean undo snapshot.
+   - **Cluster Duplication (`duplicateNodesInGraph`):** `Ctrl+D` duplicates all selected nodes with a +40px offset, clones internal interconnecting wires between duplicated nodes, and intentionally leaves external connections untouched to keep duplicated subgraphs isolated.
+5. **Floating Action Bar:**
+   - Render a floating pill docked bottom-center when `selectedNodeIds.size > 1` (`w-auto`, backdrop-blur, dark-shell glassmorphism) providing quick count inspection and 1-click batch duplication, deletion, and dismissal.
+
+**Reason:** Empowers users to rapidly manipulate, duplicate, re-arrange, and delete complex multi-tool workflow graphs with standard creative-workstation ergonomics matching Figma, Blender, and Unreal Engine.
+
 
 
 
